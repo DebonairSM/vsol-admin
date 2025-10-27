@@ -3,11 +3,54 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { apiClient } from '@/lib/api-client';
 import { Link } from 'react-router-dom';
-import { Eye, Edit } from 'lucide-react';
+import { Eye, Edit, FileCheck } from 'lucide-react';
+import { useState } from 'react';
 
 export default function ConsultantsPage() {
   const { data: consultants, isLoading } = useConsultants();
+  const [generatingContracts, setGeneratingContracts] = useState<Record<number, boolean>>({});
+
+  const handleGenerateContract = async (consultant: any) => {
+    const consultantId = consultant.id;
+    setGeneratingContracts(prev => ({ ...prev, [consultantId]: true }));
+    
+    try {
+      const response = await apiClient.generateConsultantContract(consultantId);
+      
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = 'contract.txt';
+      if (contentDisposition) {
+        const matches = /filename="?([^"]+)"?/.exec(contentDisposition);
+        if (matches) {
+          filename = matches[1];
+        }
+      }
+      
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Failed to generate contract:', error);
+      alert(`Failed to generate contract: ${error.message}`);
+    } finally {
+      setGeneratingContracts(prev => ({ ...prev, [consultantId]: false }));
+    }
+  };
+
+  const canGenerateContract = (consultant: any) => 
+    consultant.name?.trim() && 
+    consultant.companyLegalName?.trim() && 
+    consultant.cnpj?.trim();
 
   if (isLoading) {
     return (
@@ -89,7 +132,7 @@ export default function ConsultantsPage() {
                     {consultant.terminationDate ? formatDate(consultant.terminationDate) : '-'}
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-wrap gap-2">
                       <Link to={`/consultants/${consultant.id}`}>
                         <Button variant="outline" size="sm">
                           <Eye className="w-4 h-4 mr-1" />
@@ -102,6 +145,16 @@ export default function ConsultantsPage() {
                           Edit
                         </Button>
                       </Link>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleGenerateContract(consultant)}
+                        disabled={generatingContracts[consultant.id] || !canGenerateContract(consultant)}
+                        title={!canGenerateContract(consultant) ? 'Missing required fields: Name, Company Legal Name, or CNPJ' : 'Generate Master Services Agreement'}
+                      >
+                        <FileCheck className="w-4 h-4 mr-1" />
+                        {generatingContracts[consultant.id] ? 'Generating...' : 'Contract'}
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

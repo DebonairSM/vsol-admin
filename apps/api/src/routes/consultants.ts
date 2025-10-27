@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { ConsultantService } from '../services/consultant-service';
+import { ContractService } from '../services/contract-service';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
@@ -149,5 +150,41 @@ router.get('/:id/documents/:type', async (req, res, next) => {
     next(error);
   }
 });
+
+// GET /api/consultants/:id/contract - Generate and download contract
+router.get('/:id/contract',
+  auditMiddleware('GENERATE_CONTRACT', 'consultant'),
+  async (req, res, next) => {
+    try {
+      const consultantId = parseInt(req.params.id);
+      
+      // Get consultant data
+      const consultant = await ConsultantService.getById(consultantId);
+      
+      // Validate consultant has required fields
+      const validationError = ContractService.validateConsultantForContract(consultant);
+      if (validationError) {
+        return res.status(400).json({ 
+          error: validationError.message,
+          missingFields: validationError.missingFields 
+        });
+      }
+      
+      // Generate contract content
+      const contractContent = ContractService.generateContract(consultant);
+      const filename = ContractService.generateContractFilename(consultant);
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', Buffer.byteLength(contractContent, 'utf8'));
+      
+      // Send contract content
+      res.send(contractContent);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default router;

@@ -7,6 +7,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useState } from 'react';
+import BonusInfoCell from '@/components/bonus-info-cell';
+import WorkflowTracker from '@/components/workflow-tracker';
 
 export default function GoldenSheetPage() {
   const { id } = useParams<{ id: string }>();
@@ -48,10 +50,8 @@ export default function GoldenSheetPage() {
       let value: any = editValue;
       
       // Convert value based on field type
-      if (['adjustmentValue', 'bonusAdvance', 'workHours'].includes(editingCell.field)) {
+      if (['adjustmentValue', 'workHours'].includes(editingCell.field)) {
         value = editValue ? parseFloat(editValue) : null;
-      } else if (['bonusDate', 'informedDate', 'bonusPaydate', 'advanceDate'].includes(editingCell.field)) {
-        value = editValue ? new Date(editValue).toISOString() : null;
       } else if (editingCell.field === 'invoiceSent') {
         value = editValue === 'true';
       }
@@ -81,6 +81,18 @@ export default function GoldenSheetPage() {
     return rateAmount + adjustment - advance;
   };
 
+  const handleWorkflowDateUpdate = async (fieldName: string, date: string | null) => {
+    try {
+      await updateCycle.mutateAsync({
+        cycleId,
+        data: { [fieldName]: date }
+      });
+    } catch (error) {
+      console.error('Failed to update workflow date:', error);
+      throw error;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -90,6 +102,12 @@ export default function GoldenSheetPage() {
           <p className="text-gray-600">{cycle.monthLabel} Payroll Cycle</p>
         </div>
       </div>
+
+      {/* Workflow Tracker */}
+      <WorkflowTracker 
+        cycle={cycle}
+        onUpdateWorkflowDate={handleWorkflowDateUpdate}
+      />
 
       {/* Main Table */}
       <Card>
@@ -108,12 +126,8 @@ export default function GoldenSheetPage() {
                   <TableHead>Invoice Sent</TableHead>
                   <TableHead>Adjustment Value</TableHead>
                   <TableHead>Comments</TableHead>
-                  <TableHead>Bonus Date</TableHead>
-                  <TableHead>Informed Date</TableHead>
-                  <TableHead>Bonus Paydate</TableHead>
+                  <TableHead>Bonus Information</TableHead>
                   <TableHead>Rate/Hour</TableHead>
-                  <TableHead>Bonus Advance</TableHead>
-                  <TableHead>Advance Date</TableHead>
                   <TableHead>Subtotal</TableHead>
                 </TableRow>
               </TableHeader>
@@ -202,143 +216,18 @@ export default function GoldenSheetPage() {
                     </TableCell>
 
                     <TableCell>
-                      {editingCell?.lineId === line.id && editingCell?.field === 'bonusDate' ? (
-                        <div className="flex gap-2">
-                          <Input
-                            type="date"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="w-36"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleCellSave();
-                              if (e.key === 'Escape') handleCellCancel();
-                            }}
-                            autoFocus
-                          />
-                          <Button size="sm" onClick={handleCellSave}>Save</Button>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
-                          onClick={() => handleCellEdit(line.id, 'bonusDate', 
-                            line.bonusDate ? new Date(line.bonusDate).toISOString().split('T')[0] : '')}
-                        >
-                          {line.bonusDate ? formatDate(line.bonusDate) : '-'}
-                        </div>
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      {editingCell?.lineId === line.id && editingCell?.field === 'informedDate' ? (
-                        <div className="flex gap-2">
-                          <Input
-                            type="date"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="w-36"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleCellSave();
-                              if (e.key === 'Escape') handleCellCancel();
-                            }}
-                            autoFocus
-                          />
-                          <Button size="sm" onClick={handleCellSave}>Save</Button>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
-                          onClick={() => handleCellEdit(line.id, 'informedDate', 
-                            line.informedDate ? new Date(line.informedDate).toISOString().split('T')[0] : '')}
-                        >
-                          {line.informedDate ? formatDate(line.informedDate) : '-'}
-                        </div>
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      {editingCell?.lineId === line.id && editingCell?.field === 'bonusPaydate' ? (
-                        <div className="flex gap-2">
-                          <Input
-                            type="date"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="w-36"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleCellSave();
-                              if (e.key === 'Escape') handleCellCancel();
-                            }}
-                            autoFocus
-                          />
-                          <Button size="sm" onClick={handleCellSave}>Save</Button>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
-                          onClick={() => handleCellEdit(line.id, 'bonusPaydate', 
-                            line.bonusPaydate ? new Date(line.bonusPaydate).toISOString().split('T')[0] : '')}
-                        >
-                          {line.bonusPaydate ? formatDate(line.bonusPaydate) : '-'}
-                        </div>
-                      )}
+                      <BonusInfoCell
+                        lineItem={line}
+                        cycleId={cycleId}
+                        cycleSendReceiptDate={cycle.sendReceiptDate}
+                        onUpdate={(lineId, data) => updateLineItem.mutateAsync({ cycleId, lineId, data })}
+                      />
                     </TableCell>
 
                     <TableCell className="font-mono">
                       {formatCurrency(line.ratePerHour)}
                     </TableCell>
 
-                    <TableCell>
-                      {editingCell?.lineId === line.id && editingCell?.field === 'bonusAdvance' ? (
-                        <div className="flex gap-2">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="w-24"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleCellSave();
-                              if (e.key === 'Escape') handleCellCancel();
-                            }}
-                            autoFocus
-                          />
-                          <Button size="sm" onClick={handleCellSave}>Save</Button>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
-                          onClick={() => handleCellEdit(line.id, 'bonusAdvance', line.bonusAdvance)}
-                        >
-                          {line.bonusAdvance ? formatCurrency(line.bonusAdvance) : '-'}
-                        </div>
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      {editingCell?.lineId === line.id && editingCell?.field === 'advanceDate' ? (
-                        <div className="flex gap-2">
-                          <Input
-                            type="date"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            className="w-36"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleCellSave();
-                              if (e.key === 'Escape') handleCellCancel();
-                            }}
-                            autoFocus
-                          />
-                          <Button size="sm" onClick={handleCellSave}>Save</Button>
-                        </div>
-                      ) : (
-                        <div
-                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
-                          onClick={() => handleCellEdit(line.id, 'advanceDate', 
-                            line.advanceDate ? new Date(line.advanceDate).toISOString().split('T')[0] : '')}
-                        >
-                          {line.advanceDate ? formatDate(line.advanceDate) : '-'}
-                        </div>
-                      )}
-                    </TableCell>
 
                     <TableCell className="font-mono font-bold">
                       {formatCurrency(calculateSubtotal(line))}

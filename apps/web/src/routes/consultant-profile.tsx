@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
-import { ArrowLeft, Edit, Trash2, Download, User, Building, Phone, MapPin, FileText, CreditCard } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Download, User, Building, Phone, MapPin, FileText, CreditCard, FileCheck } from 'lucide-react';
+import { useState } from 'react';
 
 export default function ConsultantProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +15,8 @@ export default function ConsultantProfilePage() {
   
   const { data: consultant, isLoading, error } = useConsultantProfile(consultantId);
   const deleteConsultant = useDeleteConsultant();
+  const [isGeneratingContract, setIsGeneratingContract] = useState(false);
+  const [contractError, setContractError] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -54,6 +57,46 @@ export default function ConsultantProfilePage() {
     window.open(url, '_blank');
   };
 
+  const handleGenerateContract = async () => {
+    setIsGeneratingContract(true);
+    setContractError(null);
+    
+    try {
+      const response = await apiClient.generateConsultantContract(consultantId);
+      
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = 'contract.txt';
+      if (contentDisposition) {
+        const matches = /filename="?([^"]+)"?/.exec(contentDisposition);
+        if (matches) {
+          filename = matches[1];
+        }
+      }
+      
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Failed to generate contract:', error);
+      setContractError(error.message || 'Failed to generate contract');
+    } finally {
+      setIsGeneratingContract(false);
+    }
+  };
+
+  const canGenerateContract = consultant && 
+    consultant.name?.trim() && 
+    consultant.companyLegalName?.trim() && 
+    consultant.cnpj?.trim();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -73,6 +116,15 @@ export default function ConsultantProfilePage() {
           </div>
         </div>
         <div className="flex space-x-2">
+          <Button 
+            variant="outline"
+            onClick={handleGenerateContract}
+            disabled={isGeneratingContract || !canGenerateContract}
+            title={!canGenerateContract ? 'Missing required fields: Name, Company Legal Name, or CNPJ' : 'Generate Master Services Agreement'}
+          >
+            <FileCheck className="w-4 h-4 mr-2" />
+            {isGeneratingContract ? 'Generating...' : 'Generate Contract'}
+          </Button>
           <Link to={`/consultants/${consultantId}/edit`}>
             <Button>
               <Edit className="w-4 h-4 mr-2" />
@@ -96,6 +148,17 @@ export default function ConsultantProfilePage() {
           {consultant.terminationDate ? 'Terminated' : 'Active'}
         </Badge>
       </div>
+
+      {/* Contract Error Display */}
+      {contractError && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+          <div className="flex">
+            <div className="text-red-700">
+              <strong>Contract Generation Error:</strong> {contractError}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Basic Information */}

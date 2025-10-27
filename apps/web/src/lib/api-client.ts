@@ -25,13 +25,13 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+      headers['Authorization'] = `Bearer ${this.token}`;
     }
 
     const config: RequestInit = {
@@ -97,10 +97,10 @@ class ApiClient {
     formData.append('document', file);
     
     const url = `${this.baseURL}/consultants/${consultantId}/documents/${documentType}`;
-    const headers: HeadersInit = {};
+    const headers: Record<string, string> = {};
     
     if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
+      headers['Authorization'] = `Bearer ${this.token}`;
     }
 
     const response = await fetch(url, {
@@ -119,6 +119,27 @@ class ApiClient {
 
   getConsultantDocumentUrl(consultantId: number, documentType: 'cnh' | 'address_proof') {
     return `${this.baseURL}/consultants/${consultantId}/documents/${documentType}`;
+  }
+
+  async generateConsultantContract(consultantId: number) {
+    const url = `${this.baseURL}/consultants/${consultantId}/contract`;
+    const headers: Record<string, string> = {};
+    
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+
+    return response; // Return the response object for handling file download
   }
 
   async deleteConsultant(id: number) {
