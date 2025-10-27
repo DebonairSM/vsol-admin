@@ -1,0 +1,425 @@
+import { useParams } from 'react-router-dom';
+import { useCycle, useCycleSummary, useUpdateLineItem, useUpdateCycle } from '@/hooks/use-cycles';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { useState } from 'react';
+
+export default function GoldenSheetPage() {
+  const { id } = useParams<{ id: string }>();
+  const cycleId = parseInt(id!);
+  
+  const { data: cycle, isLoading: cycleLoading } = useCycle(cycleId);
+  const { data: summary, isLoading: summaryLoading } = useCycleSummary(cycleId);
+  const updateLineItem = useUpdateLineItem();
+  const updateCycle = useUpdateCycle();
+
+  const [editingCell, setEditingCell] = useState<{ lineId: number; field: string } | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  if (cycleLoading || summaryLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-lg">Loading Golden Sheet...</div>
+      </div>
+    );
+  }
+
+  if (!cycle || !summary) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-lg text-red-600">Cycle not found</div>
+      </div>
+    );
+  }
+
+  const handleCellEdit = (lineId: number, field: string, currentValue: any) => {
+    setEditingCell({ lineId, field });
+    setEditValue(currentValue?.toString() || '');
+  };
+
+  const handleCellSave = async () => {
+    if (!editingCell) return;
+
+    try {
+      let value: any = editValue;
+      
+      // Convert value based on field type
+      if (['adjustmentValue', 'bonusAdvance', 'workHours'].includes(editingCell.field)) {
+        value = editValue ? parseFloat(editValue) : null;
+      } else if (['bonusDate', 'informedDate', 'bonusPaydate', 'advanceDate'].includes(editingCell.field)) {
+        value = editValue ? new Date(editValue).toISOString() : null;
+      } else if (editingCell.field === 'invoiceSent') {
+        value = editValue === 'true';
+      }
+
+      await updateLineItem.mutateAsync({
+        cycleId,
+        lineId: editingCell.lineId,
+        data: { [editingCell.field]: value }
+      });
+
+      setEditingCell(null);
+    } catch (error) {
+      console.error('Failed to update line item:', error);
+    }
+  };
+
+  const handleCellCancel = () => {
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const calculateSubtotal = (line: any) => {
+    const workHours = line.workHours || cycle.globalWorkHours || 0;
+    const rateAmount = workHours * line.ratePerHour;
+    const adjustment = line.adjustmentValue || 0;
+    const advance = line.bonusAdvance || 0;
+    return rateAmount + adjustment - advance;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Golden Sheet</h1>
+          <p className="text-gray-600">{cycle.monthLabel} Payroll Cycle</p>
+        </div>
+      </div>
+
+      {/* Main Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Consultant Line Items</CardTitle>
+          <CardDescription>
+            Click on cells to edit values. Changes are saved automatically.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Contractor Info</TableHead>
+                  <TableHead>Invoice Sent</TableHead>
+                  <TableHead>Adjustment Value</TableHead>
+                  <TableHead>Comments</TableHead>
+                  <TableHead>Bonus Date</TableHead>
+                  <TableHead>Informed Date</TableHead>
+                  <TableHead>Bonus Paydate</TableHead>
+                  <TableHead>Rate/Hour</TableHead>
+                  <TableHead>Bonus Advance</TableHead>
+                  <TableHead>Advance Date</TableHead>
+                  <TableHead>Subtotal</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cycle.lines?.map((line: any) => (
+                  <TableRow key={line.id}>
+                    <TableCell className="font-medium">
+                      <div>
+                        <div className="font-semibold">{line.consultant.name}</div>
+                        {line.consultant.companyTradeName && (
+                          <div className="text-xs text-gray-600">
+                            {line.consultant.companyTradeName}
+                          </div>
+                        )}
+                        {line.consultant.payoneerID && (
+                          <div className="text-xs text-blue-600">
+                            Payoneer: {line.consultant.payoneerID}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    
+                    <TableCell>
+                      <Checkbox
+                        checked={line.invoiceSent || false}
+                        onCheckedChange={(checked) => {
+                          updateLineItem.mutate({
+                            cycleId,
+                            lineId: line.id,
+                            data: { invoiceSent: checked }
+                          });
+                        }}
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      {editingCell?.lineId === line.id && editingCell?.field === 'adjustmentValue' ? (
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-24"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave();
+                              if (e.key === 'Escape') handleCellCancel();
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleCellSave}>Save</Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                          onClick={() => handleCellEdit(line.id, 'adjustmentValue', line.adjustmentValue)}
+                        >
+                          {line.adjustmentValue ? formatCurrency(line.adjustmentValue) : '-'}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      {editingCell?.lineId === line.id && editingCell?.field === 'comments' ? (
+                        <div className="flex gap-2">
+                          <Input
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-32"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave();
+                              if (e.key === 'Escape') handleCellCancel();
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleCellSave}>Save</Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                          onClick={() => handleCellEdit(line.id, 'comments', line.comments)}
+                        >
+                          {line.comments || '-'}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      {editingCell?.lineId === line.id && editingCell?.field === 'bonusDate' ? (
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-36"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave();
+                              if (e.key === 'Escape') handleCellCancel();
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleCellSave}>Save</Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                          onClick={() => handleCellEdit(line.id, 'bonusDate', 
+                            line.bonusDate ? new Date(line.bonusDate).toISOString().split('T')[0] : '')}
+                        >
+                          {line.bonusDate ? formatDate(line.bonusDate) : '-'}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      {editingCell?.lineId === line.id && editingCell?.field === 'informedDate' ? (
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-36"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave();
+                              if (e.key === 'Escape') handleCellCancel();
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleCellSave}>Save</Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                          onClick={() => handleCellEdit(line.id, 'informedDate', 
+                            line.informedDate ? new Date(line.informedDate).toISOString().split('T')[0] : '')}
+                        >
+                          {line.informedDate ? formatDate(line.informedDate) : '-'}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      {editingCell?.lineId === line.id && editingCell?.field === 'bonusPaydate' ? (
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-36"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave();
+                              if (e.key === 'Escape') handleCellCancel();
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleCellSave}>Save</Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                          onClick={() => handleCellEdit(line.id, 'bonusPaydate', 
+                            line.bonusPaydate ? new Date(line.bonusPaydate).toISOString().split('T')[0] : '')}
+                        >
+                          {line.bonusPaydate ? formatDate(line.bonusPaydate) : '-'}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="font-mono">
+                      {formatCurrency(line.ratePerHour)}
+                    </TableCell>
+
+                    <TableCell>
+                      {editingCell?.lineId === line.id && editingCell?.field === 'bonusAdvance' ? (
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-24"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave();
+                              if (e.key === 'Escape') handleCellCancel();
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleCellSave}>Save</Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                          onClick={() => handleCellEdit(line.id, 'bonusAdvance', line.bonusAdvance)}
+                        >
+                          {line.bonusAdvance ? formatCurrency(line.bonusAdvance) : '-'}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      {editingCell?.lineId === line.id && editingCell?.field === 'advanceDate' ? (
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-36"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave();
+                              if (e.key === 'Escape') handleCellCancel();
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleCellSave}>Save</Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                          onClick={() => handleCellEdit(line.id, 'advanceDate', 
+                            line.advanceDate ? new Date(line.advanceDate).toISOString().split('T')[0] : '')}
+                        >
+                          {line.advanceDate ? formatDate(line.advanceDate) : '-'}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="font-mono font-bold">
+                      {formatCurrency(calculateSubtotal(line))}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Footer Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Totals</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between">
+              <span>Total Hourly Value:</span>
+              <span className="font-mono">{formatCurrency(summary.totalHourlyValue)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Global Work Hours:</span>
+              <span className="font-mono">{cycle.globalWorkHours || 0}</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg border-t pt-2">
+              <span>USD Total:</span>
+              <span className="font-mono">{formatCurrency(summary.usdTotal)}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Adjustments</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between">
+              <span>Omnigo Bonus:</span>
+              <span className="font-mono">{formatCurrency(cycle.omnigoBonus || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Pagamento PIX:</span>
+              <span className="font-mono">{formatCurrency(cycle.pagamentoPIX || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Pagamento Inter:</span>
+              <span className="font-mono">{formatCurrency(cycle.pagamentoInter || 0)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Equipments USD:</span>
+              <span className="font-mono">{formatCurrency(cycle.equipmentsUSD || 0)}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="text-sm">
+              <p><strong>Line Items:</strong> {summary.lineCount}</p>
+              <p><strong>Created:</strong> {formatDate(cycle.createdAt)}</p>
+              <p><strong>Updated:</strong> {formatDate(cycle.updatedAt)}</p>
+            </div>
+            {summary.anomalies.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-red-600 mb-2">Anomalies:</p>
+                <ul className="text-xs text-red-600 space-y-1">
+                  {summary.anomalies.map((anomaly: string, index: number) => (
+                    <li key={index}>• {anomaly}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

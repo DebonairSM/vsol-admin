@@ -1,0 +1,21 @@
+{
+  "name": "vsol-admin",
+  "private": true,
+  "scripts": {
+    "setup": "node setup.js",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "db:migrate": "pnpm --filter @vsol-admin/api db:migrate",
+    "db:studio": "pnpm --filter @vsol-admin/api db:studio",
+    "db:seed": "pnpm --filter @vsol-admin/api db:seed",
+    "backup:db": "node ./apps/api/scripts/backup-db.js"
+  },
+  "devDependencies": {
+    "turbo": "^1.13.4"
+  },
+  "packageManager": "pnpm@8.15.6",
+  "engines": {
+    "node": ">=18"
+  }
+}
