@@ -113,6 +113,9 @@ export class CycleService {
     if (data.sendInvoiceDate !== undefined) {
       updateData.sendInvoiceDate = data.sendInvoiceDate ? new Date(data.sendInvoiceDate) : null;
     }
+    if (data.consultantInvoicesVerifiedDate !== undefined) {
+      updateData.consultantInvoicesVerifiedDate = data.consultantInvoicesVerifiedDate ? new Date(data.consultantInvoicesVerifiedDate) : null;
+    }
     if (data.invoiceApprovalDate !== undefined) {
       updateData.invoiceApprovalDate = data.invoiceApprovalDate ? new Date(data.invoiceApprovalDate) : null;
     }

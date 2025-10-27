@@ -8,12 +8,14 @@ import {
   CreditCard, 
   History, 
   LogOut,
-  Table
+  Table,
+  Laptop
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Consultants', href: '/consultants', icon: Users },
+  { name: 'Equipment', href: '/equipment', icon: Laptop },
   { name: 'Invoices', href: '/invoices', icon: FileText },
   { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Audit Log', href: '/audit', icon: History },

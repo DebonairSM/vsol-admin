@@ -41,6 +41,11 @@ export const consultants = sqliteTable('consultants', {
   cpf: text('cpf'),
   cnhPhotoPath: text('cnh_photo_path'),
   addressProofPhotoPath: text('address_proof_photo_path'),
+  // Termination Process
+  finalPaymentAmount: real('final_payment_amount'),
+  equipmentReturnDeadline: integer('equipment_return_deadline', { mode: 'timestamp' }),
+  contractSignedDate: integer('contract_signed_date', { mode: 'timestamp' }),
+  terminationReason: text('termination_reason', { enum: ['FIRED', 'LAID_OFF', 'QUIT', 'MUTUAL_AGREEMENT'] }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
@@ -54,6 +59,7 @@ export const payrollCycles = sqliteTable('payroll_cycles', {
   paymentArrivalDate: integer('payment_arrival_date', { mode: 'timestamp' }),
   sendReceiptDate: integer('send_receipt_date', { mode: 'timestamp' }),
   sendInvoiceDate: integer('send_invoice_date', { mode: 'timestamp' }),
+  consultantInvoicesVerifiedDate: integer('consultant_invoices_verified_date', { mode: 'timestamp' }),
   invoiceApprovalDate: integer('invoice_approval_date', { mode: 'timestamp' }),
   hoursLimitChangedOn: integer('hours_limit_changed_on', { mode: 'timestamp' }),
   additionalPaidOn: integer('additional_paid_on', { mode: 'timestamp' }),
@@ -122,6 +128,21 @@ export const auditLogs = sqliteTable('audit_logs', {
   timestamp: integer('timestamp', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
 
+// Consultant equipment table
+export const consultantEquipment = sqliteTable('consultant_equipment', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  consultantId: integer('consultant_id').notNull().references(() => consultants.id),
+  deviceName: text('device_name').notNull(),
+  model: text('model'),
+  purchaseDate: integer('purchase_date', { mode: 'timestamp' }),
+  serialNumber: text('serial_number'),
+  returnRequired: integer('return_required', { mode: 'boolean' }).notNull().default(true),
+  returnedDate: integer('returned_date', { mode: 'timestamp' }),
+  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   auditLogs: many(auditLogs)
@@ -130,7 +151,8 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const consultantsRelations = relations(consultants, ({ many }) => ({
   lineItems: many(cycleLineItems),
   invoices: many(invoices),
-  payments: many(payments)
+  payments: many(payments),
+  equipment: many(consultantEquipment)
 }));
 
 export const payrollCyclesRelations = relations(payrollCycles, ({ many }) => ({
@@ -181,5 +203,12 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   cycle: one(payrollCycles, {
     fields: [auditLogs.cycleId],
     references: [payrollCycles.id]
+  })
+}));
+
+export const consultantEquipmentRelations = relations(consultantEquipment, ({ one }) => ({
+  consultant: one(consultants, {
+    fields: [consultantEquipment.consultantId],
+    references: [consultants.id]
   })
 }));

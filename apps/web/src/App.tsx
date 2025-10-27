@@ -7,6 +7,8 @@ import GoldenSheetPage from './routes/golden-sheet';
 import ConsultantsPage from './routes/consultants-demo';
 import ConsultantProfilePage from './routes/consultant-profile';
 import ConsultantEditPage from './routes/consultant-edit';
+import EquipmentPage from './routes/equipment';
+import NewEquipmentPage from './routes/equipment-new';
 import InvoicesPage from './routes/invoices';
 import PaymentsPage from './routes/payments';
 import AuditPage from './routes/audit';
@@ -53,6 +55,8 @@ function App() {
                   <Route path="/consultants" element={<ConsultantsPage />} />
                   <Route path="/consultants/:id" element={<ConsultantProfilePage />} />
                   <Route path="/consultants/:id/edit" element={<ConsultantEditPage />} />
+                  <Route path="/equipment" element={<EquipmentPage />} />
+                  <Route path="/equipment/new" element={<NewEquipmentPage />} />
                   <Route path="/invoices" element={<InvoicesPage />} />
                   <Route path="/payments" element={<PaymentsPage />} />
                   <Route path="/audit" element={<AuditPage />} />

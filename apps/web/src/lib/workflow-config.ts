@@ -1,11 +1,11 @@
-import { CalendarDays, DollarSign, FileText, CheckCircle, PlusCircle, Clock, Receipt } from 'lucide-react';
+import { CalendarDays, DollarSign, FileText, CheckCircle, PlusCircle, Clock, Receipt, UserCheck } from 'lucide-react';
 import type { PayrollCycle } from '@vsol-admin/shared';
 
 export interface WorkflowStep {
   id: string;
   title: string;
   description: string;
-  fieldName: keyof Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'invoiceApprovalDate' | 'additionalPaidOn' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
+  fieldName: keyof Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'consultantInvoicesVerifiedDate' | 'invoiceApprovalDate' | 'additionalPaidOn' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
   icon: any;
   color: {
     complete: string;
@@ -15,9 +15,35 @@ export interface WorkflowStep {
   order: number;
 }
 
-export type PayrollCycleWorkflow = Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'invoiceApprovalDate' | 'additionalPaidOn' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
+export type PayrollCycleWorkflow = Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'consultantInvoicesVerifiedDate' | 'invoiceApprovalDate' | 'additionalPaidOn' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
 
 export const workflowSteps: WorkflowStep[] = [
+  {
+    id: 'send-invoice',
+    title: 'Send Invoice',
+    description: 'Invoices sent to clients via Wave Apps',
+    fieldName: 'sendInvoiceDate',
+    icon: FileText,
+    color: {
+      complete: 'text-purple-600 border-purple-200 bg-purple-50',
+      pending: 'text-gray-400 border-gray-200 bg-gray-50',
+      background: 'bg-purple-100'
+    },
+    order: 1
+  },
+  {
+    id: 'consultant-invoices-verified',
+    title: 'Consultant Invoices Verified',
+    description: 'Verified that consultants have sent their invoices requesting payments',
+    fieldName: 'consultantInvoicesVerifiedDate',
+    icon: UserCheck,
+    color: {
+      complete: 'text-teal-600 border-teal-200 bg-teal-50',
+      pending: 'text-gray-400 border-gray-200 bg-gray-50',
+      background: 'bg-teal-100'
+    },
+    order: 2
+  },
   {
     id: 'calculate-payment',
     title: 'Calculate Payment',
@@ -29,7 +55,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-green-100'
     },
-    order: 1
+    order: 3
   },
   {
     id: 'payment-arrival',
@@ -42,20 +68,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-blue-100'
     },
-    order: 2
-  },
-  {
-    id: 'send-invoice',
-    title: 'Send Invoice',
-    description: 'Invoices sent to clients via Wave Apps',
-    fieldName: 'sendInvoiceDate',
-    icon: FileText,
-    color: {
-      complete: 'text-purple-600 border-purple-200 bg-purple-50',
-      pending: 'text-gray-400 border-gray-200 bg-gray-50',
-      background: 'bg-purple-100'
-    },
-    order: 3
+    order: 4
   },
   {
     id: 'invoice-approval',
@@ -68,7 +81,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-emerald-100'
     },
-    order: 4
+    order: 5
   },
   {
     id: 'additional-paid',
@@ -81,7 +94,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-orange-100'
     },
-    order: 5
+    order: 6
   },
   {
     id: 'hours-limit-changed',
@@ -94,7 +107,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-indigo-100'
     },
-    order: 6
+    order: 7
   },
   {
     id: 'send-receipt',
@@ -107,7 +120,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-green-200'
     },
-    order: 7
+    order: 8
   }
 ];
 
@@ -119,12 +132,12 @@ export function calculateWorkflowProgress(cycle: PayrollCycleWorkflow): {
 } {
   const completedSteps = workflowSteps.filter(step => {
     const value = cycle[step.fieldName];
-    return value !== null && value !== undefined && value !== '';
+    return value !== null && value !== undefined;
   });
 
   const nextPendingStep = workflowSteps.find(step => {
     const value = cycle[step.fieldName];
-    return value === null || value === undefined || value === '';
+    return value === null || value === undefined;
   });
 
   const totalSteps = workflowSteps.length;
@@ -140,5 +153,5 @@ export function calculateWorkflowProgress(cycle: PayrollCycleWorkflow): {
 
 export function isStepCompleted(cycle: PayrollCycleWorkflow, step: WorkflowStep): boolean {
   const value = cycle[step.fieldName];
-  return value !== null && value !== undefined && value !== '';
+  return value !== null && value !== undefined;
 }

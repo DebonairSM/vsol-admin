@@ -236,6 +236,48 @@ class ApiClient {
     const queryString = query.toString();
     return this.request<any[]>(`/audit${queryString ? `?${queryString}` : ''}`);
   }
+
+  // Equipment methods
+  async getEquipment(consultantId?: number) {
+    const query = consultantId ? `?consultantId=${consultantId}` : '';
+    return this.request<any[]>(`/equipment${query}`);
+  }
+
+  async getEquipmentById(id: number) {
+    return this.request<any>(`/equipment/${id}`);
+  }
+
+  async createEquipment(data: any) {
+    return this.request<any>('/equipment', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateEquipment(id: number, data: any) {
+    return this.request<any>(`/equipment/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEquipment(id: number) {
+    return this.request<any>(`/equipment/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async markEquipmentReturned(id: number, returnedDate?: string) {
+    return this.request<any>(`/equipment/${id}/return`, {
+      method: 'POST',
+      body: JSON.stringify(returnedDate ? { returnedDate } : {}),
+    });
+  }
+
+  async getPendingReturns(consultantId?: number) {
+    const query = consultantId ? `?consultantId=${consultantId}` : '';
+    return this.request<any[]>(`/equipment/pending-returns${query}`);
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

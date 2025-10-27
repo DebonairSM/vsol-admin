@@ -1,0 +1,1 @@
+ALTER TABLE payroll_cycles ADD `consultant_invoices_verified_date` integer;

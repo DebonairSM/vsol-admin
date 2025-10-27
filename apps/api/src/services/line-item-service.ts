@@ -25,8 +25,7 @@ export class LineItemService {
       where: eq(cycleLineItems.cycleId, cycleId),
       with: {
         consultant: true
-      },
-      orderBy: (lineItems, { asc }) => [asc(lineItems.consultant.name)]
+      }
     });
   }
 

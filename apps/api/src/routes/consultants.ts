@@ -2,11 +2,19 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { ConsultantService } from '../services/consultant-service';
-import { ContractService } from '../services/contract-service';
+import { EquipmentService } from '../services/equipment-service';
+import { TerminationService } from '../services/termination-service';
+import { DocumentService } from '../services/document-service';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
-import { createConsultantSchema, updateConsultantSchema } from '@vsol-admin/shared';
+import { 
+  createConsultantSchema, 
+  updateConsultantSchema,
+  createEquipmentSchema,
+  updateEquipmentSchema,
+  initiateTerminationSchema
+} from '@vsol-admin/shared';
 
 const router = Router();
 
@@ -151,36 +159,164 @@ router.get('/:id/documents/:type', async (req, res, next) => {
   }
 });
 
-// GET /api/consultants/:id/contract - Generate and download contract
-router.get('/:id/contract',
-  auditMiddleware('GENERATE_CONTRACT', 'consultant'),
+// Equipment Management Routes
+
+// GET /api/consultants/:id/equipment - Get equipment for consultant
+router.get('/:id/equipment', async (req, res, next) => {
+  try {
+    const consultantId = parseInt(req.params.id);
+    const equipment = await EquipmentService.getByConsultantId(consultantId);
+    res.json(equipment);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/consultants/:id/equipment - Add equipment to consultant
+router.post('/:id/equipment',
+  validateBody(createEquipmentSchema),
+  auditMiddleware('CREATE_EQUIPMENT', 'equipment'),
+  async (req, res, next) => {
+    try {
+      const consultantId = parseInt(req.params.id);
+      const equipmentData = { ...req.body, consultantId };
+      const equipment = await EquipmentService.create(equipmentData);
+      res.status(201).json(equipment);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// PUT /api/consultants/:id/equipment/:equipmentId - Update equipment
+router.put('/:id/equipment/:equipmentId',
+  validateBody(updateEquipmentSchema),
+  auditMiddleware('UPDATE_EQUIPMENT', 'equipment'),
+  async (req, res, next) => {
+    try {
+      const equipmentId = parseInt(req.params.equipmentId);
+      const equipment = await EquipmentService.update(equipmentId, req.body);
+      res.json(equipment);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// DELETE /api/consultants/:id/equipment/:equipmentId - Delete equipment
+router.delete('/:id/equipment/:equipmentId',
+  auditMiddleware('DELETE_EQUIPMENT', 'equipment'),
+  async (req, res, next) => {
+    try {
+      const equipmentId = parseInt(req.params.equipmentId);
+      const result = await EquipmentService.delete(equipmentId);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /api/consultants/:id/equipment/:equipmentId/return - Mark equipment as returned
+router.post('/:id/equipment/:equipmentId/return',
+  auditMiddleware('RETURN_EQUIPMENT', 'equipment'),
+  async (req, res, next) => {
+    try {
+      const equipmentId = parseInt(req.params.equipmentId);
+      const returnedDate = req.body.returnedDate ? new Date(req.body.returnedDate) : undefined;
+      const equipment = await EquipmentService.markAsReturned(equipmentId, returnedDate);
+      res.json(equipment);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /api/consultants/:id/equipment/pending-returns - Get pending equipment returns
+router.get('/:id/equipment/pending-returns', async (req, res, next) => {
+  try {
+    const consultantId = parseInt(req.params.id);
+    const pendingReturns = await EquipmentService.getPendingReturns(consultantId);
+    res.json(pendingReturns);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Termination Management Routes
+
+// GET /api/consultants/:id/termination/status - Get termination status
+router.get('/:id/termination/status', async (req, res, next) => {
+  try {
+    const consultantId = parseInt(req.params.id);
+    const status = await TerminationService.getTerminationStatus(consultantId);
+    res.json(status);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/consultants/:id/termination/initiate - Initiate termination
+router.post('/:id/termination/initiate',
+  validateBody(initiateTerminationSchema),
+  auditMiddleware('INITIATE_TERMINATION', 'consultant'),
+  async (req, res, next) => {
+    try {
+      const consultantId = parseInt(req.params.id);
+      const terminationData = { ...req.body, consultantId };
+      const consultant = await TerminationService.initiateTermination(terminationData);
+      res.json(consultant);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /api/consultants/:id/termination/sign-contract - Mark contract as signed
+router.post('/:id/termination/sign-contract',
+  auditMiddleware('SIGN_TERMINATION_CONTRACT', 'consultant'),
+  async (req, res, next) => {
+    try {
+      const consultantId = parseInt(req.params.id);
+      const contractSignedDate = req.body.contractSignedDate ? new Date(req.body.contractSignedDate) : undefined;
+      const consultant = await TerminationService.signContract(consultantId, contractSignedDate);
+      res.json(consultant);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /api/consultants/:id/termination/document - Generate and download termination contract
+router.get('/:id/termination/document',
+  auditMiddleware('GENERATE_TERMINATION_DOCUMENT', 'consultant'),
   async (req, res, next) => {
     try {
       const consultantId = parseInt(req.params.id);
       
-      // Get consultant data
-      const consultant = await ConsultantService.getById(consultantId);
-      
-      // Validate consultant has required fields
-      const validationError = ContractService.validateConsultantForContract(consultant);
-      if (validationError) {
+      // Check if document can be generated
+      const { canGenerate, reasons } = await TerminationService.canGenerateDocument(consultantId);
+      if (!canGenerate) {
         return res.status(400).json({ 
-          error: validationError.message,
-          missingFields: validationError.missingFields 
+          error: 'Cannot generate termination document',
+          reasons 
         });
       }
       
-      // Generate contract content
-      const contractContent = ContractService.generateContract(consultant);
-      const filename = ContractService.generateContractFilename(consultant);
+      // Get consultant data for filename
+      const consultant = await ConsultantService.getById(consultantId);
       
-      // Set headers for file download
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      // Generate PDF document
+      const pdfBuffer = await DocumentService.generateTerminationContract(consultantId);
+      const filename = DocumentService.getTerminationDocumentFilename(consultant.name);
+      
+      // Set headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', Buffer.byteLength(contractContent, 'utf8'));
+      res.setHeader('Content-Length', pdfBuffer.length);
       
-      // Send contract content
-      res.send(contractContent);
+      // Send PDF
+      res.send(pdfBuffer);
     } catch (error) {
       next(error);
     }

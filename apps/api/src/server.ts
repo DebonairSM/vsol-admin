@@ -11,6 +11,7 @@ import cycleRoutes from './routes/cycles';
 import invoiceRoutes from './routes/invoices';
 import paymentRoutes from './routes/payments';
 import auditRoutes from './routes/audit';
+import equipmentRoutes from './routes/equipment';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +39,7 @@ app.use('/api/cycles', cycleRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/equipment', equipmentRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

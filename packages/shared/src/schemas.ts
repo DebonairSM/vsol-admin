@@ -119,7 +119,12 @@ export const updateConsultantSchema = z.object({
   emergencyContactRelation: z.string().nullable().optional(),
   emergencyContactPhone: z.string().regex(/^\+?55\s?\d{2}\s?\d{4,5}-?\d{4}$/, 'Invalid Brazilian phone format').nullable().optional(),
   // Documents
-  cpf: z.string().refine(validateCPF, 'Invalid CPF format').nullable().optional()
+  cpf: z.string().refine(validateCPF, 'Invalid CPF format').nullable().optional(),
+  // Termination Process
+  finalPaymentAmount: z.number().positive().nullable().optional(),
+  equipmentReturnDeadline: z.string().datetime().nullable().optional(),
+  contractSignedDate: z.string().datetime().nullable().optional(),
+  terminationReason: z.enum(['FIRED', 'LAID_OFF', 'QUIT', 'MUTUAL_AGREEMENT']).nullable().optional()
 });
 
 // Cycle schemas
@@ -135,6 +140,7 @@ export const updateCycleSchema = z.object({
   paymentArrivalDate: z.string().datetime().nullable().optional(),
   sendReceiptDate: z.string().datetime().nullable().optional(),
   sendInvoiceDate: z.string().datetime().nullable().optional(),
+  consultantInvoicesVerifiedDate: z.string().datetime().nullable().optional(),
   invoiceApprovalDate: z.string().datetime().nullable().optional(),
   hoursLimitChangedOn: z.string().datetime().nullable().optional(),
   additionalPaidOn: z.string().datetime().nullable().optional(),
@@ -213,3 +219,43 @@ export const fileUploadSchema = z.object({
 });
 
 export type FileUploadRequest = z.infer<typeof fileUploadSchema>;
+
+// Equipment schemas
+export const createEquipmentSchema = z.object({
+  consultantId: z.number().int().positive(),
+  deviceName: z.string().min(1, 'Device name is required'),
+  model: z.string().optional(),
+  purchaseDate: z.string().datetime().optional(),
+  serialNumber: z.string().optional(),
+  returnRequired: z.boolean().default(true),
+  notes: z.string().optional()
+});
+
+export const updateEquipmentSchema = z.object({
+  deviceName: z.string().min(1).optional(),
+  model: z.string().nullable().optional(),
+  purchaseDate: z.string().datetime().nullable().optional(),
+  serialNumber: z.string().nullable().optional(),
+  returnRequired: z.boolean().optional(),
+  returnedDate: z.string().datetime().nullable().optional(),
+  notes: z.string().nullable().optional()
+});
+
+// Termination schemas
+export const initiateTerminationSchema = z.object({
+  consultantId: z.number().int().positive(),
+  terminationReason: z.enum(['FIRED', 'LAID_OFF', 'QUIT', 'MUTUAL_AGREEMENT']),
+  terminationDate: z.string().datetime(),
+  finalPaymentAmount: z.number().positive(),
+  equipmentReturnDeadline: z.string().datetime().optional()
+});
+
+export const generateTerminationDocumentSchema = z.object({
+  consultantId: z.number().int().positive()
+});
+
+// Export equipment and termination types
+export type CreateEquipmentRequest = z.infer<typeof createEquipmentSchema>;
+export type UpdateEquipmentRequest = z.infer<typeof updateEquipmentSchema>;
+export type InitiateTerminationRequest = z.infer<typeof initiateTerminationSchema>;
+export type GenerateTerminationDocumentRequest = z.infer<typeof generateTerminationDocumentSchema>;

@@ -8,6 +8,20 @@
       "when": 1761520707648,
       "tag": "0000_supreme_galactus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1761528168475,
+      "tag": "0001_flawless_kingpin",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1761529383093,
+      "tag": "0002_fearless_bastion",
+      "breakpoints": true
     }
   ]
 }

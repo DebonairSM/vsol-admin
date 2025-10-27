@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { UpdateConsultantRequest } from '@vsol-admin/shared';
 import { ArrowLeft, Save, Upload } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import EquipmentManagement from '@/components/equipment-management';
+import TerminationWorkflow from '@/components/termination-workflow';
 
 export default function ConsultantEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -458,23 +460,36 @@ export default function ConsultantEditPage() {
             />
           </CardContent>
         </Card>
-
-        {/* Submit Actions */}
-        <div className="flex justify-end space-x-4">
-          <Link to={`/consultants/${consultantId}`}>
-            <Button type="button" variant="outline">
-              Cancel
-            </Button>
-          </Link>
-          <Button 
-            type="submit" 
-            disabled={updateProfile.isPending || !hasChanges}
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
       </form>
+
+      {/* Equipment Management */}
+      <EquipmentManagement 
+        consultantId={consultantId} 
+        isTerminated={!!consultant.terminationDate}
+      />
+
+      {/* Termination Workflow */}
+      <TerminationWorkflow consultantId={consultantId} />
+
+      {/* Submit Actions */}
+      <div className="space-y-6">
+        <form onSubmit={handleSubmit}>
+          <div className="flex justify-end space-x-4">
+            <Link to={`/consultants/${consultantId}`}>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </Link>
+            <Button 
+              type="submit" 
+              disabled={updateProfile.isPending || !hasChanges}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

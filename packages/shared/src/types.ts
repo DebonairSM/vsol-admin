@@ -36,6 +36,11 @@ export interface Consultant {
   cpf?: string | null;
   cnhPhotoPath?: string | null;
   addressProofPhotoPath?: string | null;
+  // Termination Process
+  finalPaymentAmount?: number | null;
+  equipmentReturnDeadline?: Date | null;
+  contractSignedDate?: Date | null;
+  terminationReason?: TerminationReason | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +53,7 @@ export interface PayrollCycle {
   paymentArrivalDate?: Date | null;
   sendReceiptDate?: Date | null;
   sendInvoiceDate?: Date | null;
+  consultantInvoicesVerifiedDate?: Date | null;
   invoiceApprovalDate?: Date | null;
   hoursLimitChangedOn?: Date | null;
   additionalPaidOn?: Date | null;
@@ -142,6 +148,14 @@ export interface CycleSummary {
 // Brazilian-specific types
 export type ShirtSize = 'P' | 'M' | 'G' | 'GG' | 'GGG';
 
+// Termination types
+export enum TerminationReason {
+  FIRED = 'FIRED',
+  LAID_OFF = 'LAID_OFF',
+  QUIT = 'QUIT',
+  MUTUAL_AGREEMENT = 'MUTUAL_AGREEMENT'
+}
+
 export interface BrazilianDocuments {
   cpf: string;
   cnpj?: string;
@@ -152,4 +166,18 @@ export interface FileUpload {
   mimetype: string;
   size: number;
   buffer: Buffer;
+}
+
+export interface ConsultantEquipment {
+  id: number;
+  consultantId: number;
+  deviceName: string;
+  model?: string | null;
+  purchaseDate?: Date | null;
+  serialNumber?: string | null;
+  returnRequired: boolean;
+  returnedDate?: Date | null;
+  notes?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
