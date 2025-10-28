@@ -65,10 +65,22 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
 
   const handleMarkComplete = async (step: typeof workflowSteps[0]) => {
     try {
-      // Use current date at noon in local timezone for consistency
-      const now = new Date();
-      const localNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
-      await onUpdateWorkflowDate(step.fieldName, localNoon.toISOString());
+      let dateToSave: string;
+      
+      if (editDate) {
+        // User selected a specific date - use it
+        const localDate = new Date(editDate + 'T12:00:00');
+        dateToSave = localDate.toISOString();
+      } else {
+        // No date selected - use today
+        const now = new Date();
+        const localNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+        dateToSave = localNoon.toISOString();
+      }
+      
+      await onUpdateWorkflowDate(step.fieldName, dateToSave);
+      setEditingStep(null); // Close popup
+      setEditDate(''); // Clear date state
     } catch (error) {
       console.error('Failed to mark step complete:', error);
     }
@@ -267,36 +279,33 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                             </div>
                           )}
 
-                          <div className="flex justify-between gap-2">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={handleDateCancel}
+                              className="text-xs"
+                            >
+                              Cancel
+                            </Button>
                             {step.id !== 'calculate-payment' && (
                               <Button 
                                 size="sm" 
-                                variant="outline"
                                 onClick={() => handleMarkComplete(step)}
                                 className="text-xs"
                               >
-                                Mark Complete Now
+                                Mark Complete
                               </Button>
                             )}
-                            <div className="flex gap-2 ml-auto">
+                            {step.id === 'calculate-payment' && (calculationResult || isCompleted) && (
                               <Button 
                                 size="sm" 
-                                variant="outline" 
-                                onClick={handleDateCancel}
+                                onClick={() => handleMarkComplete(step)}
                                 className="text-xs"
                               >
-                                Cancel
+                                Mark Complete
                               </Button>
-                              {(step.id !== 'calculate-payment' || calculationResult || isCompleted) && (
-                                <Button 
-                                  size="sm" 
-                                  onClick={handleDateSave}
-                                  className="text-xs"
-                                >
-                                  Save
-                                </Button>
-                              )}
-                            </div>
+                            )}
                           </div>
                         </div>
                       </PopoverContent>

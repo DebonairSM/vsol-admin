@@ -138,6 +138,9 @@ export class CycleService {
     if (data.invoiceApprovalDate !== undefined) {
       updateData.invoiceApprovalDate = data.invoiceApprovalDate ? new Date(data.invoiceApprovalDate) : null;
     }
+    if (data.consultantsPaidDate !== undefined) {
+      updateData.consultantsPaidDate = data.consultantsPaidDate ? new Date(data.consultantsPaidDate) : null;
+    }
     if (data.hoursLimitChangedOn !== undefined) {
       updateData.hoursLimitChangedOn = data.hoursLimitChangedOn ? new Date(data.hoursLimitChangedOn) : null;
     }

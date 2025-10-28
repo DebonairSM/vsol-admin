@@ -2,7 +2,6 @@
   "name": "vsol-admin",
   "private": true,
   "scripts": {
-    "setup": "node setup.js",
     "dev": "turbo run dev",
     "dev:clean": "pnpm kill-all-ports && pnpm dev",
     "build": "turbo run build",
