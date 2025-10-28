@@ -5,7 +5,20 @@ import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
+import { useQuery as useReactQuery } from '@tanstack/react-query';
+
+interface MonthlyWorkHours {
+  id: number;
+  year: number;
+  month: string;
+  monthNumber: number;
+  weekdays: number;
+  workHours: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export default function NewCyclePage() {
   const navigate = useNavigate();
@@ -15,6 +28,17 @@ export default function NewCyclePage() {
   // Get defaults from the latest cycle
   const latestCycle = cycles?.[0];
   
+  // Get current month for defaulting
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
+  
+  // Fetch monthly work hours for the current year
+  const { data: monthlyWorkHours, isLoading: isLoadingWorkHours } = useReactQuery({
+    queryKey: ['work-hours', currentYear],
+    queryFn: () => apiClient.getWorkHoursByYear(currentYear),
+  });
+
   const [formData, setFormData] = useState({
     monthLabel: '',
     globalWorkHours: latestCycle?.globalWorkHours || 168,
@@ -22,38 +46,40 @@ export default function NewCyclePage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [suggestedHours, setSuggestedHours] = useState<number | null>(null);
-  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+  const [selectedMonthNumber, setSelectedMonthNumber] = useState<string>(currentMonth.toString());
 
-  // Fetch suggested work hours when month label changes
+  // Auto-populate work hours when month is selected
   useEffect(() => {
-    const fetchSuggestedHours = async () => {
-      if (!formData.monthLabel.trim()) {
-        setSuggestedHours(null);
-        return;
+    if (monthlyWorkHours && selectedMonthNumber) {
+      const selected = monthlyWorkHours.find(
+        (m: MonthlyWorkHours) => m.monthNumber === parseInt(selectedMonthNumber)
+      );
+      if (selected) {
+        setFormData(prev => ({ ...prev, globalWorkHours: selected.workHours }));
       }
-
-      setLoadingSuggestion(true);
-      try {
-        const result = await apiClient.getSuggestedWorkHours(formData.monthLabel);
-        setSuggestedHours(result.suggestedHours);
-      } catch (error) {
-        console.error('Failed to fetch suggested hours:', error);
-        setSuggestedHours(null);
-      } finally {
-        setLoadingSuggestion(false);
-      }
-    };
-
-    // Debounce the API call
-    const timeoutId = setTimeout(fetchSuggestedHours, 500);
-    return () => clearTimeout(timeoutId);
-  }, [formData.monthLabel]);
-
-  const handleUseSuggestedHours = () => {
-    if (suggestedHours !== null) {
-      setFormData(prev => ({ ...prev, globalWorkHours: suggestedHours }));
     }
+  }, [selectedMonthNumber, monthlyWorkHours]);
+
+  // Auto-set month label based on selected month (only once when component mounts or month changes)
+  useEffect(() => {
+    if (monthlyWorkHours && selectedMonthNumber) {
+      const selected = monthlyWorkHours.find(
+        (m: MonthlyWorkHours) => m.monthNumber === parseInt(selectedMonthNumber)
+      );
+      if (selected) {
+        setFormData(prev => {
+          // Only update if the label is empty or matches the previous selected month
+          if (!prev.monthLabel || prev.monthLabel.startsWith(selected.month)) {
+            return { ...prev, monthLabel: `${selected.month} ${currentYear}` };
+          }
+          return prev;
+        });
+      }
+    }
+  }, [selectedMonthNumber, monthlyWorkHours, currentYear]);
+
+  const handleMonthChange = (value: string) => {
+    setSelectedMonthNumber(value);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,22 +150,58 @@ export default function NewCyclePage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Month Label */}
+            {/* Month Selection */}
+            <div className="space-y-2">
+              <label htmlFor="monthSelector" className="text-sm font-medium">
+                Select Month *
+              </label>
+              {isLoadingWorkHours ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="animate-spin w-4 h-4 border border-gray-300 border-t-blue-600 rounded-full"></div>
+                  Loading month data...
+                </div>
+              ) : monthlyWorkHours && monthlyWorkHours.length > 0 ? (
+                <Select value={selectedMonthNumber} onValueChange={handleMonthChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthlyWorkHours.map((m: MonthlyWorkHours) => (
+                      <SelectItem key={m.monthNumber} value={m.monthNumber.toString()}>
+                        {m.month} ({m.workHours} hours)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                  <p className="text-sm text-amber-800">
+                    No monthly work hours data available for {currentYear}. 
+                    Please import work hours data first at the Work Hours page.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Month Label - Auto-populated but can be edited */}
             <div className="space-y-2">
               <label htmlFor="monthLabel" className="text-sm font-medium">
-                Month Label *
+                Month Label (Auto-filled) *
               </label>
               <Input
                 id="monthLabel"
                 type="text"
                 value={formData.monthLabel}
                 onChange={(e) => handleInputChange('monthLabel', e.target.value)}
-                placeholder="e.g., January 2024, 2024-01"
+                placeholder="e.g., January 2025"
                 className={errors.monthLabel ? 'border-red-500' : ''}
               />
               {errors.monthLabel && (
                 <p className="text-sm text-red-600">{errors.monthLabel}</p>
               )}
+              <p className="text-xs text-gray-500">
+                This is automatically set based on your selection, but you can edit it if needed.
+              </p>
             </div>
 
             {/* Global Work Hours */}
@@ -157,35 +219,11 @@ export default function NewCyclePage() {
                 placeholder="168"
               />
               
-              {/* Work Hours Suggestion */}
-              {loadingSuggestion && (
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <div className="animate-spin w-3 h-3 border border-gray-300 border-t-blue-600 rounded-full"></div>
-                  Looking up suggested hours...
-                </div>
-              )}
-              
-              {suggestedHours !== null && !loadingSuggestion && (
-                <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-blue-800">
-                      💡 Suggested: {suggestedHours} hours
-                    </p>
-                    <p className="text-xs text-blue-600">
-                      Based on work hours reference data for this month
-                    </p>
-                  </div>
-                  {formData.globalWorkHours !== suggestedHours && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={handleUseSuggestedHours}
-                      className="text-xs h-6 px-2 border-blue-300 text-blue-700 hover:bg-blue-100"
-                    >
-                      Use {suggestedHours}
-                    </Button>
-                  )}
+              {monthlyWorkHours && monthlyWorkHours.length > 0 && (
+                <div className="p-2 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-xs text-blue-800">
+                    ⚙️ This value is automatically set based on the selected month. You can override it if needed.
+                  </p>
                 </div>
               )}
               

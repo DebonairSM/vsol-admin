@@ -123,7 +123,7 @@ export default function GoldenSheetPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Contractor Info</TableHead>
-                  <TableHead>Invoice Sent</TableHead>
+                  <TableHead>Sent Invoice</TableHead>
                   <TableHead>Adjustment Value</TableHead>
                   <TableHead>Comments</TableHead>
                   <TableHead>Bonus Information</TableHead>

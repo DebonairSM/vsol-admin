@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { RefreshCw, Sync, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 
@@ -171,7 +171,7 @@ export default function PayrollSettingsTable({ className }: PayrollSettingsTable
                 disabled={syncAllMutation.isPending || !syncStatus?.status?.apiConnected}
                 size="sm"
               >
-                <Sync className="w-4 h-4 mr-2" />
+                <RefreshCw className="w-4 h-4 mr-2" />
                 {syncAllMutation.isPending ? 'Syncing...' : 'Sync All'}
               </Button>
             </div>
@@ -246,7 +246,7 @@ export default function PayrollSettingsTable({ className }: PayrollSettingsTable
                         !syncStatus?.status?.apiConnected
                       }
                     >
-                      <Sync className="w-4 h-4 mr-1" />
+                      <RefreshCw className="w-4 h-4 mr-1" />
                       {syncingConsultants[consultant.id] ? 'Syncing...' : 'Sync'}
                     </Button>
                   </TableCell>
