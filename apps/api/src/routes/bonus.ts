@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { validateBody } from '../middleware/validate';
 import { authenticateToken } from '../middleware/auth';
+import { auditMiddleware } from '../middleware/audit';
 import { updateBonusWorkflowSchema } from '@vsol-admin/shared';
 import { BonusWorkflowService } from '../services/bonus-workflow-service';
-import { createAuditLog } from '../middleware/audit';
 
 const router = Router();
 
@@ -19,46 +19,35 @@ router.get('/cycles/:cycleId/bonus', authenticateToken, async (req, res, next) =
 });
 
 // Create bonus workflow for a cycle
-router.post('/cycles/:cycleId/bonus', authenticateToken, async (req, res, next) => {
-  try {
-    const cycleId = parseInt(req.params.cycleId);
-    const workflow = await BonusWorkflowService.createForCycle(cycleId);
-    
-    await createAuditLog(req.user!.userId, {
-      action: 'CREATE_BONUS_WORKFLOW',
-      entityType: 'BONUS_WORKFLOW',
-      entityId: workflow.id,
-      changes: { cycleId: workflow.cycleId }
-    });
-    
-    res.status(201).json(workflow);
-  } catch (error) {
-    next(error);
+router.post('/cycles/:cycleId/bonus',
+  authenticateToken,
+  auditMiddleware('CREATE_BONUS_WORKFLOW', 'BONUS_WORKFLOW'),
+  async (req, res, next) => {
+    try {
+      const cycleId = parseInt(req.params.cycleId);
+      const workflow = await BonusWorkflowService.createForCycle(cycleId);
+      res.status(201).json(workflow);
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 // Update bonus workflow
-router.patch('/cycles/:cycleId/bonus', authenticateToken, validateBody(updateBonusWorkflowSchema), async (req, res, next) => {
-  try {
-    const cycleId = parseInt(req.params.cycleId);
-    
-    const workflow = await BonusWorkflowService.update(cycleId, req.body);
-    
-    if (workflow) {
-      await createAuditLog(req.user!.userId, {
-        action: 'UPDATE_BONUS_WORKFLOW',
-        entityType: 'BONUS_WORKFLOW',
-        entityId: workflow.id,
-        cycleId,
-        changes: req.body
-      });
+router.patch('/cycles/:cycleId/bonus',
+  authenticateToken,
+  validateBody(updateBonusWorkflowSchema),
+  auditMiddleware('UPDATE_BONUS_WORKFLOW', 'BONUS_WORKFLOW'),
+  async (req, res, next) => {
+    try {
+      const cycleId = parseInt(req.params.cycleId);
+      const workflow = await BonusWorkflowService.update(cycleId, req.body);
+      res.json(workflow);
+    } catch (error) {
+      next(error);
     }
-    
-    res.json(workflow);
-  } catch (error) {
-    next(error);
   }
-});
+);
 
 // Generate bonus email content
 router.post('/cycles/:cycleId/bonus/generate-email', authenticateToken, async (req, res, next) => {

@@ -53,6 +53,8 @@ export const consultants = sqliteTable('consultants', {
   currency: text('currency').notNull().default('USD'),
   timeDoctorSyncEnabled: integer('time_doctor_sync_enabled', { mode: 'boolean' }).notNull().default(true),
   lastTimeDoctorSync: integer('last_time_doctor_sync', { mode: 'timestamp' }),
+  // Bonus
+  yearlyBonus: real('yearly_bonus'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
@@ -173,6 +175,7 @@ export const monthlyWorkHours = sqliteTable('monthly_work_hours', {
 export const bonusWorkflows = sqliteTable('bonus_workflows', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   cycleId: integer('cycle_id').notNull().references(() => payrollCycles.id),
+  bonusRecipientConsultantId: integer('bonus_recipient_consultant_id').references(() => consultants.id),
   bonusAnnouncementDate: integer('bonus_announcement_date', { mode: 'timestamp' }),
   emailGenerated: integer('email_generated', { mode: 'boolean' }).notNull().default(false),
   emailContent: text('email_content'),
@@ -260,5 +263,9 @@ export const bonusWorkflowsRelations = relations(bonusWorkflows, ({ one }) => ({
   cycle: one(payrollCycles, {
     fields: [bonusWorkflows.cycleId],
     references: [payrollCycles.id]
+  }),
+  consultant: one(consultants, {
+    fields: [bonusWorkflows.bonusRecipientConsultantId],
+    references: [consultants.id]
   })
 }));

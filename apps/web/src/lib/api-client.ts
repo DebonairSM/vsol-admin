@@ -125,7 +125,7 @@ class ApiClient {
     return `${this.baseURL}/consultants/${consultantId}/documents/${documentType}`;
   }
 
-  async generateConsultantContract(consultantId: number) {
+  async generateConsultantContract(consultantId: number): Promise<void> {
     const url = `${this.baseURL}/consultants/${consultantId}/contract`;
     const headers: Record<string, string> = {};
     
@@ -145,7 +145,26 @@ class ApiClient {
       throw error;
     }
 
-    return response; // Return the response object for handling file download
+    // Handle file download
+    const contentDisposition = response.headers.get('content-disposition');
+    let filename = 'contract.txt';
+    if (contentDisposition) {
+      const matches = /filename="?([^"]+)"?/.exec(contentDisposition);
+      if (matches) {
+        filename = matches[1];
+      }
+    }
+    
+    // Create blob and trigger download
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
   }
 
   async deleteConsultant(id: number) {

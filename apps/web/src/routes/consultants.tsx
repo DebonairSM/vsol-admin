@@ -19,28 +19,7 @@ export default function ConsultantsPage() {
     setGeneratingContracts(prev => ({ ...prev, [consultantId]: true }));
     
     try {
-      const response = await apiClient.generateConsultantContract(consultantId);
-      
-      // Get filename from Content-Disposition header
-      const contentDisposition = response.headers.get('content-disposition');
-      let filename = 'contract.txt';
-      if (contentDisposition) {
-        const matches = /filename="?([^"]+)"?/.exec(contentDisposition);
-        if (matches) {
-          filename = matches[1];
-        }
-      }
-      
-      // Create blob and download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      await apiClient.generateConsultantContract(consultantId);
     } catch (error: any) {
       console.error('Failed to generate contract:', error);
       alert(`Failed to generate contract: ${error.message}`);

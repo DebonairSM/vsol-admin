@@ -1,0 +1,1 @@
+ALTER TABLE consultants ADD `yearly_bonus` real;

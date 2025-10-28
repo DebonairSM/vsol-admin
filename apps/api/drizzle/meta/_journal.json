@@ -57,6 +57,13 @@
       "when": 1761662129920,
       "tag": "0007_cultured_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1761670256343,
+      "tag": "0008_thin_toad_men",
+      "breakpoints": true
     }
   ]
 }

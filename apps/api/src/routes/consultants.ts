@@ -1,6 +1,4 @@
 import { Router } from 'express';
-import multer from 'multer';
-import path from 'path';
 import { ConsultantService } from '../services/consultant-service';
 import { EquipmentService } from '../services/equipment-service';
 import { TerminationService } from '../services/termination-service';
@@ -8,6 +6,8 @@ import { DocumentService } from '../services/document-service';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
+import { uploadConsultantDocument } from '../middleware/upload';
+import { ValidationError, NotFoundError } from '../middleware/errors';
 import { 
   createConsultantSchema, 
   updateConsultantSchema,
@@ -17,22 +17,6 @@ import {
 } from '@vsol-admin/shared';
 
 const router = Router();
-
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png'];
-    if (allowedMimes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only JPEG and PNG files are allowed'));
-    }
-  },
-});
 
 // All consultant routes require authentication
 router.use(authenticateToken);
@@ -110,7 +94,7 @@ router.delete('/:id',
 
 // POST /api/consultants/:id/documents/:type - Upload document
 router.post('/:id/documents/:type',
-  upload.single('document'),
+  uploadConsultantDocument.single('document'),
   auditMiddleware('UPLOAD_DOCUMENT', 'consultant'),
   async (req, res, next) => {
     try {
@@ -118,11 +102,11 @@ router.post('/:id/documents/:type',
       const documentType = req.params.type as 'cnh' | 'address_proof';
       
       if (!['cnh', 'address_proof'].includes(documentType)) {
-        return res.status(400).json({ error: 'Invalid document type. Must be "cnh" or "address_proof"' });
+        throw new ValidationError('Invalid document type. Must be "cnh" or "address_proof"');
       }
 
       if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
+        throw new ValidationError('No file uploaded');
       }
 
       const consultant = await ConsultantService.uploadDocument(consultantId, documentType, req.file);
@@ -140,13 +124,13 @@ router.get('/:id/documents/:type', async (req, res, next) => {
     const documentType = req.params.type as 'cnh' | 'address_proof';
     
     if (!['cnh', 'address_proof'].includes(documentType)) {
-      return res.status(400).json({ error: 'Invalid document type' });
+      throw new ValidationError('Invalid document type');
     }
 
     const filePath = await ConsultantService.getDocumentPath(consultantId, documentType);
     
     if (!filePath) {
-      return res.status(404).json({ error: 'Document not found' });
+      throw new NotFoundError('Document not found');
     }
 
     // Set appropriate headers
@@ -294,19 +278,10 @@ router.get('/:id/termination/document',
     try {
       const consultantId = parseInt(req.params.id);
       
-      // Check if document can be generated
-      const { canGenerate, reasons } = await TerminationService.canGenerateDocument(consultantId);
-      if (!canGenerate) {
-        return res.status(400).json({ 
-          error: 'Cannot generate termination document',
-          reasons 
-        });
-      }
-      
       // Get consultant data for filename
       const consultant = await ConsultantService.getById(consultantId);
       
-      // Generate PDF document
+      // Generate PDF document (service will validate if generation is possible)
       const pdfBuffer = await DocumentService.generateTerminationContract(consultantId);
       const filename = DocumentService.getTerminationDocumentFilename(consultant.name);
       

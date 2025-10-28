@@ -48,6 +48,8 @@ export interface Consultant {
   currency: string;
   timeDoctorSyncEnabled: boolean;
   lastTimeDoctorSync?: Date | null;
+  // Bonus
+  yearlyBonus?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

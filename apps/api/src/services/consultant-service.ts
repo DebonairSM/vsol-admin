@@ -65,7 +65,9 @@ export class ConsultantService {
       emergencyContactRelation: data.emergencyContactRelation || null,
       emergencyContactPhone: data.emergencyContactPhone || null,
       // Documents
-      cpf: data.cpf || null
+      cpf: data.cpf || null,
+      // Bonus
+      yearlyBonus: data.yearlyBonus || null
     }).returning();
 
     return consultant;
@@ -123,6 +125,9 @@ export class ConsultantService {
     
     // Documents
     if (data.cpf !== undefined) updateData.cpf = data.cpf;
+    
+    // Bonus
+    if (data.yearlyBonus !== undefined) updateData.yearlyBonus = data.yearlyBonus;
 
     const [consultant] = await db.update(consultants)
       .set(updateData)

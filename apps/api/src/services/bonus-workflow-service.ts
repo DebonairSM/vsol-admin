@@ -86,7 +86,7 @@ export class BonusWorkflowService {
       throw new NotFoundError('Cycle not found');
     }
 
-    // Get line items with bonus amounts
+    // Get line items with consultant information
     const lineItems = await db.query.cycleLineItems.findMany({
       where: eq(cycleLineItems.cycleId, cycleId),
       with: {
@@ -94,6 +94,40 @@ export class BonusWorkflowService {
       }
     });
 
+    // Check if cycle has omnigoBonus (global bonus from Omnigo client)
+    const globalBonus = cycle.omnigoBonus || 0;
+    
+    // If there's a global omnigoBonus, use that for all consultants
+    if (globalBonus > 0) {
+      const consultantsWithBonuses = lineItems.map(item => ({
+        name: item.consultant.name,
+        bonusAmount: globalBonus
+      }));
+
+      const announcementDate = workflow.bonusAnnouncementDate || new Date();
+      const formattedDate = announcementDate.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+
+      // Generate email template with global bonus
+      let emailContent = `Dear Consultants,\n\n`;
+      emailContent += `We are pleased to announce your bonuses for ${cycle.monthLabel}.\n\n`;
+      emailContent += `All consultants will receive a bonus of $${globalBonus.toFixed(2)} from the Omnigo client.\n\n`;
+      
+      emailContent += `\nThese bonuses will be processed on ${formattedDate}.\n\n`;
+      emailContent += `Thank you for your continued dedication and hard work.\n\n`;
+      emailContent += `Best regards,\nVSol Admin`;
+
+      return {
+        emailContent,
+        consultantsCount: consultantsWithBonuses.length,
+        totalBonus: globalBonus * consultantsWithBonuses.length
+      };
+    }
+
+    // Otherwise, check for individual bonus amounts
     const consultantsWithBonuses = lineItems
       .filter(item => item.bonusAdvance && item.bonusAdvance > 0)
       .map(item => ({
@@ -102,7 +136,7 @@ export class BonusWorkflowService {
       }));
 
     if (consultantsWithBonuses.length === 0) {
-      throw new ValidationError('No consultants have bonus amounts for this cycle');
+      throw new ValidationError('No bonus amounts configured for this cycle. Please set the Omnigo Bonus on the cycle or individual bonus amounts on line items.');
     }
 
     const announcementDate = workflow.bonusAnnouncementDate || new Date();

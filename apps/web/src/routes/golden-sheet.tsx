@@ -76,14 +76,6 @@ export default function GoldenSheetPage() {
     setEditValue('');
   };
 
-  const calculateSubtotal = (line: any) => {
-    const workHours = line.workHours || cycle.globalWorkHours || 0;
-    const rateAmount = workHours * line.ratePerHour;
-    const adjustment = line.adjustmentValue || 0;
-    const advance = line.bonusAdvance || 0;
-    return rateAmount + adjustment - advance;
-  };
-
   const handleWorkflowDateUpdate = async (fieldName: string, date: string | null) => {
     try {
       await updateCycle.mutateAsync({
@@ -291,9 +283,8 @@ export default function GoldenSheetPage() {
                       {formatCurrency(line.ratePerHour)}
                     </TableCell>
 
-
                     <TableCell className="font-mono font-bold">
-                      {formatCurrency(calculateSubtotal(line))}
+                      {formatCurrency(line.subtotal)}
                     </TableCell>
                   </TableRow>
                 ))}

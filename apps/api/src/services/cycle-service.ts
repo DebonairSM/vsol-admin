@@ -36,7 +36,13 @@ export class CycleService {
       throw new NotFoundError('Payroll cycle not found');
     }
 
-    return cycle;
+    // Add computed subtotals to line items
+    const linesWithSubtotals = cycle.lines.map(line => ({
+      ...line,
+      subtotal: this.calculateLineItemSubtotal(line, cycle.globalWorkHours || 0)
+    }));
+
+    return { ...cycle, lines: linesWithSubtotals };
   }
 
   static async create(data: CreateCycleRequest) {
@@ -71,7 +77,8 @@ export class CycleService {
       const lineItemsData = activeConsultants.map(consultant => ({
         cycleId: cycle.id,
         consultantId: consultant.id,
-        ratePerHour: consultant.hourlyRate // Snapshot the current rate
+        ratePerHour: consultant.hourlyRate, // Snapshot the current rate
+        bonusAdvance: consultant.yearlyBonus || null // Pre-fill yearly bonus if set
       }));
 
       await tx.insert(cycleLineItems).values(lineItemsData);

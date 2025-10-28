@@ -91,7 +91,9 @@ export const createConsultantSchema = z.object({
   emergencyContactRelation: z.string().optional(),
   emergencyContactPhone: z.string().regex(/^\+?55\s?\d{2}\s?\d{4,5}-?\d{4}$/, 'Invalid Brazilian phone format').optional(),
   // Documents
-  cpf: z.string().refine(validateCPF, 'Invalid CPF format').optional()
+  cpf: z.string().refine(validateCPF, 'Invalid CPF format').optional(),
+  // Bonus
+  yearlyBonus: z.number().positive().optional()
 });
 
 export const updateConsultantSchema = z.object({
@@ -124,7 +126,9 @@ export const updateConsultantSchema = z.object({
   finalPaymentAmount: z.number().positive().nullable().optional(),
   equipmentReturnDeadline: z.string().datetime().nullable().optional(),
   contractSignedDate: z.string().datetime().nullable().optional(),
-  terminationReason: z.enum(['FIRED', 'LAID_OFF', 'QUIT', 'MUTUAL_AGREEMENT']).nullable().optional()
+  terminationReason: z.enum(['FIRED', 'LAID_OFF', 'QUIT', 'MUTUAL_AGREEMENT']).nullable().optional(),
+  // Bonus
+  yearlyBonus: z.number().positive().nullable().optional()
 });
 
 // Cycle schemas
