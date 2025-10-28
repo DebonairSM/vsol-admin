@@ -60,6 +60,10 @@ export class LineItemService {
       updateData.advanceDate = data.advanceDate ? new Date(data.advanceDate) : null;
     }
     if (data.workHours !== undefined) updateData.workHours = validateNumber(data.workHours, 'workHours');
+    if (data.additionalPaidAmount !== undefined) updateData.additionalPaidAmount = validateNumber(data.additionalPaidAmount, 'additionalPaidAmount');
+    if (data.additionalPaidDate !== undefined) {
+      updateData.additionalPaidDate = data.additionalPaidDate ? new Date(data.additionalPaidDate) : null;
+    }
     if (data.comments !== undefined) updateData.comments = data.comments;
 
     const [lineItem] = await db.update(cycleLineItems)

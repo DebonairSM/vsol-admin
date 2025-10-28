@@ -144,7 +144,8 @@ export const updateCycleSchema = z.object({
   clientPaymentScheduledDate: z.string().datetime().nullable().optional(),
   invoiceApprovalDate: z.string().datetime().nullable().optional(),
   hoursLimitChangedOn: z.string().datetime().nullable().optional(),
-  additionalPaidOn: z.string().datetime().nullable().optional(),
+  additionalPaidOn: z.string().datetime().nullable().optional(), // Deprecated but kept for backward compatibility
+  consultantsPaidDate: z.string().datetime().nullable().optional(),
   globalWorkHours: z.number().int().positive().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   omnigoBonus: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   pagamentoPIX: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
@@ -162,6 +163,8 @@ export const updateLineItemSchema = z.object({
   bonusAdvance: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
   advanceDate: z.string().datetime().nullable().optional(),
   workHours: z.number().int().positive().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
+  additionalPaidAmount: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
+  additionalPaidDate: z.string().datetime().nullable().optional(),
   comments: z.string().nullable().optional()
 });
 
@@ -328,3 +331,20 @@ export type TimeDoctorSyncResult = z.infer<typeof timeDoctorSyncResultSchema>;
 export type TimeDoctorToggleSyncRequest = z.infer<typeof timeDoctorToggleSyncSchema>;
 export type TimeDoctorPayrollSettings = z.infer<typeof timeDoctorPayrollSettingsSchema>;
 export type TimeDoctorSettingsResponse = z.infer<typeof timeDoctorSettingsResponseSchema>;
+
+// Bonus workflow schemas
+export const createBonusWorkflowSchema = z.object({
+  cycleId: z.number().int().positive()
+});
+
+export const updateBonusWorkflowSchema = z.object({
+  bonusAnnouncementDate: z.string().datetime().nullable().optional(),
+  emailGenerated: z.boolean().nullable().optional(),
+  emailContent: z.string().nullable().optional(),
+  paidWithPayroll: z.boolean().nullable().optional(),
+  bonusPaymentDate: z.string().datetime().nullable().optional(),
+  notes: z.string().nullable().optional()
+});
+
+export type CreateBonusWorkflowRequest = z.infer<typeof createBonusWorkflowSchema>;
+export type UpdateBonusWorkflowRequest = z.infer<typeof updateBonusWorkflowSchema>;

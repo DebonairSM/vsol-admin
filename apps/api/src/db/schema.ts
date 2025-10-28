@@ -70,7 +70,8 @@ export const payrollCycles = sqliteTable('payroll_cycles', {
   clientPaymentScheduledDate: integer('client_payment_scheduled_date', { mode: 'timestamp' }),
   invoiceApprovalDate: integer('invoice_approval_date', { mode: 'timestamp' }),
   hoursLimitChangedOn: integer('hours_limit_changed_on', { mode: 'timestamp' }),
-  additionalPaidOn: integer('additional_paid_on', { mode: 'timestamp' }),
+  additionalPaidOn: integer('additional_paid_on', { mode: 'timestamp' }), // Deprecated but kept for backward compatibility
+  consultantsPaidDate: integer('consultants_paid_date', { mode: 'timestamp' }),
   // Footer values
   globalWorkHours: integer('global_work_hours'),
   omnigoBonus: real('omnigo_bonus'),
@@ -95,6 +96,8 @@ export const cycleLineItems = sqliteTable('cycle_line_items', {
   bonusAdvance: real('bonus_advance'),
   advanceDate: integer('advance_date', { mode: 'timestamp' }),
   workHours: integer('work_hours'), // Override for cycle.globalWorkHours
+  additionalPaidAmount: real('additional_paid_amount'),
+  additionalPaidDate: integer('additional_paid_date', { mode: 'timestamp' }),
   comments: text('comments'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
@@ -166,6 +169,20 @@ export const monthlyWorkHours = sqliteTable('monthly_work_hours', {
   uniqueYearMonth: unique().on(table.year, table.monthNumber)
 }));
 
+// Bonus workflows table
+export const bonusWorkflows = sqliteTable('bonus_workflows', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  cycleId: integer('cycle_id').notNull().references(() => payrollCycles.id),
+  bonusAnnouncementDate: integer('bonus_announcement_date', { mode: 'timestamp' }),
+  emailGenerated: integer('email_generated', { mode: 'boolean' }).notNull().default(false),
+  emailContent: text('email_content'),
+  paidWithPayroll: integer('paid_with_payroll', { mode: 'boolean' }).notNull().default(false),
+  bonusPaymentDate: integer('bonus_payment_date', { mode: 'timestamp' }),
+  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   auditLogs: many(auditLogs)
@@ -178,11 +195,12 @@ export const consultantsRelations = relations(consultants, ({ many }) => ({
   equipment: many(consultantEquipment)
 }));
 
-export const payrollCyclesRelations = relations(payrollCycles, ({ many }) => ({
+export const payrollCyclesRelations = relations(payrollCycles, ({ many, one }) => ({
   lines: many(cycleLineItems),
   invoices: many(invoices),
   payments: many(payments),
-  auditLogs: many(auditLogs)
+  auditLogs: many(auditLogs),
+  bonusWorkflow: one(bonusWorkflows)
 }));
 
 export const cycleLineItemsRelations = relations(cycleLineItems, ({ one }) => ({
@@ -237,3 +255,10 @@ export const consultantEquipmentRelations = relations(consultantEquipment, ({ on
 }));
 
 export const monthlyWorkHoursRelations = relations(monthlyWorkHours, ({}) => ({}));
+
+export const bonusWorkflowsRelations = relations(bonusWorkflows, ({ one }) => ({
+  cycle: one(payrollCycles, {
+    fields: [bonusWorkflows.cycleId],
+    references: [payrollCycles.id]
+  })
+}));

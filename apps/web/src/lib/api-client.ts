@@ -43,7 +43,9 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(errorData.error || `HTTP ${response.status}`);
+      const error = new Error(errorData.message || errorData.error || `HTTP ${response.status}`);
+      (error as any).response = { data: errorData, status: response.status };
+      throw error;
     }
 
     return response.json();
@@ -111,7 +113,9 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(errorData.error || `HTTP ${response.status}`);
+      const error = new Error(errorData.message || errorData.error || `HTTP ${response.status}`);
+      (error as any).response = { data: errorData, status: response.status };
+      throw error;
     }
 
     return response.json();
@@ -136,7 +140,9 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(errorData.error || `HTTP ${response.status}`);
+      const error = new Error(errorData.message || errorData.error || `HTTP ${response.status}`);
+      (error as any).response = { data: errorData, status: response.status };
+      throw error;
     }
 
     return response; // Return the response object for handling file download
@@ -336,6 +342,30 @@ class ApiClient {
 
   async getTimeDoctorSettings() {
     return this.request<any>('/time-doctor/settings');
+  }
+
+  // Bonus workflow API methods
+  async getBonusWorkflow(cycleId: number) {
+    return this.request<any>(`/cycles/${cycleId}/bonus`);
+  }
+
+  async createBonusWorkflow(cycleId: number) {
+    return this.request<any>(`/cycles/${cycleId}/bonus`, {
+      method: 'POST',
+    });
+  }
+
+  async updateBonusWorkflow(cycleId: number, data: any) {
+    return this.request<any>(`/cycles/${cycleId}/bonus`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async generateBonusEmail(cycleId: number) {
+    return this.request<any>(`/cycles/${cycleId}/bonus/generate-email`, {
+      method: 'POST',
+    });
   }
 }
 

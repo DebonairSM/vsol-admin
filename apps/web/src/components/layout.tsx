@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/toaster';
+import { Toaster as SonnerToaster } from 'sonner';
 import { 
   LayoutDashboard, 
   Users, 
@@ -102,6 +103,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       
       {/* Toast notifications */}
       <Toaster />
+      <SonnerToaster />
     </div>
   );
 }

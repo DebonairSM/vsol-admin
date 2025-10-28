@@ -15,6 +15,7 @@ import auditRoutes from './routes/audit';
 import equipmentRoutes from './routes/equipment';
 import workHoursRoutes from './routes/work-hours';
 import timeDoctorRoutes from './routes/time-doctor';
+import bonusRoutes from './routes/bonus';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -48,6 +49,7 @@ app.use('/api/audit', auditRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/work-hours', workHoursRoutes);
 app.use('/api/time-doctor', timeDoctorRoutes);
+app.use('/api', bonusRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

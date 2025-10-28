@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { useState } from 'react';
 import BonusInfoCell from '@/components/bonus-info-cell';
 import WorkflowTracker from '@/components/workflow-tracker';
+import BonusWorkflowSection from '@/components/bonus-workflow-section';
 
 export default function GoldenSheetPage() {
   const { id } = useParams<{ id: string }>();
@@ -50,10 +51,12 @@ export default function GoldenSheetPage() {
       let value: any = editValue;
       
       // Convert value based on field type
-      if (['adjustmentValue', 'workHours'].includes(editingCell.field)) {
+      if (['adjustmentValue', 'workHours', 'additionalPaidAmount'].includes(editingCell.field)) {
         value = editValue ? parseFloat(editValue) : null;
       } else if (editingCell.field === 'invoiceSent') {
         value = editValue === 'true';
+      } else if (editingCell.field === 'additionalPaidDate') {
+        value = editValue ? new Date(editValue).toISOString() : null;
       }
 
       await updateLineItem.mutateAsync({
@@ -109,6 +112,9 @@ export default function GoldenSheetPage() {
         onUpdateWorkflowDate={handleWorkflowDateUpdate}
       />
 
+      {/* Bonus Workflow Section */}
+      <BonusWorkflowSection cycleId={cycleId} />
+
       {/* Main Table */}
       <Card>
         <CardHeader>
@@ -127,6 +133,8 @@ export default function GoldenSheetPage() {
                   <TableHead>Adjustment Value</TableHead>
                   <TableHead>Comments</TableHead>
                   <TableHead>Bonus Information</TableHead>
+                  <TableHead>Additional Paid Amount</TableHead>
+                  <TableHead>Additional Paid Date</TableHead>
                   <TableHead>Rate/Hour</TableHead>
                   <TableHead>Subtotal</TableHead>
                 </TableRow>
@@ -222,6 +230,61 @@ export default function GoldenSheetPage() {
                         cycleSendReceiptDate={cycle.sendReceiptDate}
                         onUpdate={(lineId, data) => updateLineItem.mutateAsync({ cycleId, lineId, data })}
                       />
+                    </TableCell>
+
+                    {/* Additional Paid Amount */}
+                    <TableCell>
+                      {editingCell?.lineId === line.id && editingCell?.field === 'additionalPaidAmount' ? (
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-24"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave();
+                              if (e.key === 'Escape') handleCellCancel();
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleCellSave}>Save</Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                          onClick={() => handleCellEdit(line.id, 'additionalPaidAmount', line.additionalPaidAmount)}
+                        >
+                          {line.additionalPaidAmount ? formatCurrency(line.additionalPaidAmount) : '-'}
+                        </div>
+                      )}
+                    </TableCell>
+
+                    {/* Additional Paid Date */}
+                    <TableCell>
+                      {editingCell?.lineId === line.id && editingCell?.field === 'additionalPaidDate' ? (
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="w-32"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCellSave();
+                              if (e.key === 'Escape') handleCellCancel();
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" onClick={handleCellSave}>Save</Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="cursor-pointer hover:bg-gray-100 p-1 rounded"
+                          onClick={() => handleCellEdit(line.id, 'additionalPaidDate', line.additionalPaidDate ? new Date(line.additionalPaidDate).toISOString().split('T')[0] : '')}
+                        >
+                          {line.additionalPaidDate ? formatDate(line.additionalPaidDate) : '-'}
+                        </div>
+                      )}
                     </TableCell>
 
                     <TableCell className="font-mono">

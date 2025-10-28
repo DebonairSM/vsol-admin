@@ -64,7 +64,8 @@ export interface PayrollCycle {
   clientPaymentScheduledDate?: Date | null;
   invoiceApprovalDate?: Date | null;
   hoursLimitChangedOn?: Date | null;
-  additionalPaidOn?: Date | null;
+  additionalPaidOn?: Date | null; // Deprecated but kept for backward compatibility
+  consultantsPaidDate?: Date | null;
   // Footer values
   globalWorkHours?: number | null;
   omnigoBonus?: number | null;
@@ -88,6 +89,8 @@ export interface CycleLineItem {
   bonusAdvance?: number | null;
   advanceDate?: Date | null;
   workHours?: number | null; // Override for cycle.globalWorkHours
+  additionalPaidAmount?: number | null;
+  additionalPaidDate?: Date | null;
   comments?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -237,4 +240,27 @@ export interface PaymentCalculationResult {
   globalWorkHours: number;
   usdTotal: number; // Final cycle total after PIX/Inter deductions
   anomalies: string[];
+}
+
+export interface BonusWorkflow {
+  id: number;
+  cycleId: number;
+  bonusAnnouncementDate?: Date | null;
+  emailGenerated: boolean;
+  emailContent?: string | null;
+  paidWithPayroll: boolean;
+  bonusPaymentDate?: Date | null;
+  notes?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface BonusEmailTemplate {
+  cycleId: number;
+  monthLabel: string;
+  consultantsWithBonuses: Array<{
+    name: string;
+    bonusAmount: number;
+  }>;
+  announcementDate: Date;
 }
