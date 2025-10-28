@@ -48,14 +48,17 @@ export default function NewCyclePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedMonthNumber, setSelectedMonthNumber] = useState<string>(currentMonth.toString());
 
-  // Auto-populate work hours when month is selected
+  // Auto-populate work hours when month is selected or data loads
   useEffect(() => {
     if (monthlyWorkHours && selectedMonthNumber) {
       const selected = monthlyWorkHours.find(
         (m: MonthlyWorkHours) => m.monthNumber === parseInt(selectedMonthNumber)
       );
       if (selected) {
-        setFormData(prev => ({ ...prev, globalWorkHours: selected.workHours }));
+        setFormData(prev => ({ 
+          ...prev, 
+          globalWorkHours: selected.workHours 
+        }));
       }
     }
   }, [selectedMonthNumber, monthlyWorkHours]);
@@ -218,15 +221,6 @@ export default function NewCyclePage() {
                 onChange={(e) => handleInputChange('globalWorkHours', parseInt(e.target.value) || 0)}
                 placeholder="168"
               />
-              
-              {monthlyWorkHours && monthlyWorkHours.length > 0 && (
-                <div className="p-2 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-xs text-blue-800">
-                    ⚙️ This value is automatically set based on the selected month. You can override it if needed.
-                  </p>
-                </div>
-              )}
-              
               <p className="text-xs text-gray-500">
                 Default work hours for all consultants in this cycle. Individual consultants can override this value.
               </p>
