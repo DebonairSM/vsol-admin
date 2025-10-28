@@ -84,7 +84,7 @@ export default function GoldenSheetPage() {
   const handleWorkflowDateUpdate = async (fieldName: string, date: string | null) => {
     try {
       await updateCycle.mutateAsync({
-        cycleId,
+        id: cycleId,
         data: { [fieldName]: date }
       });
     } catch (error) {

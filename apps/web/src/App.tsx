@@ -4,7 +4,7 @@ import LoginPage from './routes/login';
 import DashboardPage from './routes/dashboard';
 import NewCyclePage from './routes/new-cycle';
 import GoldenSheetPage from './routes/golden-sheet';
-import ConsultantsPage from './routes/consultants-demo';
+import ConsultantsPage from './routes/consultants';
 import ConsultantProfilePage from './routes/consultant-profile';
 import ConsultantEditPage from './routes/consultant-edit';
 import EquipmentPage from './routes/equipment';
@@ -12,6 +12,7 @@ import NewEquipmentPage from './routes/equipment-new';
 import InvoicesPage from './routes/invoices';
 import PaymentsPage from './routes/payments';
 import AuditPage from './routes/audit';
+import WorkHoursPage from './routes/work-hours';
 import Layout from './components/layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -59,6 +60,7 @@ function App() {
                   <Route path="/equipment/new" element={<NewEquipmentPage />} />
                   <Route path="/invoices" element={<InvoicesPage />} />
                   <Route path="/payments" element={<PaymentsPage />} />
+                  <Route path="/work-hours" element={<WorkHoursPage />} />
                   <Route path="/audit" element={<AuditPage />} />
                 </Routes>
               </Layout>

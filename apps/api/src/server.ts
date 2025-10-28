@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { Server } from 'http';
 import { errorHandler } from './middleware/errors';
 
 // Import routes
@@ -12,9 +13,14 @@ import invoiceRoutes from './routes/invoices';
 import paymentRoutes from './routes/payments';
 import auditRoutes from './routes/audit';
 import equipmentRoutes from './routes/equipment';
+import workHoursRoutes from './routes/work-hours';
+import timeDoctorRoutes from './routes/time-doctor';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
+
+// Keep track of the server instance for graceful shutdown
+let server: Server;
 
 // Security middleware
 app.use(helmet());
@@ -40,12 +46,91 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/equipment', equipmentRoutes);
+app.use('/api/work-hours', workHoursRoutes);
+app.use('/api/time-doctor', timeDoctorRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Function to find an available port
+async function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve) => {
+    const testServer = app.listen(startPort, () => {
+      const port = (testServer.address() as any)?.port || startPort;
+      testServer.close(() => resolve(port));
+    });
+    
+    testServer.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(findAvailablePort(startPort + 1));
+      } else {
+        resolve(startPort);
+      }
+    });
+  });
+}
+
+// Graceful shutdown function
+function gracefulShutdown(signal: string) {
+  console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+  
+  if (server) {
+    server.close((err) => {
+      if (err) {
+        console.error('❌ Error during server shutdown:', err);
+        process.exit(1);
+      }
+      
+      console.log('✅ Server closed successfully');
+      console.log('👋 Goodbye!');
+      process.exit(0);
+    });
+    
+    // Force shutdown after 10 seconds
+    setTimeout(() => {
+      console.log('⚠️  Forcing shutdown after 10s...');
+      process.exit(1);
+    }, 10000);
+  } else {
+    process.exit(0);
+  }
+}
+
+// Start server with port conflict handling
+async function startServer() {
+  try {
+    const availablePort = await findAvailablePort(Number(PORT));
+    
+    server = app.listen(availablePort, () => {
+      console.log(`🚀 Server running on port ${availablePort}`);
+      console.log(`📊 Health check: http://localhost:${availablePort}/health`);
+      console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+      
+      if (availablePort !== Number(PORT)) {
+        console.log(`⚠️  Note: Port ${PORT} was busy, using ${availablePort} instead`);
+      }
+    });
+
+    server.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${availablePort} is already in use`);
+        console.log('💡 Try running: pnpm kill-port to clean up stuck processes');
+      } else {
+        console.error('❌ Server error:', err);
+      }
+      process.exit(1);
+    });
+
+    // Register shutdown handlers
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // nodemon restart
+    
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Start the server
+startServer();

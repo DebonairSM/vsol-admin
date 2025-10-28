@@ -1,6 +1,6 @@
 import { eq, isNull, sum } from 'drizzle-orm';
 import { db, payrollCycles, cycleLineItems, consultants } from '../db';
-import { CreateCycleRequest, UpdateCycleRequest, CycleSummary } from '@vsol-admin/shared';
+import { CreateCycleRequest, UpdateCycleRequest, CycleSummary, PaymentCalculationResult, ConsultantPaymentDetail } from '@vsol-admin/shared';
 import { NotFoundError, ValidationError } from '../middleware/errors';
 
 export class CycleService {
@@ -97,6 +97,15 @@ export class CycleService {
       }
     }
 
+    // Helper function to validate numeric values
+    const validateNumber = (value: number | null | undefined, fieldName: string): number | null => {
+      if (value === undefined || value === null) return null;
+      if (!isFinite(value)) {
+        throw new ValidationError(`${fieldName} must be a finite number (not NaN or Infinity)`);
+      }
+      return value;
+    };
+
     const updateData: any = {
       updatedAt: new Date()
     };
@@ -113,8 +122,11 @@ export class CycleService {
     if (data.sendInvoiceDate !== undefined) {
       updateData.sendInvoiceDate = data.sendInvoiceDate ? new Date(data.sendInvoiceDate) : null;
     }
-    if (data.consultantInvoicesVerifiedDate !== undefined) {
-      updateData.consultantInvoicesVerifiedDate = data.consultantInvoicesVerifiedDate ? new Date(data.consultantInvoicesVerifiedDate) : null;
+    if (data.clientInvoicePaymentDate !== undefined) {
+      updateData.clientInvoicePaymentDate = data.clientInvoicePaymentDate ? new Date(data.clientInvoicePaymentDate) : null;
+    }
+    if (data.clientPaymentScheduledDate !== undefined) {
+      updateData.clientPaymentScheduledDate = data.clientPaymentScheduledDate ? new Date(data.clientPaymentScheduledDate) : null;
     }
     if (data.invoiceApprovalDate !== undefined) {
       updateData.invoiceApprovalDate = data.invoiceApprovalDate ? new Date(data.invoiceApprovalDate) : null;
@@ -125,11 +137,11 @@ export class CycleService {
     if (data.additionalPaidOn !== undefined) {
       updateData.additionalPaidOn = data.additionalPaidOn ? new Date(data.additionalPaidOn) : null;
     }
-    if (data.globalWorkHours !== undefined) updateData.globalWorkHours = data.globalWorkHours;
-    if (data.omnigoBonus !== undefined) updateData.omnigoBonus = data.omnigoBonus;
-    if (data.pagamentoPIX !== undefined) updateData.pagamentoPIX = data.pagamentoPIX;
-    if (data.pagamentoInter !== undefined) updateData.pagamentoInter = data.pagamentoInter;
-    if (data.equipmentsUSD !== undefined) updateData.equipmentsUSD = data.equipmentsUSD;
+    if (data.globalWorkHours !== undefined) updateData.globalWorkHours = validateNumber(data.globalWorkHours, 'globalWorkHours');
+    if (data.omnigoBonus !== undefined) updateData.omnigoBonus = validateNumber(data.omnigoBonus, 'omnigoBonus');
+    if (data.pagamentoPIX !== undefined) updateData.pagamentoPIX = validateNumber(data.pagamentoPIX, 'pagamentoPIX');
+    if (data.pagamentoInter !== undefined) updateData.pagamentoInter = validateNumber(data.pagamentoInter, 'pagamentoInter');
+    if (data.equipmentsUSD !== undefined) updateData.equipmentsUSD = validateNumber(data.equipmentsUSD, 'equipmentsUSD');
 
     await db.update(payrollCycles)
       .set(updateData)
@@ -187,5 +199,64 @@ export class CycleService {
     const adjustment = lineItem.adjustmentValue || 0;
     const advance = lineItem.bonusAdvance || 0;
     return rateAmount + adjustment - advance;
+  }
+
+  static async calculatePayment(id: number): Promise<PaymentCalculationResult> {
+    const cycle = await this.getById(id);
+    const globalWorkHours = cycle.globalWorkHours || 0;
+
+    if (globalWorkHours === 0) {
+      throw new ValidationError('Global work hours must be set before calculating payments');
+    }
+
+    // Calculate individual consultant payment details
+    const consultantPayments: ConsultantPaymentDetail[] = cycle.lines.map(line => {
+      const workHours = line.workHours || globalWorkHours;
+      const baseAmount = workHours * line.ratePerHour;
+      const adjustmentValue = line.adjustmentValue || 0;
+      const bonusAdvance = line.bonusAdvance || 0;
+      const subtotal = baseAmount + adjustmentValue - bonusAdvance;
+
+      return {
+        consultantId: line.consultant.id,
+        consultantName: line.consultant.name,
+        payoneerID: line.consultant.payoneerID,
+        ratePerHour: line.ratePerHour,
+        workHours,
+        baseAmount,
+        adjustmentValue,
+        bonusAdvance,
+        subtotal
+      };
+    });
+
+    // Calculate totals
+    const totalConsultantPayments = consultantPayments.reduce((sum, payment) => sum + payment.subtotal, 0);
+    const omnigoBonus = cycle.omnigoBonus || 0;
+    const equipmentsUSD = cycle.equipmentsUSD || 0;
+    const totalWellsFargoTransfer = totalConsultantPayments + omnigoBonus + equipmentsUSD;
+
+    // Get cycle summary for additional info
+    const summary = await this.getSummary(id);
+
+    // Update cycle with calculated payment date
+    await this.update(id, {
+      calculatedPaymentDate: new Date().toISOString()
+    });
+
+    return {
+      cycleId: cycle.id,
+      monthLabel: cycle.monthLabel,
+      calculatedAt: new Date(),
+      consultantPayments,
+      totalConsultantPayments,
+      omnigoBonus,
+      equipmentsUSD,
+      totalWellsFargoTransfer,
+      totalHourlyValue: summary.totalHourlyValue,
+      globalWorkHours,
+      usdTotal: summary.usdTotal,
+      anomalies: summary.anomalies
+    };
   }
 }

@@ -1,0 +1,1 @@
+ALTER TABLE payroll_cycles ADD `client_payment_scheduled_date` integer;

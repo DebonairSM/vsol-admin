@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateCycle, useCycles } from '@/hooks/use-cycles';
+import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,39 @@ export default function NewCyclePage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [suggestedHours, setSuggestedHours] = useState<number | null>(null);
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+
+  // Fetch suggested work hours when month label changes
+  useEffect(() => {
+    const fetchSuggestedHours = async () => {
+      if (!formData.monthLabel.trim()) {
+        setSuggestedHours(null);
+        return;
+      }
+
+      setLoadingSuggestion(true);
+      try {
+        const result = await apiClient.getSuggestedWorkHours(formData.monthLabel);
+        setSuggestedHours(result.suggestedHours);
+      } catch (error) {
+        console.error('Failed to fetch suggested hours:', error);
+        setSuggestedHours(null);
+      } finally {
+        setLoadingSuggestion(false);
+      }
+    };
+
+    // Debounce the API call
+    const timeoutId = setTimeout(fetchSuggestedHours, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.monthLabel]);
+
+  const handleUseSuggestedHours = () => {
+    if (suggestedHours !== null) {
+      setFormData(prev => ({ ...prev, globalWorkHours: suggestedHours }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,6 +156,39 @@ export default function NewCyclePage() {
                 onChange={(e) => handleInputChange('globalWorkHours', parseInt(e.target.value) || 0)}
                 placeholder="168"
               />
+              
+              {/* Work Hours Suggestion */}
+              {loadingSuggestion && (
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <div className="animate-spin w-3 h-3 border border-gray-300 border-t-blue-600 rounded-full"></div>
+                  Looking up suggested hours...
+                </div>
+              )}
+              
+              {suggestedHours !== null && !loadingSuggestion && (
+                <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-blue-800">
+                      💡 Suggested: {suggestedHours} hours
+                    </p>
+                    <p className="text-xs text-blue-600">
+                      Based on work hours reference data for this month
+                    </p>
+                  </div>
+                  {formData.globalWorkHours !== suggestedHours && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={handleUseSuggestedHours}
+                      className="text-xs h-6 px-2 border-blue-300 text-blue-700 hover:bg-blue-100"
+                    >
+                      Use {suggestedHours}
+                    </Button>
+                  )}
+                </div>
+              )}
+              
               <p className="text-xs text-gray-500">
                 Default work hours for all consultants in this cycle. Individual consultants can override this value.
               </p>

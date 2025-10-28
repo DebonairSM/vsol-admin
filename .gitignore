@@ -108,8 +108,17 @@ temp/
 ehthumbs.db
 Thumbs.db
 
-# Backups (keep directory structure but ignore files)
-backups/*.db
+# Backups
+backups/
 
 # Turbo
 .turbo
+
+# Additional build artifacts
+*.js.map
+*.d.ts.map
+
+# SQLite journal files
+*-wal
+*-shm
+*.db-journal

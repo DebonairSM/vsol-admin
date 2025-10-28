@@ -1,11 +1,11 @@
-import { CalendarDays, DollarSign, FileText, CheckCircle, PlusCircle, Clock, Receipt, UserCheck } from 'lucide-react';
+import { CalendarDays, DollarSign, FileText, CheckCircle, PlusCircle, Clock, Receipt, UserCheck, Calendar } from 'lucide-react';
 import type { PayrollCycle } from '@vsol-admin/shared';
 
 export interface WorkflowStep {
   id: string;
   title: string;
   description: string;
-  fieldName: keyof Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'consultantInvoicesVerifiedDate' | 'invoiceApprovalDate' | 'additionalPaidOn' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
+  fieldName: keyof Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'clientInvoicePaymentDate' | 'clientPaymentScheduledDate' | 'invoiceApprovalDate' | 'additionalPaidOn' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
   icon: any;
   color: {
     complete: string;
@@ -15,7 +15,7 @@ export interface WorkflowStep {
   order: number;
 }
 
-export type PayrollCycleWorkflow = Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'consultantInvoicesVerifiedDate' | 'invoiceApprovalDate' | 'additionalPaidOn' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
+export type PayrollCycleWorkflow = Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'clientInvoicePaymentDate' | 'clientPaymentScheduledDate' | 'invoiceApprovalDate' | 'additionalPaidOn' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
 
 export const workflowSteps: WorkflowStep[] = [
   {
@@ -32,10 +32,10 @@ export const workflowSteps: WorkflowStep[] = [
     order: 1
   },
   {
-    id: 'consultant-invoices-verified',
-    title: 'Consultant Invoices Verified',
-    description: 'Verified that consultants have sent their invoices requesting payments',
-    fieldName: 'consultantInvoicesVerifiedDate',
+    id: 'client-invoice-payment-date',
+    title: 'Client Invoice Payment Date',
+    description: 'Date when client invoice payment is confirmed in Bill.com',
+    fieldName: 'clientInvoicePaymentDate',
     icon: UserCheck,
     color: {
       complete: 'text-teal-600 border-teal-200 bg-teal-50',
@@ -43,6 +43,19 @@ export const workflowSteps: WorkflowStep[] = [
       background: 'bg-teal-100'
     },
     order: 2
+  },
+  {
+    id: 'client-payment-scheduled-date',
+    title: 'Client Payment Scheduled Date',
+    description: 'Date when Bill.com schedules payment after confirming invoice receipt',
+    fieldName: 'clientPaymentScheduledDate',
+    icon: Calendar,
+    color: {
+      complete: 'text-cyan-600 border-cyan-200 bg-cyan-50',
+      pending: 'text-gray-400 border-gray-200 bg-gray-50',
+      background: 'bg-cyan-100'
+    },
+    order: 3
   },
   {
     id: 'calculate-payment',
@@ -55,7 +68,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-green-100'
     },
-    order: 3
+    order: 4
   },
   {
     id: 'payment-arrival',
@@ -68,7 +81,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-blue-100'
     },
-    order: 4
+    order: 5
   },
   {
     id: 'invoice-approval',
@@ -81,7 +94,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-emerald-100'
     },
-    order: 5
+    order: 6
   },
   {
     id: 'additional-paid',
@@ -94,7 +107,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-orange-100'
     },
-    order: 6
+    order: 7
   },
   {
     id: 'hours-limit-changed',
@@ -107,7 +120,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-indigo-100'
     },
-    order: 7
+    order: 8
   },
   {
     id: 'send-receipt',
@@ -120,7 +133,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-green-200'
     },
-    order: 8
+    order: 9
   }
 ];
 

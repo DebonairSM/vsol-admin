@@ -9,6 +9,7 @@ A local-first, SQLite-backed application that replaces the Excel-based "golden s
 - **Automated Calculations**: Real-time computation of subtotals and USD totals using Excel formula logic
 - **Audit Logging**: Track all state changes with user attribution
 - **Consultant Management**: CRUD operations with termination date support
+- **Time Doctor Integration**: Sync payroll settings and rates with Time Doctor API
 - **Invoice & Payment Tracking**: Integrated tracking with cycles
 - **Anomaly Detection**: Identify missing data, bonuses without dates, etc.
 
@@ -317,11 +318,49 @@ All calculations are in `apps/api/src/services/cycle-service.ts`:
 - **Username**: rommel, isabel, or celiane
 - **Password**: admin123
 
+## Time Doctor Integration
+
+The system integrates with Time Doctor's payroll API to synchronize consultant rates, hourly limits, and payee information.
+
+### Configuration
+
+Add these environment variables to `apps/api/.env`:
+
+```env
+# Time Doctor Integration
+TIME_DOCTOR_API_KEY=your-time-doctor-api-key-here
+TIME_DOCTOR_BASE_URL=https://api2.timedoctor.com
+TIME_DOCTOR_SYNC_INTERVAL=3600
+```
+
+### Features
+
+- **Payroll Settings Interface**: Time Doctor-style table showing consultant payroll information
+- **Automatic Sync**: Sync all consultants or individual consultants with Time Doctor data
+- **Sync Status Tracking**: Monitor last sync times and API connection status
+- **Selective Sync**: Enable/disable Time Doctor sync per consultant
+- **Rate & Limit Management**: Sync hourly rates and hourly limits from Time Doctor
+
+### Usage
+
+1. Navigate to **Consultants > Payroll Settings** tab
+2. Configure Time Doctor API credentials in environment variables
+3. Use "Sync All" to sync all active consultants
+4. Use individual "Sync" buttons for specific consultants
+5. Toggle sync enabled/disabled per consultant as needed
+
+### API Endpoints
+
+- `GET /api/time-doctor/status` - Check sync status
+- `GET /api/time-doctor/sync` - Sync all consultants
+- `POST /api/time-doctor/sync/:consultantId` - Sync specific consultant
+- `PUT /api/time-doctor/consultant/:consultantId/toggle-sync` - Enable/disable sync
+- `GET /api/time-doctor/settings` - Fetch Time Doctor payroll settings
+
 ## Future Enhancements (Phase 2)
 
 - Ollama assistant integration for workflow guidance
 - Email/reminder automations
-- Time Doctor API integration
 - Wave Apps API integration  
 - Payoneer API integration
 - CSV/PDF exports

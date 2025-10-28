@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db, cycleLineItems } from '../db';
 import { UpdateLineItemRequest } from '@vsol-admin/shared';
-import { NotFoundError } from '../middleware/errors';
+import { NotFoundError, ValidationError } from '../middleware/errors';
 
 export class LineItemService {
   static async getById(id: number) {
@@ -32,11 +32,20 @@ export class LineItemService {
   static async update(id: number, data: UpdateLineItemRequest) {
     const existing = await this.getById(id);
 
+    // Helper function to validate numeric values
+    const validateNumber = (value: number | null | undefined, fieldName: string): number | null => {
+      if (value === undefined || value === null) return null;
+      if (!isFinite(value)) {
+        throw new ValidationError(`${fieldName} must be a finite number (not NaN or Infinity)`);
+      }
+      return value;
+    };
+
     const updateData: any = {
       updatedAt: new Date()
     };
     if (data.invoiceSent !== undefined) updateData.invoiceSent = data.invoiceSent;
-    if (data.adjustmentValue !== undefined) updateData.adjustmentValue = data.adjustmentValue;
+    if (data.adjustmentValue !== undefined) updateData.adjustmentValue = validateNumber(data.adjustmentValue, 'adjustmentValue');
     if (data.bonusDate !== undefined) {
       updateData.bonusDate = data.bonusDate ? new Date(data.bonusDate) : null;
     }
@@ -46,11 +55,11 @@ export class LineItemService {
     if (data.bonusPaydate !== undefined) {
       updateData.bonusPaydate = data.bonusPaydate ? new Date(data.bonusPaydate) : null;
     }
-    if (data.bonusAdvance !== undefined) updateData.bonusAdvance = data.bonusAdvance;
+    if (data.bonusAdvance !== undefined) updateData.bonusAdvance = validateNumber(data.bonusAdvance, 'bonusAdvance');
     if (data.advanceDate !== undefined) {
       updateData.advanceDate = data.advanceDate ? new Date(data.advanceDate) : null;
     }
-    if (data.workHours !== undefined) updateData.workHours = data.workHours;
+    if (data.workHours !== undefined) updateData.workHours = validateNumber(data.workHours, 'workHours');
     if (data.comments !== undefined) updateData.comments = data.comments;
 
     const [lineItem] = await db.update(cycleLineItems)

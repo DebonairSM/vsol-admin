@@ -22,6 +22,34 @@
       "when": 1761529383093,
       "tag": "0002_fearless_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1761534937367,
+      "tag": "0003_clear_speed_demon",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1761537043804,
+      "tag": "0004_robust_deathbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1761577008709,
+      "tag": "0005_wet_mandroid",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1761578523335,
+      "tag": "0006_married_sunfire",
+      "breakpoints": true
     }
   ]
 }

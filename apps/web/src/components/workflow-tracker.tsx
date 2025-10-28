@@ -6,8 +6,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, cn } from '@/lib/utils';
-import { workflowSteps, calculateWorkflowProgress, isStepCompleted, type PayrollCycleWorkflow } from '@/lib/workflow-config';
-import { Check, Calendar, Clock } from 'lucide-react';
+import { workflowSteps, calculateWorkflowProgress, isStepCompleted } from '@/lib/workflow-config';
+import { Check, Calendar, Clock, Calculator, DollarSign } from 'lucide-react';
+import { useCalculatePayment } from '@/hooks/use-cycles';
 import type { PayrollCycle } from '@vsol-admin/shared';
 
 interface WorkflowTrackerProps {
@@ -18,12 +19,22 @@ interface WorkflowTrackerProps {
 export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: WorkflowTrackerProps) {
   const [editingStep, setEditingStep] = useState<string | null>(null);
   const [editDate, setEditDate] = useState('');
+  const [calculationResult, setCalculationResult] = useState<any>(null);
+  
+  const calculatePaymentMutation = useCalculatePayment();
 
   const progress = calculateWorkflowProgress(cycle);
 
-  const handleStepClick = (stepId: string, fieldName: string, currentDate?: Date | string | null) => {
+  const handleStepClick = (stepId: string, _fieldName: string, currentDate?: Date | string | null) => {
     setEditingStep(stepId);
-    setEditDate(currentDate ? new Date(currentDate).toISOString().split('T')[0] : '');
+    if (currentDate) {
+      const date = new Date(currentDate);
+      // Use local date instead of UTC date to avoid timezone issues
+      const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+      setEditDate(localDate.toISOString().split('T')[0]);
+    } else {
+      setEditDate('');
+    }
   };
 
   const handleDateSave = async () => {
@@ -33,10 +44,13 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     if (!step) return;
 
     try {
-      await onUpdateWorkflowDate(
-        step.fieldName, 
-        editDate ? new Date(editDate).toISOString() : null
-      );
+      let dateToSave = null;
+      if (editDate) {
+        // Create date in local timezone to match what user sees
+        const localDate = new Date(editDate + 'T12:00:00'); // Use noon to avoid DST issues
+        dateToSave = localDate.toISOString();
+      }
+      await onUpdateWorkflowDate(step.fieldName, dateToSave);
       setEditingStep(null);
     } catch (error) {
       console.error('Failed to update workflow date:', error);
@@ -46,13 +60,26 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const handleDateCancel = () => {
     setEditingStep(null);
     setEditDate('');
+    setCalculationResult(null);
   };
 
   const handleMarkComplete = async (step: typeof workflowSteps[0]) => {
     try {
-      await onUpdateWorkflowDate(step.fieldName, new Date().toISOString());
+      // Use current date at noon in local timezone for consistency
+      const now = new Date();
+      const localNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+      await onUpdateWorkflowDate(step.fieldName, localNoon.toISOString());
     } catch (error) {
       console.error('Failed to mark step complete:', error);
+    }
+  };
+
+  const handleCalculatePayment = async () => {
+    try {
+      const result = await calculatePaymentMutation.mutateAsync(cycle.id);
+      setCalculationResult(result);
+    } catch (error) {
+      console.error('Failed to calculate payment:', error);
     }
   };
 
@@ -137,43 +164,121 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
 
                     {/* Edit Popover */}
                     <Popover open={editingStep === step.id} onOpenChange={(open) => {
-                      if (!open) setEditingStep(null);
+                      if (!open) {
+                        setEditingStep(null);
+                        setCalculationResult(null);
+                      }
                     }}>
                       <PopoverTrigger asChild>
                         <div className="opacity-0 hover:opacity-100 transition-opacity">
                           <Calendar className="w-4 h-4 text-gray-400 cursor-pointer" />
                         </div>
                       </PopoverTrigger>
-                      <PopoverContent className="w-80">
+                      <PopoverContent className="w-96">
                         <div className="space-y-4">
                           <div>
                             <h4 className="font-medium">{step.title}</h4>
                             <p className="text-sm text-gray-600">{step.description}</p>
                           </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="stepDate" className="text-xs">
-                              Completion Date
-                            </Label>
-                            <Input
-                              id="stepDate"
-                              type="date"
-                              value={editDate}
-                              onChange={(e) => setEditDate(e.target.value)}
-                              className="text-sm"
-                            />
-                          </div>
+                          {step.id === 'calculate-payment' ? (
+                            <>
+                              {/* Payment Calculation Section */}
+                              {!calculationResult ? (
+                                <div className="space-y-3">
+                                  <Button 
+                                    onClick={handleCalculatePayment}
+                                    disabled={calculatePaymentMutation.isPending}
+                                    className="w-full"
+                                    size="sm"
+                                  >
+                                    <Calculator className="w-4 h-4 mr-2" />
+                                    {calculatePaymentMutation.isPending ? 'Calculating...' : 'Calculate Payment'}
+                                  </Button>
+                                  <p className="text-xs text-gray-500">
+                                    This will calculate amounts for Wells Fargo transfer and prepare Payoneer dispersal data.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <div className="flex items-center gap-2 text-green-700 font-medium text-sm">
+                                      <DollarSign className="w-4 h-4" />
+                                      Payment Calculated Successfully
+                                    </div>
+                                    <div className="mt-2 text-xs space-y-1">
+                                      <div className="flex justify-between">
+                                        <span>Total Consultant Payments:</span>
+                                        <span className="font-mono">${calculationResult.totalConsultantPayments?.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>Omnigo Bonus:</span>
+                                        <span className="font-mono">${calculationResult.omnigoBonus?.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>Equipment USD:</span>
+                                        <span className="font-mono">${calculationResult.equipmentsUSD?.toFixed(2)}</span>
+                                      </div>
+                                      <hr className="border-green-200" />
+                                      <div className="flex justify-between font-medium">
+                                        <span>Wells Fargo Transfer:</span>
+                                        <span className="font-mono">${calculationResult.totalWellsFargoTransfer?.toFixed(2)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-gray-600">
+                                    <p>✓ {calculationResult.consultantPayments?.length} consultant payments calculated</p>
+                                    {calculationResult.anomalies?.length > 0 && (
+                                      <p className="text-amber-600">⚠ {calculationResult.anomalies.length} anomalies detected</p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Date Setting Section */}
+                              {(calculationResult || isCompleted) && (
+                                <div className="space-y-2 pt-3 border-t">
+                                  <Label htmlFor="stepDate" className="text-xs">
+                                    Completion Date
+                                  </Label>
+                                  <Input
+                                    id="stepDate"
+                                    type="date"
+                                    value={editDate}
+                                    onChange={(e) => setEditDate(e.target.value)}
+                                    className="text-sm"
+                                  />
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            /* Standard Date Picker for Other Steps */
+                            <div className="space-y-2">
+                              <Label htmlFor="stepDate" className="text-xs">
+                                Completion Date
+                              </Label>
+                              <Input
+                                id="stepDate"
+                                type="date"
+                                value={editDate}
+                                onChange={(e) => setEditDate(e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                          )}
 
                           <div className="flex justify-between gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleMarkComplete(step)}
-                              className="text-xs"
-                            >
-                              Mark Complete Now
-                            </Button>
-                            <div className="flex gap-2">
+                            {step.id !== 'calculate-payment' && (
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleMarkComplete(step)}
+                                className="text-xs"
+                              >
+                                Mark Complete Now
+                              </Button>
+                            )}
+                            <div className="flex gap-2 ml-auto">
                               <Button 
                                 size="sm" 
                                 variant="outline" 
@@ -182,13 +287,15 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                               >
                                 Cancel
                               </Button>
-                              <Button 
-                                size="sm" 
-                                onClick={handleDateSave}
-                                className="text-xs"
-                              >
-                                Save
-                              </Button>
+                              {(step.id !== 'calculate-payment' || calculationResult || isCompleted) && (
+                                <Button 
+                                  size="sm" 
+                                  onClick={handleDateSave}
+                                  className="text-xs"
+                                >
+                                  Save
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>

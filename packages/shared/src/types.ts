@@ -41,6 +41,13 @@ export interface Consultant {
   equipmentReturnDeadline?: Date | null;
   contractSignedDate?: Date | null;
   terminationReason?: TerminationReason | null;
+  // Time Doctor Integration
+  timeDoctorPayeeId?: string | null;
+  hourlyLimit?: number | null;
+  rateType: string;
+  currency: string;
+  timeDoctorSyncEnabled: boolean;
+  lastTimeDoctorSync?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,7 +60,8 @@ export interface PayrollCycle {
   paymentArrivalDate?: Date | null;
   sendReceiptDate?: Date | null;
   sendInvoiceDate?: Date | null;
-  consultantInvoicesVerifiedDate?: Date | null;
+  clientInvoicePaymentDate?: Date | null;
+  clientPaymentScheduledDate?: Date | null;
   invoiceApprovalDate?: Date | null;
   hoursLimitChangedOn?: Date | null;
   additionalPaidOn?: Date | null;
@@ -180,4 +188,53 @@ export interface ConsultantEquipment {
   notes?: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Monthly work hours reference
+export interface MonthlyWorkHours {
+  id: number;
+  year: number;
+  month: string;
+  monthNumber: number;
+  weekdays: number;
+  workHours: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ImportWorkHoursResult {
+  imported: number;
+  updated: number;
+  errors?: string[];
+}
+
+// Payment calculation types
+export interface ConsultantPaymentDetail {
+  consultantId: number;
+  consultantName: string;
+  payoneerID?: string | null;
+  ratePerHour: number;
+  workHours: number;
+  baseAmount: number; // ratePerHour * workHours
+  adjustmentValue: number;
+  bonusAdvance: number;
+  subtotal: number; // baseAmount + adjustment - bonusAdvance
+}
+
+export interface PaymentCalculationResult {
+  cycleId: number;
+  monthLabel: string;
+  calculatedAt: Date;
+  // Individual consultant payments
+  consultantPayments: ConsultantPaymentDetail[];
+  // Total amounts for Wells Fargo transfer
+  totalConsultantPayments: number; // Sum of all consultant subtotals
+  omnigoBonus: number;
+  equipmentsUSD: number;
+  totalWellsFargoTransfer: number; // Amount to request from Wells Fargo
+  // Cycle summary info
+  totalHourlyValue: number;
+  globalWorkHours: number;
+  usdTotal: number; // Final cycle total after PIX/Inter deductions
+  anomalies: string[];
 }

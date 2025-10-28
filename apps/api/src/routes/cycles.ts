@@ -4,7 +4,7 @@ import { LineItemService } from '../services/line-item-service';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
-import { createCycleSchema, updateCycleSchema, updateLineItemSchema } from '@vsol-admin/shared';
+import { createCycleSchema, updateCycleSchema, updateLineItemSchema, calculatePaymentSchema } from '@vsol-admin/shared';
 
 const router = Router();
 
@@ -50,6 +50,19 @@ router.get('/:id/lines', async (req, res, next) => {
     next(error);
   }
 });
+
+// POST /api/cycles/:id/calculate-payment
+router.post('/:id/calculate-payment',
+  auditMiddleware('CALCULATE_PAYMENT', 'cycle'),
+  async (req, res, next) => {
+    try {
+      const paymentCalculation = await CycleService.calculatePayment(parseInt(req.params.id));
+      res.json(paymentCalculation);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 // POST /api/cycles
 router.post('/',

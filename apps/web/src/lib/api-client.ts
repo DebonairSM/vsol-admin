@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 class ApiClient {
   private baseURL: string;
@@ -225,6 +225,39 @@ class ApiClient {
     });
   }
 
+  // Payment calculation
+  async calculatePayment(cycleId: number) {
+    return this.request<any>(`/cycles/${cycleId}/calculate-payment`, {
+      method: 'POST',
+    });
+  }
+
+  // Work hours methods
+  async getWorkHours() {
+    return this.request<any[]>('/work-hours');
+  }
+
+  async getWorkHoursByYear(year: number) {
+    return this.request<any[]>(`/work-hours/${year}`);
+  }
+
+  async getSuggestedWorkHours(monthLabel: string) {
+    return this.request<{ suggestedHours: number | null }>(`/work-hours/suggestion/${encodeURIComponent(monthLabel)}`);
+  }
+
+  async importWorkHours(jsonContent: string) {
+    return this.request<any>('/work-hours/import', {
+      method: 'POST',
+      body: JSON.stringify({ jsonContent }),
+    });
+  }
+
+  async deleteWorkHoursYear(year: number) {
+    return this.request<any>(`/work-hours/${year}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Audit methods
   async getAuditLogs(params?: { cycleId?: number; userId?: number; limit?: number; offset?: number }) {
     const query = new URLSearchParams();
@@ -277,6 +310,32 @@ class ApiClient {
   async getPendingReturns(consultantId?: number) {
     const query = consultantId ? `?consultantId=${consultantId}` : '';
     return this.request<any[]>(`/equipment/pending-returns${query}`);
+  }
+
+  // Time Doctor API methods
+  async getTimeDoctorSyncStatus() {
+    return this.request<any>('/time-doctor/status');
+  }
+
+  async syncAllTimeDoctorConsultants() {
+    return this.request<any>('/time-doctor/sync');
+  }
+
+  async syncTimeDoctorConsultant(consultantId: number) {
+    return this.request<any>(`/time-doctor/sync/${consultantId}`, {
+      method: 'POST',
+    });
+  }
+
+  async toggleTimeDoctorSync(consultantId: number, enabled: boolean) {
+    return this.request<any>(`/time-doctor/consultant/${consultantId}/toggle-sync`, {
+      method: 'PUT',
+      body: JSON.stringify({ enabled }),
+    });
+  }
+
+  async getTimeDoctorSettings() {
+    return this.request<any>('/time-doctor/settings');
   }
 }
 

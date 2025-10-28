@@ -140,27 +140,28 @@ export const updateCycleSchema = z.object({
   paymentArrivalDate: z.string().datetime().nullable().optional(),
   sendReceiptDate: z.string().datetime().nullable().optional(),
   sendInvoiceDate: z.string().datetime().nullable().optional(),
-  consultantInvoicesVerifiedDate: z.string().datetime().nullable().optional(),
+  clientInvoicePaymentDate: z.string().datetime().nullable().optional(),
+  clientPaymentScheduledDate: z.string().datetime().nullable().optional(),
   invoiceApprovalDate: z.string().datetime().nullable().optional(),
   hoursLimitChangedOn: z.string().datetime().nullable().optional(),
   additionalPaidOn: z.string().datetime().nullable().optional(),
-  globalWorkHours: z.number().int().positive().nullable().optional(),
-  omnigoBonus: z.number().nullable().optional(),
-  pagamentoPIX: z.number().nullable().optional(),
-  pagamentoInter: z.number().nullable().optional(),
-  equipmentsUSD: z.number().nullable().optional()
+  globalWorkHours: z.number().int().positive().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
+  omnigoBonus: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
+  pagamentoPIX: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
+  pagamentoInter: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
+  equipmentsUSD: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional()
 });
 
 // Line item schemas
 export const updateLineItemSchema = z.object({
   invoiceSent: z.boolean().nullable().optional(),
-  adjustmentValue: z.number().nullable().optional(),
+  adjustmentValue: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
   bonusDate: z.string().datetime().nullable().optional(),
   informedDate: z.string().datetime().nullable().optional(),
   bonusPaydate: z.string().datetime().nullable().optional(),
-  bonusAdvance: z.number().nullable().optional(),
+  bonusAdvance: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
   advanceDate: z.string().datetime().nullable().optional(),
-  workHours: z.number().int().positive().nullable().optional(),
+  workHours: z.number().int().positive().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
   comments: z.string().nullable().optional()
 });
 
@@ -254,8 +255,76 @@ export const generateTerminationDocumentSchema = z.object({
   consultantId: z.number().int().positive()
 });
 
+// Payment calculation schemas
+export const calculatePaymentSchema = z.object({
+  // No body parameters needed - cycleId comes from URL
+});
+
+// Work hours schemas
+export const importWorkHoursSchema = z.object({
+  jsonContent: z.string().min(1, 'JSON content is required')
+});
+
+export const workHoursYearSchema = z.object({
+  year: z.number().int().min(2020).max(2030)
+});
+
 // Export equipment and termination types
 export type CreateEquipmentRequest = z.infer<typeof createEquipmentSchema>;
 export type UpdateEquipmentRequest = z.infer<typeof updateEquipmentSchema>;
 export type InitiateTerminationRequest = z.infer<typeof initiateTerminationSchema>;
 export type GenerateTerminationDocumentRequest = z.infer<typeof generateTerminationDocumentSchema>;
+export type CalculatePaymentRequest = z.infer<typeof calculatePaymentSchema>;
+export type ImportWorkHoursRequest = z.infer<typeof importWorkHoursSchema>;
+export type WorkHoursYearRequest = z.infer<typeof workHoursYearSchema>;
+
+// Time Doctor schemas
+export const timeDoctorSyncStatusSchema = z.object({
+  success: z.boolean(),
+  status: z.object({
+    totalConsultants: z.number(),
+    syncEnabledConsultants: z.number(),
+    lastSyncTimes: z.record(z.number(), z.date().nullable()),
+    apiConnected: z.boolean()
+  }).optional(),
+  error: z.string().optional()
+});
+
+export const timeDoctorSyncResultSchema = z.object({
+  success: z.boolean(),
+  message: z.string().optional(),
+  synced: z.number().optional(),
+  errors: z.array(z.string()).optional(),
+  totalConsultants: z.number().optional(),
+  error: z.string().optional()
+});
+
+export const timeDoctorToggleSyncSchema = z.object({
+  enabled: z.boolean()
+});
+
+export const timeDoctorPayrollSettingsSchema = z.object({
+  payeeId: z.string(),
+  name: z.string(),
+  paymentMethod: z.string(),
+  payrollPeriod: z.string(),
+  rateType: z.string(),
+  currency: z.string(),
+  ratePerHour: z.number(),
+  hourlyLimit: z.number(),
+  maxRatePerPeriod: z.number()
+});
+
+// Time Doctor API response schemas
+export const timeDoctorSettingsResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.array(timeDoctorPayrollSettingsSchema).optional(),
+  error: z.string().optional()
+});
+
+// Export Time Doctor types
+export type TimeDoctorSyncStatus = z.infer<typeof timeDoctorSyncStatusSchema>;
+export type TimeDoctorSyncResult = z.infer<typeof timeDoctorSyncResultSchema>;
+export type TimeDoctorToggleSyncRequest = z.infer<typeof timeDoctorToggleSyncSchema>;
+export type TimeDoctorPayrollSettings = z.infer<typeof timeDoctorPayrollSettingsSchema>;
+export type TimeDoctorSettingsResponse = z.infer<typeof timeDoctorSettingsResponseSchema>;

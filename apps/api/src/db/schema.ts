@@ -1,4 +1,4 @@
-import { sqliteTable, integer, text, real, blob } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, integer, text, real, blob, unique } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
 
 // Users table
@@ -46,6 +46,13 @@ export const consultants = sqliteTable('consultants', {
   equipmentReturnDeadline: integer('equipment_return_deadline', { mode: 'timestamp' }),
   contractSignedDate: integer('contract_signed_date', { mode: 'timestamp' }),
   terminationReason: text('termination_reason', { enum: ['FIRED', 'LAID_OFF', 'QUIT', 'MUTUAL_AGREEMENT'] }),
+  // Time Doctor Integration
+  timeDoctorPayeeId: text('time_doctor_payee_id'),
+  hourlyLimit: integer('hourly_limit'),
+  rateType: text('rate_type').notNull().default('Per Hour'),
+  currency: text('currency').notNull().default('USD'),
+  timeDoctorSyncEnabled: integer('time_doctor_sync_enabled', { mode: 'boolean' }).notNull().default(true),
+  lastTimeDoctorSync: integer('last_time_doctor_sync', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
@@ -59,7 +66,8 @@ export const payrollCycles = sqliteTable('payroll_cycles', {
   paymentArrivalDate: integer('payment_arrival_date', { mode: 'timestamp' }),
   sendReceiptDate: integer('send_receipt_date', { mode: 'timestamp' }),
   sendInvoiceDate: integer('send_invoice_date', { mode: 'timestamp' }),
-  consultantInvoicesVerifiedDate: integer('consultant_invoices_verified_date', { mode: 'timestamp' }),
+  clientInvoicePaymentDate: integer('client_invoice_payment_date', { mode: 'timestamp' }),
+  clientPaymentScheduledDate: integer('client_payment_scheduled_date', { mode: 'timestamp' }),
   invoiceApprovalDate: integer('invoice_approval_date', { mode: 'timestamp' }),
   hoursLimitChangedOn: integer('hours_limit_changed_on', { mode: 'timestamp' }),
   additionalPaidOn: integer('additional_paid_on', { mode: 'timestamp' }),
@@ -143,6 +151,21 @@ export const consultantEquipment = sqliteTable('consultant_equipment', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
 
+// Monthly work hours reference table
+export const monthlyWorkHours = sqliteTable('monthly_work_hours', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  year: integer('year').notNull(),
+  month: text('month').notNull(), // 'January', 'February', etc.
+  monthNumber: integer('month_number').notNull(), // 1-12
+  weekdays: integer('weekdays').notNull(), // Working days in the month
+  workHours: integer('work_hours').notNull(), // Total billable hours
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+}, (table) => ({
+  // Unique constraint on year + month
+  uniqueYearMonth: unique().on(table.year, table.monthNumber)
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   auditLogs: many(auditLogs)
@@ -212,3 +235,5 @@ export const consultantEquipmentRelations = relations(consultantEquipment, ({ on
     references: [consultants.id]
   })
 }));
+
+export const monthlyWorkHoursRelations = relations(monthlyWorkHours, ({}) => ({}));

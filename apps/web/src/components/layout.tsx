@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
+import { Toaster } from '@/components/ui/toaster';
 import { 
   LayoutDashboard, 
   Users, 
@@ -9,13 +10,15 @@ import {
   History, 
   LogOut,
   Table,
-  Laptop
+  Laptop,
+  Clock
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Consultants', href: '/consultants', icon: Users },
   { name: 'Equipment', href: '/equipment', icon: Laptop },
+  { name: 'Work Hours', href: '/work-hours', icon: Clock },
   { name: 'Invoices', href: '/invoices', icon: FileText },
   { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Audit Log', href: '/audit', icon: History },
@@ -96,6 +99,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+      
+      {/* Toast notifications */}
+      <Toaster />
     </div>
   );
 }
