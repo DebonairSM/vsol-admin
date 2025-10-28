@@ -5,7 +5,7 @@ import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { importWorkHoursSchema } from '@vsol-admin/shared';
 
-const router = Router();
+const router: Router = Router();
 
 // All work hours routes require authentication
 router.use(authenticateToken);
@@ -64,7 +64,8 @@ router.post('/import',
           totalImported += result.imported;
           totalUpdated += result.updated;
         } catch (error) {
-          errors.push(`Year ${yearData.year}: ${error.message}`);
+          const message = error instanceof Error ? error.message : String(error);
+          errors.push(`Year ${yearData.year}: ${message}`);
         }
       }
 

@@ -6,7 +6,7 @@ import { auditMiddleware } from '../middleware/audit';
 import { createPaymentSchema } from '@vsol-admin/shared';
 import { z } from 'zod';
 
-const router = Router();
+const router: Router = Router();
 
 // All payment routes require authentication
 router.use(authenticateToken);

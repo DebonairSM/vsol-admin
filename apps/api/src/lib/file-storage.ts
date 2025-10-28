@@ -1,4 +1,5 @@
 import fs from 'fs/promises';
+import { Stats } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
@@ -88,7 +89,7 @@ export class FileStorageService {
     }
   }
 
-  async getFileInfo(filePath: string): Promise<{ exists: boolean; stats?: fs.Stats }> {
+  async getFileInfo(filePath: string): Promise<{ exists: boolean; stats?: Stats }> {
     try {
       const fullPath = path.join(this.baseUploadPath, filePath);
       const stats = await fs.stat(fullPath);

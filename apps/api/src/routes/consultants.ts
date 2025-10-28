@@ -16,7 +16,7 @@ import {
   initiateTerminationSchema
 } from '@vsol-admin/shared';
 
-const router = Router();
+const router: Router = Router();
 
 // All consultant routes require authentication
 router.use(authenticateToken);

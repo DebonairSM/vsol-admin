@@ -20,7 +20,7 @@ interface BonusInfoCellProps {
   onUpdate: (lineId: number, data: Record<string, any>) => Promise<void>;
 }
 
-export default function BonusInfoCell({ lineItem, cycleId, cycleSendReceiptDate, onUpdate }: BonusInfoCellProps) {
+export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, onUpdate }: BonusInfoCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     bonusDate: lineItem.bonusDate ? new Date(lineItem.bonusDate).toISOString().split('T')[0] : '',

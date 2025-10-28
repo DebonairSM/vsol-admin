@@ -1,4 +1,4 @@
-import { CalendarDays, DollarSign, FileText, CheckCircle, PlusCircle, Clock, Receipt, UserCheck, Calendar } from 'lucide-react';
+import { CalendarDays, DollarSign, FileText, CheckCircle, Clock, Receipt, UserCheck, Calendar } from 'lucide-react';
 import type { PayrollCycle } from '@vsol-admin/shared';
 
 export interface WorkflowStep {

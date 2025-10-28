@@ -1,11 +1,11 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useConsultantProfile, useDeleteConsultant } from '@/hooks/use-consultant-profile';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
-import { ArrowLeft, Edit, Trash2, Download, User, Building, Phone, MapPin, FileText, CreditCard, FileCheck } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Download, User, Building, Phone, MapPin, FileText, FileCheck } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ConsultantProfilePage() {

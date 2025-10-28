@@ -57,7 +57,7 @@ class TimeDoctorService {
         };
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       return { success: true, data: data.payroll_settings || [] };
     } catch (error) {
       console.error('Time Doctor API fetch error:', error);

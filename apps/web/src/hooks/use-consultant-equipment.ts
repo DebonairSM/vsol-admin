@@ -9,10 +9,7 @@ import type {
 export function useConsultantEquipment(consultantId: number) {
   return useQuery({
     queryKey: ['equipment', consultantId],
-    queryFn: async (): Promise<ConsultantEquipment[]> => {
-      const response = await apiClient.get(`/consultants/${consultantId}/equipment`);
-      return response.data;
-    },
+    queryFn: (): Promise<ConsultantEquipment[]> => apiClient.getEquipment(consultantId),
     enabled: !!consultantId
   });
 }
@@ -21,10 +18,8 @@ export function useCreateEquipment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ consultantId, data }: { consultantId: number; data: CreateEquipmentRequest }) => {
-      const response = await apiClient.post(`/consultants/${consultantId}/equipment`, data);
-      return response.data;
-    },
+    mutationFn: ({ data, consultantId }: { data: CreateEquipmentRequest; consultantId: number }) => 
+      apiClient.createEquipment({ ...data, consultantId }),
     onSuccess: (_, { consultantId }) => {
       queryClient.invalidateQueries({ queryKey: ['equipment', consultantId] });
       queryClient.invalidateQueries({ queryKey: ['consultants'] });
@@ -36,18 +31,14 @@ export function useUpdateEquipment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      consultantId, 
+    mutationFn: ({ 
       equipmentId, 
       data 
     }: { 
       consultantId: number; 
       equipmentId: number; 
       data: UpdateEquipmentRequest 
-    }) => {
-      const response = await apiClient.put(`/consultants/${consultantId}/equipment/${equipmentId}`, data);
-      return response.data;
-    },
+    }) => apiClient.updateEquipment(equipmentId, data),
     onSuccess: (_, { consultantId }) => {
       queryClient.invalidateQueries({ queryKey: ['equipment', consultantId] });
       queryClient.invalidateQueries({ queryKey: ['consultants'] });
@@ -59,10 +50,8 @@ export function useDeleteEquipment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ consultantId, equipmentId }: { consultantId: number; equipmentId: number }) => {
-      const response = await apiClient.delete(`/consultants/${consultantId}/equipment/${equipmentId}`);
-      return response.data;
-    },
+    mutationFn: ({ equipmentId }: { consultantId: number; equipmentId: number }) => 
+      apiClient.deleteEquipment(equipmentId),
     onSuccess: (_, { consultantId }) => {
       queryClient.invalidateQueries({ queryKey: ['equipment', consultantId] });
       queryClient.invalidateQueries({ queryKey: ['consultants'] });
@@ -74,7 +63,7 @@ export function useMarkEquipmentReturned() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
+    mutationFn: ({ 
       consultantId, 
       equipmentId, 
       returnedDate 
@@ -82,13 +71,7 @@ export function useMarkEquipmentReturned() {
       consultantId: number; 
       equipmentId: number; 
       returnedDate?: Date 
-    }) => {
-      const response = await apiClient.post(
-        `/consultants/${consultantId}/equipment/${equipmentId}/return`,
-        { returnedDate: returnedDate?.toISOString() }
-      );
-      return response.data;
-    },
+    }) => apiClient.markEquipmentReturned(equipmentId, returnedDate?.toISOString()),
     onSuccess: (_, { consultantId }) => {
       queryClient.invalidateQueries({ queryKey: ['equipment', consultantId] });
       queryClient.invalidateQueries({ queryKey: ['consultants'] });
@@ -99,10 +82,7 @@ export function useMarkEquipmentReturned() {
 export function usePendingEquipmentReturns(consultantId: number) {
   return useQuery({
     queryKey: ['equipment', consultantId, 'pending-returns'],
-    queryFn: async (): Promise<ConsultantEquipment[]> => {
-      const response = await apiClient.get(`/consultants/${consultantId}/equipment/pending-returns`);
-      return response.data;
-    },
+    queryFn: (): Promise<ConsultantEquipment[]> => apiClient.getPendingReturns(consultantId),
     enabled: !!consultantId
   });
 }

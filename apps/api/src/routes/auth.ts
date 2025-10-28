@@ -8,7 +8,7 @@ import { authenticateToken } from '../middleware/auth';
 import { loginSchema } from '@vsol-admin/shared';
 import { UnauthorizedError } from '../middleware/errors';
 
-const router = Router();
+const router: Router = Router();
 
 // POST /api/auth/login
 router.post('/login', validateBody(loginSchema), async (req, res, next) => {

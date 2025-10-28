@@ -5,7 +5,6 @@ import { Card } from './ui/card';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
-import { Checkbox } from './ui/checkbox';
 import { CreateConsultantRequest } from '@vsol-admin/shared';
 
 interface ConsultantRegistrationFormProps {

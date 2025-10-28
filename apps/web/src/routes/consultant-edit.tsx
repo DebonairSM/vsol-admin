@@ -1,13 +1,13 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useConsultantProfile, useUpdateConsultantProfile, useUploadConsultantDocument } from '@/hooks/use-consultant-profile';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UpdateConsultantRequest } from '@vsol-admin/shared';
-import { ArrowLeft, Save, Upload } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import EquipmentManagement from '@/components/equipment-management';
 import TerminationWorkflow from '@/components/termination-workflow';

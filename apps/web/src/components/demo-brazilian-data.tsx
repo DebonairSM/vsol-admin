@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { createConsultant } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
 
 export default function DemoBrazilianData() {
   const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ export default function DemoBrazilianData() {
         cpf: '137.257.707-60'
       };
 
-      await createConsultant(consultantData);
+      await apiClient.createConsultant(consultantData);
       setSuccess(true);
     } catch (error) {
       console.error('Failed to insert Brazilian consultant data:', error);

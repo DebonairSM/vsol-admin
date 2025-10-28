@@ -5,7 +5,7 @@ import { auditMiddleware } from '../middleware/audit';
 import { updateBonusWorkflowSchema } from '@vsol-admin/shared';
 import { BonusWorkflowService } from '../services/bonus-workflow-service';
 
-const router = Router();
+const router: Router = Router();
 
 // Get bonus workflow for a cycle
 router.get('/cycles/:cycleId/bonus', authenticateToken, async (req, res, next) => {

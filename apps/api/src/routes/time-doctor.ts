@@ -3,7 +3,7 @@ import { timeDoctorService } from '../services/time-doctor-service';
 import { authenticateToken } from '../middleware/auth';
 import { auditMiddleware } from '../middleware/audit';
 
-const router = Router();
+const router: Router = Router();
 
 // Apply authentication to all Time Doctor routes
 router.use(authenticateToken);

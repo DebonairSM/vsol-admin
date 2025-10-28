@@ -16,7 +16,7 @@ export function useUpdateConsultantProfile() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateConsultantRequest }) =>
       apiClient.updateConsultant(id, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       // Invalidate and refetch consultant data
       queryClient.invalidateQueries({ queryKey: ['consultant', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['consultants'] });
@@ -38,7 +38,7 @@ export function useUploadConsultantDocument() {
       file: File;
     }) =>
       apiClient.uploadConsultantDocument(consultantId, documentType, file),
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       // Invalidate consultant data to refresh with new document paths
       queryClient.invalidateQueries({ queryKey: ['consultant', variables.consultantId] });
     },

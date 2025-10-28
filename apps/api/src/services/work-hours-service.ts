@@ -38,12 +38,13 @@ export class WorkHoursService {
   }
 
   static async getByYearMonth(year: number, monthNumber: number): Promise<WorkHoursReference | null> {
-    return db.query.monthlyWorkHours.findFirst({
+    const result = await db.query.monthlyWorkHours.findFirst({
       where: (workHours, { and, eq }) => and(
         eq(workHours.year, year),
         eq(workHours.monthNumber, monthNumber)
       )
     });
+    return result || null;
   }
 
   static async importWorkHours(data: ImportWorkHoursData): Promise<{ imported: number; updated: number }> {
@@ -81,7 +82,7 @@ export class WorkHoursService {
             workHours: monthData.workHours,
             updatedAt: new Date()
           })
-          .where((table) => eq(table.id, existing.id));
+          .where(eq(monthlyWorkHours.id, existing.id));
         updated++;
       } else {
         // Insert new record
@@ -163,7 +164,7 @@ export class WorkHoursService {
   }
 
   private static getMonthNumber(monthName: string): number {
-    const months = {
+    const months: Record<string, number> = {
       'january': 1, 'february': 2, 'march': 3, 'april': 4,
       'may': 5, 'june': 6, 'july': 7, 'august': 8,
       'september': 9, 'october': 10, 'november': 11, 'december': 12
@@ -176,7 +177,8 @@ export class WorkHoursService {
     const result = await db.delete(monthlyWorkHours)
       .where(eq(monthlyWorkHours.year, year));
     
-    return result.changes || 0;
+    // Drizzle returns the number of affected rows
+    return (result as any).rowsAffected || 0;
   }
 
   /**

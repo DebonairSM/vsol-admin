@@ -5,7 +5,7 @@ import { authenticateToken } from '../middleware/auth';
 import { validateQuery } from '../middleware/validate';
 import { z } from 'zod';
 
-const router = Router();
+const router: Router = Router();
 
 // All audit routes require authentication
 router.use(authenticateToken);
@@ -13,8 +13,8 @@ router.use(authenticateToken);
 const querySchema = z.object({
   cycleId: z.string().transform(Number).optional(),
   userId: z.string().transform(Number).optional(),
-  limit: z.string().transform(Number).default(50),
-  offset: z.string().transform(Number).default(0)
+  limit: z.string().default('50').transform(Number),
+  offset: z.string().default('0').transform(Number)
 });
 
 // GET /api/audit

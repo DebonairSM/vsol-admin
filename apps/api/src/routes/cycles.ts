@@ -6,7 +6,7 @@ import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { createCycleSchema, updateCycleSchema, updateLineItemSchema, calculatePaymentSchema } from '@vsol-admin/shared';
 
-const router = Router();
+const router: Router = Router();
 
 // All cycle routes require authentication
 router.use(authenticateToken);
