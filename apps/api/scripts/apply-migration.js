@@ -8,7 +8,7 @@ const client = createClient({
 });
 
 async function applyMigration() {
-  const migrationPath = join(__dirname, '../drizzle/0011_fixed_ozymandias.sql');
+  const migrationPath = join(__dirname, '../drizzle/0012_pale_multiple_man.sql');
   const migrationSql = readFileSync(migrationPath, 'utf-8');
 
   try {
@@ -16,8 +16,8 @@ async function applyMigration() {
     console.log('✅ Migration applied successfully');
     process.exit(0);
   } catch (error) {
-    if (error.message?.includes('duplicate column') || error.message?.includes('already exists')) {
-      console.log('ℹ️  Migration already applied (column exists)');
+    if (error.message?.includes('duplicate column') || error.message?.includes('already exists') || error.message?.includes('table already exists')) {
+      console.log('ℹ️  Migration already applied');
       process.exit(0);
     } else {
       console.error('❌ Error applying migration:', error.message);

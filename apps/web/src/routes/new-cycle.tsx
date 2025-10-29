@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateCycle, useCycles } from '@/hooks/use-cycles';
+import { useSettings } from '@/hooks/use-settings';
 import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,9 +24,10 @@ interface MonthlyWorkHours {
 export default function NewCyclePage() {
   const navigate = useNavigate();
   const { data: cycles } = useCycles();
+  const { data: settings } = useSettings();
   const createCycle = useCreateCycle();
 
-  // Get defaults from the latest cycle
+  // Get defaults from the latest cycle (for globalWorkHours) and global settings (for omnigoBonus)
   const latestCycle = cycles?.[0];
   
   // Get current month for defaulting
@@ -42,7 +44,7 @@ export default function NewCyclePage() {
   const [formData, setFormData] = useState({
     monthLabel: '',
     globalWorkHours: latestCycle?.globalWorkHours || 168,
-    omnigoBonus: latestCycle?.omnigoBonus || 0
+    omnigoBonus: settings?.defaultOmnigoBonus || 0
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});

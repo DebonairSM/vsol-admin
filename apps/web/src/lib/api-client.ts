@@ -393,6 +393,18 @@ class ApiClient {
     });
   }
 
+  // Settings methods
+  async getSettings() {
+    return this.request<any>('/settings');
+  }
+
+  async updateSettings(data: any) {
+    return this.request<any>('/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Generic HTTP methods for extensibility
   async get<T = any>(endpoint: string): Promise<{ data: T }> {
     const result = await this.request<T>(endpoint);

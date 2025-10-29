@@ -1,4 +1,4 @@
-import { db, users, consultants, payrollCycles, cycleLineItems } from './index';
+import { db, users, consultants, payrollCycles, cycleLineItems, systemSettings } from './index';
 import { hashPassword } from '../lib/bcrypt';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -215,12 +215,31 @@ async function seed() {
 
     await db.insert(cycleLineItems).values(lineItemsData);
 
+    // Initialize system settings (singleton - check if exists first)
+    console.log('Initializing system settings...');
+    const existingSettings = await db.query.systemSettings.findFirst({
+      orderBy: (settings, { asc }) => [asc(settings.id)]
+    });
+
+    if (!existingSettings) {
+      // Initialize with the cycle's omnigoBonus value if available, otherwise 0
+      const defaultBonus = cycle.omnigoBonus || 0;
+      await db.insert(systemSettings).values({
+        defaultOmnigoBonus: defaultBonus,
+        updatedAt: new Date()
+      });
+      console.log(`   System settings initialized with defaultOmnigoBonus: ${defaultBonus}`);
+    } else {
+      console.log('   System settings already exist, skipping initialization');
+    }
+
     console.log('✅ Database seeded successfully!');
     console.log(`📊 Created:`);
     console.log(`   - 3 users (rommel, isabel, celiane)`);
     console.log(`   - 10 consultants`);
     console.log(`   - 1 payroll cycle (October 2025)`);
     console.log(`   - 10 cycle line items`);
+    console.log(`   - 1 system settings record`);
     console.log(`🔑 Default password for all users: admin123`);
 
   } catch (error) {

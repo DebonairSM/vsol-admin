@@ -38,6 +38,7 @@ export default function GoldenSheetPage() {
   const deleteCycle = useDeleteCycle();
 
   const [editingCell, setEditingCell] = useState<{ lineId: number; field: string } | null>(null);
+  const [editingCycleField, setEditingCycleField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
 
   if (cycleLoading || summaryLoading) {
@@ -90,6 +91,36 @@ export default function GoldenSheetPage() {
 
   const handleCellCancel = () => {
     setEditingCell(null);
+    setEditValue('');
+  };
+
+  const handleCycleFieldEdit = (field: string, currentValue: any) => {
+    setEditingCycleField(field);
+    setEditValue(currentValue?.toString() || '');
+  };
+
+  const handleCycleFieldSave = async () => {
+    if (!editingCycleField) return;
+
+    try {
+      const value = editValue ? parseFloat(editValue) : null;
+
+      await updateCycle.mutateAsync({
+        id: cycleId,
+        data: { [editingCycleField]: value }
+      });
+
+      setEditingCycleField(null);
+      setEditValue('');
+      toast.success('Cycle updated successfully');
+    } catch (error) {
+      console.error('Failed to update cycle:', error);
+      toast.error('Failed to update cycle');
+    }
+  };
+
+  const handleCycleFieldCancel = () => {
+    setEditingCycleField(null);
     setEditValue('');
   };
 
@@ -380,23 +411,120 @@ export default function GoldenSheetPage() {
         <Card>
           <CardHeader>
             <CardTitle>Adjustments</CardTitle>
+            <CardDescription>Click on values to edit</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span>Omnigo Bonus:</span>
-              <span className="font-mono">{formatCurrency(cycle.omnigoBonus || 0)}</span>
+              {editingCycleField === 'omnigoBonus' ? (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="w-24 h-8 text-right font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCycleFieldSave();
+                      if (e.key === 'Escape') handleCycleFieldCancel();
+                    }}
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                </div>
+              ) : (
+                <span 
+                  className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
+                  onClick={() => handleCycleFieldEdit('omnigoBonus', cycle.omnigoBonus)}
+                >
+                  {formatCurrency(cycle.omnigoBonus || 0)}
+                </span>
+              )}
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span>Pagamento PIX:</span>
-              <span className="font-mono">{formatCurrency(cycle.pagamentoPIX || 0)}</span>
+              {editingCycleField === 'pagamentoPIX' ? (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="w-24 h-8 text-right font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCycleFieldSave();
+                      if (e.key === 'Escape') handleCycleFieldCancel();
+                    }}
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                </div>
+              ) : (
+                <span 
+                  className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
+                  onClick={() => handleCycleFieldEdit('pagamentoPIX', cycle.pagamentoPIX)}
+                >
+                  {formatCurrency(cycle.pagamentoPIX || 0)}
+                </span>
+              )}
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span>Pagamento Inter:</span>
-              <span className="font-mono">{formatCurrency(cycle.pagamentoInter || 0)}</span>
+              {editingCycleField === 'pagamentoInter' ? (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="w-24 h-8 text-right font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCycleFieldSave();
+                      if (e.key === 'Escape') handleCycleFieldCancel();
+                    }}
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                </div>
+              ) : (
+                <span 
+                  className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
+                  onClick={() => handleCycleFieldEdit('pagamentoInter', cycle.pagamentoInter)}
+                >
+                  {formatCurrency(cycle.pagamentoInter || 0)}
+                </span>
+              )}
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span>Equipments USD:</span>
-              <span className="font-mono">{formatCurrency(cycle.equipmentsUSD || 0)}</span>
+              {editingCycleField === 'equipmentsUSD' ? (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="w-24 h-8 text-right font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCycleFieldSave();
+                      if (e.key === 'Escape') handleCycleFieldCancel();
+                    }}
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                </div>
+              ) : (
+                <span 
+                  className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
+                  onClick={() => handleCycleFieldEdit('equipmentsUSD', cycle.equipmentsUSD)}
+                >
+                  {formatCurrency(cycle.equipmentsUSD || 0)}
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -188,6 +188,13 @@ export const bonusWorkflows = sqliteTable('bonus_workflows', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
 
+// System settings table (singleton pattern - single row)
+export const systemSettings = sqliteTable('system_settings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  defaultOmnigoBonus: real('default_omnigo_bonus').notNull().default(0),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   auditLogs: many(auditLogs)

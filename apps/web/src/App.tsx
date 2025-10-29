@@ -13,6 +13,7 @@ import InvoicesPage from './routes/invoices';
 import PaymentsPage from './routes/payments';
 import AuditPage from './routes/audit';
 import WorkHoursPage from './routes/work-hours';
+import SettingsPage from './routes/settings';
 import Layout from './components/layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -62,6 +63,7 @@ function App() {
                   <Route path="/payments" element={<PaymentsPage />} />
                   <Route path="/work-hours" element={<WorkHoursPage />} />
                   <Route path="/audit" element={<AuditPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>

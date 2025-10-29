@@ -12,7 +12,8 @@ import {
   LogOut,
   Table,
   Laptop,
-  Clock
+  Clock,
+  Settings
 } from 'lucide-react';
 
 const navigation = [
@@ -23,6 +24,7 @@ const navigation = [
   { name: 'Invoices', href: '/invoices', icon: FileText },
   { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Audit Log', href: '/audit', icon: History },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

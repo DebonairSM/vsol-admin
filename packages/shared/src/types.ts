@@ -268,3 +268,9 @@ export interface BonusEmailTemplate {
   }>;
   announcementDate: Date;
 }
+
+export interface SystemSettings {
+  id: number;
+  defaultOmnigoBonus: number;
+  updatedAt: Date;
+}

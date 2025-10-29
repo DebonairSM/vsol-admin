@@ -355,3 +355,10 @@ export const updateBonusWorkflowSchema = z.object({
 
 export type CreateBonusWorkflowRequest = z.infer<typeof createBonusWorkflowSchema>;
 export type UpdateBonusWorkflowRequest = z.infer<typeof updateBonusWorkflowSchema>;
+
+// System settings schemas
+export const updateSettingsSchema = z.object({
+  defaultOmnigoBonus: z.number().refine(val => isFinite(val) && val >= 0, 'Must be a finite non-negative number')
+});
+
+export type UpdateSettingsRequest = z.infer<typeof updateSettingsSchema>;

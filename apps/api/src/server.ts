@@ -16,6 +16,7 @@ import equipmentRoutes from './routes/equipment';
 import workHoursRoutes from './routes/work-hours';
 import timeDoctorRoutes from './routes/time-doctor';
 import bonusRoutes from './routes/bonus';
+import settingsRoutes from './routes/settings';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -50,6 +51,7 @@ app.use('/api/equipment', equipmentRoutes);
 app.use('/api/work-hours', workHoursRoutes);
 app.use('/api/time-doctor', timeDoctorRoutes);
 app.use('/api', bonusRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
@@ -74,6 +76,24 @@ async function findAvailablePort(startPort: number): Promise<number> {
 
 // Graceful shutdown function
 function gracefulShutdown(signal: string) {
+  const isDev = process.env.NODE_ENV !== 'production';
+  
+  if (isDev) {
+    // In development, exit immediately to avoid Windows batch job prompt
+    console.log(`\n🛑 Shutting down...`);
+    if (server) {
+      server.close(() => {
+        process.exit(0);
+      });
+      // Force exit after 1 second if close takes too long
+      setTimeout(() => process.exit(0), 1000);
+    } else {
+      process.exit(0);
+    }
+    return;
+  }
+  
+  // Production graceful shutdown with timeout
   console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
   
   if (server) {
@@ -124,8 +144,24 @@ async function startServer() {
     });
 
     // Register shutdown handlers
-    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    // Use immediate exit on Windows to avoid batch job prompt
+    const isWindows = process.platform === 'win32';
+    const isDev = process.env.NODE_ENV !== 'production';
+    
+    if (isWindows && isDev) {
+      // On Windows in dev, exit immediately without waiting
+      process.on('SIGINT', () => {
+        console.log('\n🛑 Shutting down...');
+        process.exit(0);
+      });
+      process.on('SIGTERM', () => {
+        console.log('\n🛑 Shutting down...');
+        process.exit(0);
+      });
+    } else {
+      process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+      process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    }
     process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // nodemon restart
     
   } catch (error) {
