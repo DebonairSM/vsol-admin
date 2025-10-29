@@ -11,6 +11,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import EquipmentManagement from '@/components/equipment-management';
 import TerminationWorkflow from '@/components/termination-workflow';
+import { getMonthsList } from '@/lib/utils';
 
 export default function ConsultantEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +55,9 @@ export default function ConsultantEditPage() {
         emergencyContactPhone: consultant.emergencyContactPhone,
         // Documents
         cpf: consultant.cpf,
+        // Bonus
+        yearlyBonus: consultant.yearlyBonus,
+        bonusMonth: consultant.bonusMonth,
       });
     }
   }, [consultant]);
@@ -458,6 +462,47 @@ export default function ConsultantEditPage() {
               placeholder="Additional notes about the consultant..."
               rows={4}
             />
+          </CardContent>
+        </Card>
+
+        {/* Bonus Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Bonus Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="yearlyBonus">Yearly Bonus (USD)</Label>
+                <Input
+                  id="yearlyBonus"
+                  type="number"
+                  step="0.01"
+                  value={formState.yearlyBonus || ''}
+                  onChange={(e) => handleInputChange('yearlyBonus', e.target.value ? parseFloat(e.target.value) : null)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="bonusMonth">Bonus Month</Label>
+                <Select
+                  value={formState.bonusMonth?.toString() || ''}
+                  onValueChange={(value) => handleInputChange('bonusMonth', value ? parseInt(value) : null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {getMonthsList().map((month) => (
+                      <SelectItem key={month.value} value={month.value.toString()}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">Month when consultant receives yearly bonus</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </form>

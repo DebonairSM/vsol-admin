@@ -3,7 +3,7 @@ import { useConsultantProfile, useDeleteConsultant } from '@/hooks/use-consultan
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, formatMonthName } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import { ArrowLeft, Edit, Trash2, Download, User, Building, Phone, MapPin, FileText, FileCheck } from 'lucide-react';
 import { useState } from 'react';
@@ -353,6 +353,31 @@ export default function ConsultantProfilePage() {
             </CardHeader>
             <CardContent>
               <p className="whitespace-pre-wrap">{consultant.evaluationNotes}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Bonus Information */}
+        {(consultant.bonusMonth || consultant.yearlyBonus) && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Bonus Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {consultant.bonusMonth && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Bonus Month</label>
+                    <p className="font-medium">{formatMonthName(consultant.bonusMonth) || 'Not set'}</p>
+                  </div>
+                )}
+                {consultant.yearlyBonus && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Yearly Bonus</label>
+                    <p className="font-mono font-medium">{formatCurrency(consultant.yearlyBonus)}</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}

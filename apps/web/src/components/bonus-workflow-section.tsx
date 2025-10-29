@@ -7,8 +7,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatDate } from '@/lib/utils';
-import { CalendarIcon, Mail } from 'lucide-react';
+import { formatDate, formatMonthAbbr } from '@/lib/utils';
+import { CalendarIcon, Mail, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBonusWorkflow, useCreateBonusWorkflow, useUpdateBonusWorkflow, useGenerateBonusEmail } from '@/hooks/use-bonus-workflow';
 import { useCycleLines } from '@/hooks/use-cycles';
@@ -106,7 +106,10 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-semibold mb-1">Bonus Workflow</h3>
-              <p className="text-sm text-gray-600">No bonus workflow has been created for this cycle yet.</p>
+              <p className="text-sm text-gray-600 mb-2">No bonus workflow has been created for this cycle yet.</p>
+              <p className="text-xs text-gray-500">
+                Recipient will be auto-selected when bonus month matches cycle month or when bonus fields are set on line items.
+              </p>
             </div>
             <Button onClick={handleCreateWorkflow} disabled={createWorkflow.isPending}>
               Create Bonus Workflow
@@ -128,20 +131,37 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
         <div className="space-y-2">
           <Label>Bonus Recipient</Label>
           <Select 
-            value={selectedConsultantId?.toString()} 
+            value={selectedConsultantId?.toString() || ''} 
             onValueChange={(value) => setSelectedConsultantId(value ? parseInt(value) : null)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select consultant who will receive the bonus" />
             </SelectTrigger>
             <SelectContent>
-              {cycleLines?.map((line) => (
-                <SelectItem key={line.consultant.id} value={line.consultant.id.toString()}>
-                  {line.consultant.name}
-                </SelectItem>
-              ))}
+              {cycleLines?.map((line) => {
+                const monthHint = line.consultant.bonusMonth 
+                  ? ` (${formatMonthAbbr(line.consultant.bonusMonth)})` 
+                  : '';
+                return (
+                  <SelectItem key={line.consultant.id} value={line.consultant.id.toString()}>
+                    {line.consultant.name}{monthHint}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
+          {!selectedConsultantId && (
+            <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded flex items-start gap-2">
+              <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>Recipient will be auto-selected when bonus month matches cycle month or when bonus fields are set on line items.</span>
+            </div>
+          )}
+          {selectedConsultant && selectedConsultant.bonusMonth && (
+            <div className="text-sm text-green-600 bg-green-50 p-2 rounded flex items-start gap-2">
+              <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>This consultant has bonus month assignment: {formatMonthAbbr(selectedConsultant.bonusMonth)}</span>
+            </div>
+          )}
           {selectedConsultant && advanceAmount > 0 && (
             <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
               ⚠️ {selectedConsultant.name} has an advance of ${advanceAmount.toFixed(2)}. 

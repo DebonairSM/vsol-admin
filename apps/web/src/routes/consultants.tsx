@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, formatMonthAbbr } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import { Link } from 'react-router-dom';
 import { Eye, Edit, FileCheck } from 'lucide-react';
@@ -68,6 +68,7 @@ export default function ConsultantsPage() {
                   <TableRow>
                     <TableHead>Consultant Info</TableHead>
                     <TableHead>Hourly Rate</TableHead>
+                    <TableHead>Bonus Month</TableHead>
                     <TableHead>Company Details</TableHead>
                     <TableHead>Start Date</TableHead>
                     <TableHead>Status</TableHead>
@@ -90,6 +91,13 @@ export default function ConsultantsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="font-mono">{formatCurrency(consultant.hourlyRate)}</TableCell>
+                      <TableCell>
+                        {consultant.bonusMonth ? (
+                          <span className="text-xs font-medium text-gray-700">{formatMonthAbbr(consultant.bonusMonth)}</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="text-sm">
                           {consultant.companyTradeName && (

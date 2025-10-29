@@ -67,7 +67,8 @@ export class ConsultantService {
       // Documents
       cpf: data.cpf || null,
       // Bonus
-      yearlyBonus: data.yearlyBonus || null
+      yearlyBonus: data.yearlyBonus || null,
+      bonusMonth: data.bonusMonth || null
     }).returning();
 
     return consultant;
@@ -128,6 +129,12 @@ export class ConsultantService {
     
     // Bonus
     if (data.yearlyBonus !== undefined) updateData.yearlyBonus = data.yearlyBonus;
+    if (data.bonusMonth !== undefined) {
+      if (data.bonusMonth !== null && (data.bonusMonth < 1 || data.bonusMonth > 12)) {
+        throw new ValidationError('bonusMonth must be between 1 and 12');
+      }
+      updateData.bonusMonth = data.bonusMonth;
+    }
 
     const [consultant] = await db.update(consultants)
       .set(updateData)

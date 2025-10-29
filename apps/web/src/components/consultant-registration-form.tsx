@@ -6,6 +6,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { CreateConsultantRequest } from '@vsol-admin/shared';
+import { getMonthsList } from '@/lib/utils';
 
 interface ConsultantRegistrationFormProps {
   onSubmit: (data: FormData) => Promise<void>;
@@ -46,6 +47,9 @@ export default function ConsultantRegistrationForm({ onSubmit, loading = false }
     emergencyContactPhone: '',
     // Documents
     cpf: '',
+    // Bonus
+    yearlyBonus: undefined,
+    bonusMonth: undefined,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -406,6 +410,43 @@ export default function ConsultantRegistrationForm({ onSubmit, loading = false }
             placeholder="Informações adicionais sobre o consultor..."
             rows={4}
           />
+        </div>
+      </Card>
+
+      {/* Bonus Information */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Informações de Bônus</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="yearlyBonus">Bônus Anual (USD)</Label>
+            <Input
+              id="yearlyBonus"
+              type="number"
+              step="0.01"
+              value={formState.yearlyBonus || ''}
+              onChange={(e) => handleInputChange('yearlyBonus', e.target.value ? parseFloat(e.target.value) : undefined)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="bonusMonth">Mês do Bônus</Label>
+            <Select
+              value={formState.bonusMonth?.toString() || ''}
+              onValueChange={(value) => handleInputChange('bonusMonth', value ? parseInt(value) : undefined)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o mês" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
+                {getMonthsList().map((month) => (
+                  <SelectItem key={month.value} value={month.value.toString()}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-gray-500 mt-1">Mês em que o consultor recebe o bônus anual</p>
+          </div>
         </div>
       </Card>
 
