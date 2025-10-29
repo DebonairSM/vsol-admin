@@ -17,6 +17,27 @@ export default function DashboardPage() {
   }
 
   const latestCycle = cycles?.[0]; // Cycles are sorted by monthLabel desc
+  const currentYear = new Date().getFullYear();
+  
+  // Calculate total bonus for current year
+  // Extract year from monthLabel (e.g., "January 2024") or use createdAt year as fallback
+  const yearlyBonusTotal = cycles?.reduce((sum, cycle) => {
+    let cycleYear: number | null = null;
+    
+    // Try to extract year from monthLabel (format: "Month YYYY")
+    const yearMatch = cycle.monthLabel.match(/\b(\d{4})\b/);
+    if (yearMatch) {
+      cycleYear = parseInt(yearMatch[1], 10);
+    } else {
+      // Fallback to createdAt year
+      cycleYear = new Date(cycle.createdAt).getFullYear();
+    }
+    
+    if (cycleYear === currentYear && cycle.omnigoBonus) {
+      return sum + cycle.omnigoBonus;
+    }
+    return sum;
+  }, 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -73,8 +94,11 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {latestCycle?.omnigoBonus ? formatCurrency(latestCycle.omnigoBonus) : '$0'}
+              {formatCurrency(yearlyBonusTotal)}
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Total paid in {currentYear}
+            </p>
           </CardContent>
         </Card>
       </div>

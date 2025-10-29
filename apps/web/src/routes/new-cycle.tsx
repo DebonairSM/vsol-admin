@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateCycle, useCycles } from '@/hooks/use-cycles';
 import { useSettings } from '@/hooks/use-settings';
@@ -49,6 +49,18 @@ export default function NewCyclePage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedMonthNumber, setSelectedMonthNumber] = useState<string>(currentMonth.toString());
+  const hasSetOmnigoBonus = useRef(false);
+
+  // Update form data when settings load (to populate omnigoBonus default)
+  useEffect(() => {
+    if (settings && !hasSetOmnigoBonus.current) {
+      setFormData(prev => ({
+        ...prev,
+        omnigoBonus: settings.defaultOmnigoBonus || 0
+      }));
+      hasSetOmnigoBonus.current = true;
+    }
+  }, [settings]);
 
   // Auto-populate work hours when month is selected or data loads
   useEffect(() => {
@@ -65,20 +77,18 @@ export default function NewCyclePage() {
     }
   }, [selectedMonthNumber, monthlyWorkHours]);
 
-  // Auto-set month label based on selected month (only once when component mounts or month changes)
+  // Auto-set month label based on selected month
   useEffect(() => {
     if (monthlyWorkHours && selectedMonthNumber) {
       const selected = monthlyWorkHours.find(
         (m: MonthlyWorkHours) => m.monthNumber === parseInt(selectedMonthNumber)
       );
       if (selected) {
-        setFormData(prev => {
-          // Only update if the label is empty or matches the previous selected month
-          if (!prev.monthLabel || prev.monthLabel.startsWith(selected.month)) {
-            return { ...prev, monthLabel: `${selected.month} ${currentYear}` };
-          }
-          return prev;
-        });
+        // Always update the month label when month selection changes
+        setFormData(prev => ({
+          ...prev,
+          monthLabel: `${selected.month} ${currentYear}`
+        }));
       }
     }
   }, [selectedMonthNumber, monthlyWorkHours, currentYear]);
@@ -168,7 +178,9 @@ export default function NewCyclePage() {
               ) : monthlyWorkHours && monthlyWorkHours.length > 0 ? (
                 <Select value={selectedMonthNumber} onValueChange={handleMonthChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a month" />
+                    <SelectValue placeholder="Select a month">
+                      {monthlyWorkHours.find((m: MonthlyWorkHours) => m.monthNumber === parseInt(selectedMonthNumber))?.month || 'Select a month'}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {monthlyWorkHours.map((m: MonthlyWorkHours) => (
