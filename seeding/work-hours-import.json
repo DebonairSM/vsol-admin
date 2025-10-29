@@ -1,0 +1,79 @@
+[
+  {
+    "year": 2025,
+    "months": [
+      {
+        "month": "January",
+        "monthNumber": 1,
+        "weekdays": 23,
+        "workHours": 184
+      },
+      {
+        "month": "February",
+        "monthNumber": 2,
+        "weekdays": 20,
+        "workHours": 160
+      },
+      {
+        "month": "March",
+        "monthNumber": 3,
+        "weekdays": 21,
+        "workHours": 168
+      },
+      {
+        "month": "April",
+        "monthNumber": 4,
+        "weekdays": 22,
+        "workHours": 176
+      },
+      {
+        "month": "May",
+        "monthNumber": 5,
+        "weekdays": 22,
+        "workHours": 176
+      },
+      {
+        "month": "June",
+        "monthNumber": 6,
+        "weekdays": 21,
+        "workHours": 168
+      },
+      {
+        "month": "July",
+        "monthNumber": 7,
+        "weekdays": 23,
+        "workHours": 184
+      },
+      {
+        "month": "August",
+        "monthNumber": 8,
+        "weekdays": 21,
+        "workHours": 168
+      },
+      {
+        "month": "September",
+        "monthNumber": 9,
+        "weekdays": 22,
+        "workHours": 176
+      },
+      {
+        "month": "October",
+        "monthNumber": 10,
+        "weekdays": 23,
+        "workHours": 184
+      },
+      {
+        "month": "November",
+        "monthNumber": 11,
+        "weekdays": 20,
+        "workHours": 160
+      },
+      {
+        "month": "December",
+        "monthNumber": 12,
+        "weekdays": 23,
+        "workHours": 184
+      }
+    ]
+  }
+]
