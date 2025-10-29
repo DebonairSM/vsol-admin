@@ -247,6 +247,7 @@ export interface PaymentCalculationResult {
 export interface BonusWorkflow {
   id: number;
   cycleId: number;
+  bonusRecipientConsultantId?: number | null;
   bonusAnnouncementDate?: Date | null;
   emailGenerated: boolean;
   emailContent?: string | null;

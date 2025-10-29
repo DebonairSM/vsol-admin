@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { db, bonusWorkflows, cycleLineItems, payrollCycles } from '../db';
+import { db, bonusWorkflows, cycleLineItems, payrollCycles, consultants } from '../db';
 import { UpdateBonusWorkflowRequest } from '@vsol-admin/shared';
 import { NotFoundError, ValidationError } from '../middleware/errors';
 
@@ -8,7 +8,8 @@ export class BonusWorkflowService {
     const workflow = await db.query.bonusWorkflows.findFirst({
       where: eq(bonusWorkflows.cycleId, cycleId),
       with: {
-        cycle: true
+        cycle: true,
+        consultant: true
       }
     });
 
@@ -33,7 +34,8 @@ export class BonusWorkflowService {
     const workflow = await db.query.bonusWorkflows.findFirst({
       where: eq(bonusWorkflows.id, id),
       with: {
-        cycle: true
+        cycle: true,
+        consultant: true
       }
     });
 
@@ -54,6 +56,20 @@ export class BonusWorkflowService {
       updatedAt: new Date()
     };
 
+    // Check if bonus recipient is changing
+    const newRecipientId = data.bonusRecipientConsultantId !== undefined 
+      ? data.bonusRecipientConsultantId 
+      : existing.bonusRecipientConsultantId;
+
+    if (data.bonusRecipientConsultantId !== undefined) {
+      updateData.bonusRecipientConsultantId = data.bonusRecipientConsultantId;
+      
+      // If recipient is changing, clear bonus fields from all other consultants
+      if (existing.bonusRecipientConsultantId !== null && 
+          data.bonusRecipientConsultantId !== existing.bonusRecipientConsultantId) {
+        await this.clearBonusFieldsFromOtherConsultants(cycleId, data.bonusRecipientConsultantId);
+      }
+    }
     if (data.bonusAnnouncementDate !== undefined) {
       updateData.bonusAnnouncementDate = data.bonusAnnouncementDate ? new Date(data.bonusAnnouncementDate) : null;
     }
@@ -72,10 +88,36 @@ export class BonusWorkflowService {
     return this.getByCycleId(cycleId);
   }
 
+  private static async clearBonusFieldsFromOtherConsultants(cycleId: number, allowedConsultantId: number) {
+    // Get all line items for this cycle
+    const lineItems = await db.query.cycleLineItems.findMany({
+      where: eq(cycleLineItems.cycleId, cycleId)
+    });
+
+    // Update all line items that are not the allowed consultant
+    for (const lineItem of lineItems) {
+      if (lineItem.consultantId !== allowedConsultantId) {
+        await db.update(cycleLineItems)
+          .set({
+            bonusDate: null,
+            informedDate: null,
+            bonusPaydate: null,
+            updatedAt: new Date()
+          })
+          .where(eq(cycleLineItems.id, lineItem.id));
+      }
+    }
+  }
+
   static async generateEmailContent(cycleId: number) {
     const workflow = await this.getByCycleId(cycleId);
     if (!workflow) {
       throw new NotFoundError('Bonus workflow not found for this cycle');
+    }
+
+    // Check if recipient consultant is selected
+    if (!workflow.bonusRecipientConsultantId) {
+      throw new ValidationError('Please select which consultant will receive the bonus before generating the email.');
     }
 
     const cycle = await db.query.payrollCycles.findFirst({
@@ -86,58 +128,31 @@ export class BonusWorkflowService {
       throw new NotFoundError('Cycle not found');
     }
 
-    // Get line items with consultant information
-    const lineItems = await db.query.cycleLineItems.findMany({
-      where: eq(cycleLineItems.cycleId, cycleId),
-      with: {
-        consultant: true
-      }
+    // Get the recipient consultant
+    const recipientConsultant = await db.query.consultants.findFirst({
+      where: eq(consultants.id, workflow.bonusRecipientConsultantId!)
     });
 
-    // Check if cycle has omnigoBonus (global bonus from Omnigo client)
+    if (!recipientConsultant) {
+      throw new NotFoundError('Bonus recipient consultant not found');
+    }
+
+    // Check if cycle has omnigoBonus
     const globalBonus = cycle.omnigoBonus || 0;
     
-    // If there's a global omnigoBonus, use that for all consultants
-    if (globalBonus > 0) {
-      const consultantsWithBonuses = lineItems.map(item => ({
-        name: item.consultant.name,
-        bonusAmount: globalBonus
-      }));
-
-      const announcementDate = workflow.bonusAnnouncementDate || new Date();
-      const formattedDate = announcementDate.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      });
-
-      // Generate email template with global bonus
-      let emailContent = `Dear Consultants,\n\n`;
-      emailContent += `We are pleased to announce your bonuses for ${cycle.monthLabel}.\n\n`;
-      emailContent += `All consultants will receive a bonus of $${globalBonus.toFixed(2)} from the Omnigo client.\n\n`;
-      
-      emailContent += `\nThese bonuses will be processed on ${formattedDate}.\n\n`;
-      emailContent += `Thank you for your continued dedication and hard work.\n\n`;
-      emailContent += `Best regards,\nVSol Admin`;
-
-      return {
-        emailContent,
-        consultantsCount: consultantsWithBonuses.length,
-        totalBonus: globalBonus * consultantsWithBonuses.length
-      };
+    if (globalBonus <= 0) {
+      throw new ValidationError('No Omnigo bonus amount configured for this cycle. Please set the Omnigo Bonus amount.');
     }
 
-    // Otherwise, check for individual bonus amounts
-    const consultantsWithBonuses = lineItems
-      .filter(item => item.bonusAdvance && item.bonusAdvance > 0)
-      .map(item => ({
-        name: item.consultant.name,
-        bonusAmount: item.bonusAdvance!
-      }));
+    // Get line items to check for advances
+    const lineItems = await db.query.cycleLineItems.findMany({
+      where: eq(cycleLineItems.cycleId, cycleId)
+    });
 
-    if (consultantsWithBonuses.length === 0) {
-      throw new ValidationError('No bonus amounts configured for this cycle. Please set the Omnigo Bonus on the cycle or individual bonus amounts on line items.');
-    }
+    // Find the consultant's line item to check for advances
+    const consultantLineItem = lineItems.find(item => item.consultantId === workflow.bonusRecipientConsultantId);
+    const advanceAmount = consultantLineItem?.bonusAdvance || 0;
+    const netBonus = globalBonus - advanceAmount;
 
     const announcementDate = workflow.bonusAnnouncementDate || new Date();
     const formattedDate = announcementDate.toLocaleDateString('en-US', { 
@@ -146,22 +161,26 @@ export class BonusWorkflowService {
       day: 'numeric' 
     });
 
-    // Generate email template
-    let emailContent = `Dear Consultants,\n\n`;
-    emailContent += `We are pleased to announce your bonuses for ${cycle.monthLabel}.\n\n`;
+    // Generate email template for the selected consultant
+    let emailContent = `Dear ${recipientConsultant.name},\n\n`;
+    emailContent += `We are pleased to announce your bonus for ${cycle.monthLabel}.\n\n`;
     
-    consultantsWithBonuses.forEach(({ name, bonusAmount }) => {
-      emailContent += `${name}: $${bonusAmount.toFixed(2)}\n`;
-    });
+    if (advanceAmount > 0) {
+      emailContent += `Your bonus amount is $${globalBonus.toFixed(2)} from the Omnigo client.\n\n`;
+      emailContent += `However, you have already received an advance of $${advanceAmount.toFixed(2)}, `;
+      emailContent += `so the net bonus payment will be $${netBonus.toFixed(2)}.\n\n`;
+    } else {
+      emailContent += `You will receive a bonus of $${globalBonus.toFixed(2)} from the Omnigo client.\n\n`;
+    }
 
-    emailContent += `\nThese bonuses will be processed on ${formattedDate}.\n\n`;
+    emailContent += `This bonus will be processed on ${formattedDate}.\n\n`;
     emailContent += `Thank you for your continued dedication and hard work.\n\n`;
     emailContent += `Best regards,\nVSol Admin`;
 
     return {
       emailContent,
-      consultantsCount: consultantsWithBonuses.length,
-      totalBonus: consultantsWithBonuses.reduce((sum, c) => sum + c.bonusAmount, 0)
+      consultantsCount: 1,
+      totalBonus: netBonus > 0 ? netBonus : 0
     };
   }
 }

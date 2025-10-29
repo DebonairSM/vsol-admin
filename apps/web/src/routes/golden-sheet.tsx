@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useCycle, useCycleSummary, useUpdateLineItem, useUpdateCycle } from '@/hooks/use-cycles';
+import { useBonusWorkflow } from '@/hooks/use-bonus-workflow';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ export default function GoldenSheetPage() {
   
   const { data: cycle, isLoading: cycleLoading } = useCycle(cycleId);
   const { data: summary, isLoading: summaryLoading } = useCycleSummary(cycleId);
+  const { data: bonusWorkflow } = useBonusWorkflow(cycleId);
   const updateLineItem = useUpdateLineItem();
   const updateCycle = useUpdateCycle();
 
@@ -220,6 +222,7 @@ export default function GoldenSheetPage() {
                         lineItem={line}
                         cycleId={cycleId}
                         cycleSendReceiptDate={cycle.sendReceiptDate}
+                        bonusRecipientConsultantId={bonusWorkflow?.bonusRecipientConsultantId || null}
                         onUpdate={(lineId, data) => updateLineItem.mutateAsync({ cycleId, lineId, data })}
                       />
                     </TableCell>

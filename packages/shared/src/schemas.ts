@@ -342,6 +342,7 @@ export const createBonusWorkflowSchema = z.object({
 });
 
 export const updateBonusWorkflowSchema = z.object({
+  bonusRecipientConsultantId: z.number().int().nullable().optional(),
   bonusAnnouncementDate: z.string().datetime().nullable().optional(),
   emailGenerated: z.boolean().nullable().optional(),
   emailContent: z.string().nullable().optional(),

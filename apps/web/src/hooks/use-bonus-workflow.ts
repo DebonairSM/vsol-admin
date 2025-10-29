@@ -29,6 +29,7 @@ export function useUpdateBonusWorkflow(cycleId: number) {
     mutationFn: (data: UpdateBonusWorkflowRequest) => apiClient.updateBonusWorkflow(cycleId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bonus-workflow', cycleId] });
+      queryClient.invalidateQueries({ queryKey: ['lines', cycleId] });
     }
   });
 }

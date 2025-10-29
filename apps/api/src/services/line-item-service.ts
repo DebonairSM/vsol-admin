@@ -1,5 +1,5 @@
-import { eq } from 'drizzle-orm';
-import { db, cycleLineItems } from '../db';
+import { eq, and, ne } from 'drizzle-orm';
+import { db, cycleLineItems, bonusWorkflows } from '../db';
 import { UpdateLineItemRequest } from '@vsol-admin/shared';
 import { NotFoundError, ValidationError } from '../middleware/errors';
 
@@ -31,6 +31,27 @@ export class LineItemService {
 
   static async update(id: number, data: UpdateLineItemRequest) {
     const existing = await this.getById(id);
+
+    // Check if trying to set bonus fields for a consultant who is not the bonus recipient
+    const isSettingBonusFields = data.bonusDate !== undefined || 
+                                  data.informedDate !== undefined || 
+                                  data.bonusPaydate !== undefined;
+    
+    if (isSettingBonusFields) {
+      // Check if there's a bonus workflow for this cycle
+      const workflow = await db.query.bonusWorkflows.findFirst({
+        where: eq(bonusWorkflows.cycleId, existing.cycleId)
+      });
+
+      if (workflow && workflow.bonusRecipientConsultantId) {
+        // If there's a bonus recipient, only that consultant can have bonus fields
+        if (existing.consultantId !== workflow.bonusRecipientConsultantId) {
+          throw new ValidationError(
+            `Only the selected bonus recipient can have bonus information in this cycle.`
+          );
+        }
+      }
+    }
 
     // Helper function to validate numeric values
     const validateNumber = (value: number | null | undefined, fieldName: string): number | null => {

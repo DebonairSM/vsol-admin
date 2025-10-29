@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -6,10 +6,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDate } from '@/lib/utils';
 import { CalendarIcon, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBonusWorkflow, useCreateBonusWorkflow, useUpdateBonusWorkflow, useGenerateBonusEmail } from '@/hooks/use-bonus-workflow';
+import { useCycleLines } from '@/hooks/use-cycles';
 import { toast } from 'sonner';
 
 interface BonusWorkflowSectionProps {
@@ -18,10 +20,14 @@ interface BonusWorkflowSectionProps {
 
 export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionProps) {
   const { data: workflow, isLoading } = useBonusWorkflow(cycleId);
+  const { data: cycleLines } = useCycleLines(cycleId);
   const createWorkflow = useCreateBonusWorkflow(cycleId);
   const updateWorkflow = useUpdateBonusWorkflow(cycleId);
   const generateEmail = useGenerateBonusEmail(cycleId);
 
+  const [selectedConsultantId, setSelectedConsultantId] = useState<number | null>(
+    workflow?.bonusRecipientConsultantId || null
+  );
   const [announcementDate, setAnnouncementDate] = useState<Date | undefined>(
     workflow?.bonusAnnouncementDate ? new Date(workflow.bonusAnnouncementDate) : undefined
   );
@@ -32,6 +38,13 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   const [notes, setNotes] = useState(workflow?.notes || '');
   const [emailGenerated, setEmailGenerated] = useState(workflow?.emailGenerated || false);
   const [paidWithPayroll, setPaidWithPayroll] = useState(workflow?.paidWithPayroll || false);
+
+  // Update selected consultant when workflow changes
+  useEffect(() => {
+    if (workflow?.bonusRecipientConsultantId) {
+      setSelectedConsultantId(workflow.bonusRecipientConsultantId);
+    }
+  }, [workflow]);
 
   const handleCreateWorkflow = async () => {
     try {
@@ -57,6 +70,7 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   const handleSave = async () => {
     try {
       await updateWorkflow.mutateAsync({
+        bonusRecipientConsultantId: selectedConsultantId,
         bonusAnnouncementDate: announcementDate?.toISOString() || null,
         bonusPaymentDate: paymentDate?.toISOString() || null,
         emailContent,
@@ -69,6 +83,11 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
       toast.error('Failed to update bonus workflow');
     }
   };
+
+  // Find selected consultant and check for advances
+  const selectedConsultant = cycleLines?.find(line => line.consultant.id === selectedConsultantId)?.consultant;
+  const consultantLineItem = cycleLines?.find(line => line.consultantId === selectedConsultantId);
+  const advanceAmount = consultantLineItem?.bonusAdvance || 0;
 
   if (isLoading) {
     return (
@@ -105,6 +124,32 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
         <CardDescription>Manage yearly bonus announcement and payment tracking</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Consultant Selection */}
+        <div className="space-y-2">
+          <Label>Bonus Recipient</Label>
+          <Select 
+            value={selectedConsultantId?.toString()} 
+            onValueChange={(value) => setSelectedConsultantId(value ? parseInt(value) : null)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select consultant who will receive the bonus" />
+            </SelectTrigger>
+            <SelectContent>
+              {cycleLines?.map((line) => (
+                <SelectItem key={line.consultant.id} value={line.consultant.id.toString()}>
+                  {line.consultant.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedConsultant && advanceAmount > 0 && (
+            <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+              ⚠️ {selectedConsultant.name} has an advance of ${advanceAmount.toFixed(2)}. 
+              Net bonus will be ${(3111 - advanceAmount).toFixed(2)}.
+            </div>
+          )}
+        </div>
+
         {/* Bonus Announcement Date */}
         <div className="space-y-2">
           <Label>Bonus Announcement Date</Label>

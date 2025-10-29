@@ -9,6 +9,7 @@ import { Edit, DollarSign, Calendar, Info } from 'lucide-react';
 interface BonusInfoCellProps {
   lineItem: {
     id: number;
+    consultantId: number;
     bonusDate?: Date | string | null;
     informedDate?: Date | string | null;
     bonusPaydate?: Date | string | null;
@@ -17,10 +18,11 @@ interface BonusInfoCellProps {
   };
   cycleId: number;
   cycleSendReceiptDate?: Date | string | null;
+  bonusRecipientConsultantId?: number | null;
   onUpdate: (lineId: number, data: Record<string, any>) => Promise<void>;
 }
 
-export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, onUpdate }: BonusInfoCellProps) {
+export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRecipientConsultantId, onUpdate }: BonusInfoCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     bonusDate: lineItem.bonusDate ? new Date(lineItem.bonusDate).toISOString().split('T')[0] : '',
@@ -30,6 +32,8 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, onUpdate
     advanceDate: lineItem.advanceDate ? new Date(lineItem.advanceDate).toISOString().split('T')[0] : '',
   });
 
+  // Check if this consultant is the bonus recipient
+  const isBonusRecipient = bonusRecipientConsultantId !== null && bonusRecipientConsultantId === lineItem.consultantId;
   const isBonusDateHighlighted = isSameDate(lineItem.bonusDate, cycleSendReceiptDate);
 
   const handleSave = async () => {
@@ -81,11 +85,16 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, onUpdate
   const hasAnyBonusData = lineItem.bonusDate || lineItem.informedDate || lineItem.bonusPaydate || 
                          lineItem.bonusAdvance || lineItem.advanceDate;
 
+  const canEdit = isBonusRecipient || bonusRecipientConsultantId === null;
+
   return (
     <div className="min-w-[200px]">
-      <Popover open={isEditing} onOpenChange={setIsEditing}>
+      <Popover open={isEditing && canEdit} onOpenChange={(open) => canEdit && setIsEditing(open)}>
         <PopoverTrigger asChild>
-          <div className="cursor-pointer hover:bg-gray-50 p-2 rounded border transition-colors">
+          <div className={cn(
+            "p-2 rounded border transition-colors",
+            canEdit ? "cursor-pointer hover:bg-gray-50" : "cursor-not-allowed bg-gray-50 opacity-60"
+          )}>
             {hasAnyBonusData ? (
               <div className="space-y-1 text-xs">
                 {lineItem.bonusDate && (
@@ -128,8 +137,17 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, onUpdate
             ) : (
               <div className="flex items-center justify-center h-12 text-gray-400">
                 <div className="text-center">
-                  <Edit className="w-4 h-4 mx-auto mb-1" />
-                  <div className="text-xs">Add bonus info</div>
+                  {!canEdit ? (
+                    <>
+                      <div className="text-xs text-gray-500">No bonus recipient</div>
+                      <div className="text-[10px] text-gray-400">Select recipient in workflow</div>
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="w-4 h-4 mx-auto mb-1" />
+                      <div className="text-xs">Add bonus info</div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
