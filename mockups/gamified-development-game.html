@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechParts Manufacturing - Development Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1d1d1f;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 340px;
+            height: 100vh;
+            gap: 2px;
+            background: #1a1a1a;
+        }
+
+        /* Sidebar - Players */
+        .players-panel {
+            background: #1e293b;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #fbbf24;
+        }
+
+        .player-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .player-card.active {
+            border-color: #fbbf24;
+            background: rgba(251,191,36,0.2);
+        }
+
+        .player-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .player-role {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .player-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-value {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        /* Main Game Board */
+        .game-board {
+            background: #0f172a;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .board-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .sprint-info {
+            color: white;
+        }
+
+        .sprint-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .sprint-progress {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .progress-bar {
+            width: 200px;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+            width: 65%;
+            transition: width 0.3s;
+        }
+
+        /* Workflow Board */
+        .workflow-board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .board-column {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 500px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            margin-bottom: 16px;
+        }
+
+        .column-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #fbbf24;
+        }
+
+        .column-count {
+            background: #1e40af;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Story Card */
+        .story-card {
+            background: #1e293b;
+            border-left: 4px solid #3b82f6;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: move;
+            transition: all 0.3s;
+        }
+
+        .story-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        .story-card.urgent {
+            border-left-color: #ef4444;
+            background: rgba(239,68,68,0.1);
+        }
+
+        .story-card.in-progress {
+            border-left-color: #fbbf24;
+        }
+
+        .story-id {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .story-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .story-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .story-tags {
+            display: flex;
+            gap: 4px;
+        }
+
+        .tag {
+            padding: 2px 8px;
+            background: rgba(59,130,246,0.2);
+            border-radius: 4px;
+            font-size: 10px;
+            color: #60a5fa;
+        }
+
+        /* AI Panel */
+        .ai-panel {
+            background: #1e293b;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .ai-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px;
+            background: rgba(59,130,246,0.2);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .ai-status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .ai-move-card {
+            background: rgba(251,191,36,0.1);
+            border: 1px solid rgba(251,191,36,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .move-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .move-icon {
+            font-size: 18px;
+        }
+
+        .move-type {
+            font-size: 11px;
+            color: #fbbf24;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .move-content {
+            font-size: 13px;
+            color: #e2e8f0;
+            line-height: 1.5;
+        }
+
+        /* Score Card */
+        .score-card {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .score-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #10b981;
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #10b981;
+            margin-bottom: 4px;
+        }
+
+        .score-label {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        /* Penalty Cards */
+        .penalty-section {
+            margin-top: 20px;
+        }
+
+        .penalty-card {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .penalty-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #f87171;
+            margin-bottom: 6px;
+        }
+
+        .penalty-desc {
+            font-size: 11px;
+            color: #cbd5e1;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(102,126,234,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Players Panel -->
+        <div class="players-panel">
+            <div class="panel-header">🧑🤝🧑 The Players</div>
+
+            <div class="player-card active">
+                <div class="player-avatar">👨‍💼</div>
+                <div class="player-name">Alex Chen</div>
+                <div class="player-role">Product Owner</div>
+                <div class="player-stats">
+                    <div class="stat">
+                        <span>🎯</span>
+                        <span class="stat-value">12</span>
+                    </div>
+                    <div class="stat">
+                        <span>✨</span>
+                        <span class="stat-value">8</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-card">
+                <div class="player-avatar">🤖</div>
+                <div class="player-name">TechParts AI</div>
+                <div class="player-role">Game Master</div>
+                <div class="player-stats">
+                    <div class="stat">
+                        <span>💡</span>
+                        <span class="stat-value">34</span>
+                    </div>
+                    <div class="stat">
+                        <span>⚡</span>
+                        <span class="stat-value">97%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-card">
+                <div class="player-avatar">👩‍💻</div>
+                <div class="player-name">Sarah Johnson</div>
+                <div class="player-role">Developer</div>
+                <div class="player-stats">
+                    <div class="stat">
+                        <span>✅</span>
+                        <span class="stat-value">5</span>
+                    </div>
+                    <div class="stat">
+                        <span>🔧</span>
+                        <span class="stat-value">12</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-card">
+                <div class="player-avatar">👨‍🔬</div>
+                <div class="player-name">Mike Rivera</div>
+                <div class="player-role">QA Engineer</div>
+                <div class="player-stats">
+                    <div class="stat">
+                        <span>✅</span>
+                        <span class="stat-value">8</span>
+                    </div>
+                    <div class="stat">
+                        <span>🐛</span>
+                        <span class="stat-value">2</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="player-card">
+                <div class="player-avatar">👥</div>
+                <div class="player-name">End Users</div>
+                <div class="player-role">Validators</div>
+                <div class="player-stats">
+                    <div class="stat">
+                        <span>👍</span>
+                        <span class="stat-value">89%</span>
+                    </div>
+                    <div class="stat">
+                        <span>💬</span>
+                        <span class="stat-value">12</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Game Board -->
+        <div class="game-board">
+            <div class="board-header">
+                <div class="sprint-info">
+                    <div class="sprint-title">🕹️ Sprint 14 - Manufacturing Automation</div>
+                    <div class="sprint-progress">
+                        <span>Progress:</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <span>65%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workflow Board -->
+            <div class="workflow-board">
+                <div class="board-column">
+                    <div class="column-header">
+                        <div class="column-title">📋 Analysis</div>
+                        <div class="column-count">3</div>
+                    </div>
+                    <div class="story-card">
+                        <div class="story-id">#124</div>
+                        <div class="story-title">Automate shipping verification workflow</div>
+                        <div class="story-meta">
+                            <span>🎯 Alex</span>
+                            <div class="story-tags">
+                                <span class="tag">Shipping</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="story-card">
+                        <div class="story-id">#126</div>
+                        <div class="story-title">Digitize component sourcing approval</div>
+                        <div class="story-meta">
+                            <span>🎯 Alex</span>
+                            <div class="story-tags">
+                                <span class="tag">Sourcing</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="board-column">
+                    <div class="column-header">
+                        <div class="column-title">🎨 Design</div>
+                        <div class="column-count">2</div>
+                    </div>
+                    <div class="story-card in-progress">
+                        <div class="story-id">#122</div>
+                        <div class="story-title">Design packing verification system</div>
+                        <div class="story-meta">
+                            <span>👩‍💻 Sarah</span>
+                            <div class="story-tags">
+                                <span class="tag">UI</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="board-column">
+                    <div class="column-header">
+                        <div class="column-title">⚙️ Implementation</div>
+                        <div class="column-count">4</div>
+                    </div>
+                    <div class="story-card">
+                        <div class="story-id">#118</div>
+                        <div class="story-title">Build pre-staging workflow replicator</div>
+                        <div class="story-meta">
+                            <span>👩‍💻 Sarah</span>
+                            <div class="story-tags">
+                                <span class="tag">Assembly</span>
+                                <span class="tag">Core</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="story-card">
+                        <div class="story-id">#120</div>
+                        <div class="story-title">Add quality metrics dashboard</div>
+                        <div class="story-meta">
+                            <span>🤖 AI</span>
+                            <div class="story-tags">
+                                <span class="tag">Quality</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="board-column">
+                    <div class="column-header">
+                        <div class="column-title">✅ QA/Validation</div>
+                        <div class="column-count">3</div>
+                    </div>
+                    <div class="story-card">
+                        <div class="story-id">#115</div>
+                        <div class="story-title">Test automated packing verification</div>
+                        <div class="story-meta">
+                            <span>👨‍🔬 Mike</span>
+                            <div class="story-tags">
+                                <span class="tag">QA</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="story-card urgent">
+                        <div class="story-id">#117</div>
+                        <div class="story-title">Fix shipping delay calculation</div>
+                        <div class="story-meta">
+                            <span>🐛 Bug</span>
+                            <div class="story-tags">
+                                <span class="tag">Urgent</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="board-column">
+                    <div class="column-header">
+                        <div class="column-title">👥 User Review</div>
+                        <div class="column-count">2</div>
+                    </div>
+                    <div class="story-card">
+                        <div class="story-id">#113</div>
+                        <div class="story-title">Review production workflow improvements</div>
+                        <div class="story-meta">
+                            <span>👥 Users</span>
+                            <div class="story-tags">
+                                <span class="tag">UX</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="board-column">
+                    <div class="column-header">
+                        <div class="column-title">♻️ Refinement</div>
+                        <div class="column-count">5</div>
+                    </div>
+                    <div class="story-card">
+                        <div class="story-id">#111</div>
+                        <div class="story-title">Refine assembly workflow UX</div>
+                        <div class="story-meta">
+                            <span>💬 Feedback</span>
+                            <div class="story-tags">
+                                <span class="tag">Polish</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Panel -->
+        <div class="ai-panel">
+            <div class="ai-status">
+                <div class="ai-status-dot"></div>
+                <span style="font-weight: 600;">AI Game Master Active</span>
+            </div>
+
+            <div class="score-card">
+                <div class="score-title">🏆 Sprint Score</div>
+                <div class="score-grid">
+                    <div class="score-item">
+                        <div class="score-value">19</div>
+                        <div class="score-label">Stories Done</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-value">34</div>
+                        <div class="score-label">AI Insights</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-value">89%</div>
+                        <div class="score-label">Coverage</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-value">12</div>
+                        <div class="score-label">Approvals</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <h3 style="font-size: 14px; margin-bottom: 12px; color: #fbbf24;">🤖 Latest AI Moves</h3>
+                
+                <div class="ai-move-card">
+                    <div class="move-header">
+                        <span class="move-icon">💡</span>
+                        <span class="move-type">Pattern Spotted</span>
+                    </div>
+                    <div class="move-content">
+                        Detected recurring shipping delay in packing verification. Suggested automated packing list validation to eliminate 4 hours/day manual checks.
+                    </div>
+                </div>
+
+                <div class="ai-move-card">
+                    <div class="move-header">
+                        <span class="move-icon">⚡</span>
+                        <span class="move-type">Optimization</span>
+                    </div>
+                    <div class="move-content">
+                        Identified bottleneck in component sourcing approval. Proposed automated approval for pre-qualified vendors to reduce order time from 3 days to 1 day.
+                    </div>
+                </div>
+
+                <div class="ai-move-card">
+                    <div class="move-header">
+                        <span class="move-icon">🎯</span>
+                        <span class="move-type">Proposal</span>
+                    </div>
+                    <div class="move-content">
+                        Generated implementation plan for #122 packing verification system. Ready for team review and adaptation.
+                    </div>
+                </div>
+
+                <div class="ai-move-card">
+                    <div class="move-header">
+                        <span class="move-icon">🔍</span>
+                        <span class="move-type">Pattern Replication</span>
+                    </div>
+                    <div class="move-content">
+                        Assembly team's pre-staging workflow increased quality by 12%. Proposal to replicate pattern in shipping team for 20% efficiency gain.
+                    </div>
+                </div>
+            </div>
+
+            <div class="penalty-section">
+                <h3 style="font-size: 14px; margin-bottom: 12px; color: #f87171;">⚠️ Penalty Cards</h3>
+                
+                <div class="penalty-card">
+                    <div class="penalty-title">🐛 Bug Debt</div>
+                    <div class="penalty-desc">Shipping delay calculation bug blocking production workflow. Impacting on-time delivery metrics.</div>
+                </div>
+
+                <div class="penalty-card">
+                    <div class="penalty-title">❓ Unclear Req</div>
+                    <div class="penalty-desc">Story #124 (shipping automation) needs refined acceptance criteria for packing verification steps.</div>
+                </div>
+
+                <div class="penalty-card">
+                    <div class="penalty-title">⏸️ Process Drag</div>
+                    <div class="penalty-desc">Quality documentation workflows stuck in Review column for 3+ days. Blocking material release.</div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <button class="action-btn" onclick="triggerAIMove()">🎲 Let AI Make a Move</button>
+                <button class="action-btn" onclick="askAI()">💬 Ask AI for Help</button>
+                <button class="action-btn" onclick="endSprint()">🏁 End Sprint</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function triggerAIMove() {
+            alert('AI Move: Generating automated packing verification workflow. Creating test suite for shipping validation system...');
+        }
+
+        function askAI() {
+            alert('AI: "Analyzing workflow board... I see shipping workflows bottlenecking in Review. Suggest implementing automated packing verification to reduce delays by 52%."');
+        }
+
+        function endSprint() {
+            alert('Sprint 14 Complete! 🎉\n\n19 Manufacturing Workflows Improved\n89% Quality Coverage\n34 AI Insights Generated\n\nOn-time delivery rate: 95% (up from 73%)\nReady to start Sprint 15?');
+        }
+    </script>
+</body>
+</html>
+

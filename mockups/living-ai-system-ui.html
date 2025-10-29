@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechParts Manufacturing - AI Workflow System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 380px;
+            height: 100vh;
+            gap: 1px;
+            background: #d2d2d7;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: #ffffff;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1d1d1f;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            font-size: 14px;
+            color: #6e6e73;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            background: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        .nav-item.active {
+            background: #0071e3;
+            color: white;
+        }
+
+        .nav-item .icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .divider {
+            height: 1px;
+            background: #d2d2d7;
+            margin: 20px 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #d2d2d7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #0071e3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0077ed;
+        }
+
+        .btn-secondary {
+            background: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        .btn-secondary:hover {
+            background: #e8e8ed;
+        }
+
+        /* AI Panel */
+        .ai-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .ai-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: #f5f5f7;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34c759;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .ai-status strong {
+            color: #1d1d1f;
+        }
+
+        .ai-message {
+            background: #f5f5f7;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .ai-message.user {
+            background: #e8f4fd;
+            margin-left: 60px;
+        }
+
+        .ai-message.ai {
+            margin-right: 60px;
+        }
+
+        .ai-message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .ai-message-header .icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .input-area {
+            border-top: 1px solid #d2d2d7;
+            padding: 16px 24px;
+        }
+
+        .input-box {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+            min-height: 44px;
+            max-height: 120px;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #0071e3;
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            background: #0071e3;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .send-btn:hover {
+            background: #0077ed;
+        }
+
+        .send-btn:disabled {
+            background: #d2d2d7;
+            cursor: not-allowed;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            background: #ffffff;
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 1px solid #d2d2d7;
+        }
+
+        .panel-section {
+            margin-bottom: 24px;
+        }
+
+        .panel-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1d1d1f;
+        }
+
+        .suggestion-card {
+            background: #f5f5f7;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .suggestion-card:hover {
+            background: #e8e8ed;
+        }
+
+        .suggestion-card .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #0071e3;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .pattern-item {
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #d2d2d7;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .pattern-item strong {
+            color: #0071e3;
+        }
+
+        .workflow-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .workflow-item:hover {
+            background: #f5f5f7;
+        }
+
+        .workflow-item .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d2d2d7;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .workflow-item .checkbox.checked {
+            background: #0071e3;
+            border-color: #0071e3;
+        }
+
+        .workflow-item .checkbox.checked::after {
+            content: '✓';
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .stat-card {
+            background: #f5f5f7;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0071e3;
+        }
+
+        .stat-card .label {
+            font-size: 11px;
+            color: #6e6e73;
+            margin-top: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 240px 1fr 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>TechParts AI</h2>
+            <div class="nav-item active">
+                <span class="icon">💬</span>
+                <span>Chat</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon">📊</span>
+                <span>Dashboard</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon">🔄</span>
+                <span>Workflows</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon">📝</span>
+                <span>Sprints</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon">🔍</span>
+                <span>Patterns</span>
+            </div>
+            <div class="divider"></div>
+            <div class="nav-item">
+                <span class="icon">⚙️</span>
+                <span>Settings</span>
+            </div>
+            <div class="nav-item">
+                <span class="icon">🔄</span>
+                <span>Model: Llama 3</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1>Sprint 14 - Manufacturing Optimization</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary">⚙️ Configure</button>
+                    <button class="btn btn-primary">+ New Story</button>
+                </div>
+            </div>
+
+            <!-- AI Panel -->
+            <div class="ai-panel">
+                <div class="ai-status">
+                    <div class="status-dot"></div>
+                    <span><strong>Llama 3</strong> is active • Analyzing patterns in real-time</span>
+                </div>
+
+                <div class="ai-message ai">
+                    <div class="ai-message-header">
+                        <span class="icon">🤖</span>
+                        <span>AI Assistant</span>
+                    </div>
+                    <div>
+                        I've analyzed your shipping workflow and spotted a pattern: you're manually verifying packing lists, which takes 4 hours per day. Should I suggest an automated packing verification system?
+                    </div>
+                </div>
+
+                <div class="ai-message user">
+                    <div class="ai-message-header">
+                        <span class="icon">👤</span>
+                        <span>You</span>
+                    </div>
+                    <div>
+                        Yes, let's explore that. What would the workflow look like?
+                    </div>
+                </div>
+
+                <div class="ai-message ai">
+                    <div class="ai-message-header">
+                        <span class="icon">🤖</span>
+                        <span>AI Assistant</span>
+                    </div>
+                    <div>
+                        I'm proposing digitizing packing lists with automatic validation against order requirements. Digital verification completes in 30 seconds versus manual checks, reducing pack time from 4.2h to under 2h. This matches your current quality standards while eliminating bottlenecks. I can generate the implementation plan if you approve.
+                    </div>
+                </div>
+
+                <div class="ai-message user">
+                    <div class="ai-message-header">
+                        <span class="icon">👤</span>
+                        <span>You</span>
+                    </div>
+                    <div>
+                        Generate it. Also, can we detect when component orders are delayed due to manual approval?
+                    </div>
+                </div>
+
+                <div class="ai-message ai">
+                    <div class="ai-message-header">
+                        <span class="icon">🤖</span>
+                        <span>AI Assistant</span>
+                    </div>
+                    <div>
+                        I've added that anomaly check to the detection system. It will flag orders from pre-qualified vendors that are pending manual approval for 2+ days, and suggest automated approval workflow to reduce order time from 3 days to 1 day. Should I show you the automation logic?
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-box">
+                    <textarea class="text-input" placeholder="Ask AI about patterns, workflows, or improvements..."></textarea>
+                    <button class="send-btn">➤</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <!-- Suggestions -->
+            <div class="panel-section">
+                <h3>💡 AI Suggestions</h3>
+                <div class="suggestion-card">
+                    <span class="badge">PATTERN</span>
+                    <div>Assembly team's pre-staging workflow increased quality by 12%. This pattern could be replicated in shipping for 20% efficiency gain.</div>
+                </div>
+                <div class="suggestion-card">
+                    <span class="badge">SHORTCUT</span>
+                    <div>Quality control's zero-defect approach uses systematic checklists. Documenting and sharing this could improve quality across all teams.</div>
+                </div>
+                <div class="suggestion-card">
+                    <span class="badge">OPPORTUNITY</span>
+                    <div>Component sourcing approval takes 3 days. Automated approval for pre-qualified vendors could reduce this to 1 day.</div>
+                </div>
+            </div>
+
+            <!-- Patterns -->
+            <div class="panel-section">
+                <h3>🔍 Detected Patterns</h3>
+                <div class="pattern-item">
+                    <strong>Assembly Pre-Staging:</strong> Components organized before shift start increases throughput by 18%
+                </div>
+                <div class="pattern-item">
+                    <strong>Quality Zero-Defect:</strong> Systematic checklist verification achieves 0% defect rate
+                </div>
+                <div class="pattern-item">
+                    <strong>Shipping Delays:</strong> Manual packing verification adds 4 hours/day, causing 15% on-time delivery gap
+                </div>
+            </div>
+
+            <!-- Sprint Progress -->
+            <div class="panel-section">
+                <h3>⚡ Sprint 14 Progress</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="number">8</div>
+                        <div class="label">Stories</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">5</div>
+                        <div class="label">Complete</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">3</div>
+                        <div class="label">In Progress</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">12</div>
+                        <div class="label">AI Insights</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workflow Checklist -->
+            <div class="panel-section">
+                <h3>✅ This Sprint</h3>
+                <div class="workflow-item">
+                    <div class="checkbox checked"></div>
+                    <span>Automate packing verification</span>
+                </div>
+                <div class="workflow-item">
+                    <div class="checkbox checked"></div>
+                    <span>Implement pre-staging workflow</span>
+                </div>
+                <div class="workflow-item">
+                    <div class="checkbox checked"></div>
+                    <span>Digitize quality documentation</span>
+                </div>
+                <div class="workflow-item">
+                    <div class="checkbox"></div>
+                    <span>Test automated vendor approval</span>
+                </div>
+                <div class="workflow-item">
+                    <div class="checkbox"></div>
+                    <span>Document zero-defect workflow</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

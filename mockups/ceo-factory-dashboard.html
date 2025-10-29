@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Executive Dashboard - TechParts Manufacturing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f8f9fa;
+            color: #1d1d1f;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header-left h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .header-left p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .ai-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .ai-insights-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .ai-chat {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+
+        .ai-message {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 8px;
+        }
+
+        .ai-message.ai {
+            background: white;
+            margin-right: 60px;
+        }
+
+        .ai-message.user {
+            background: #3b82f6;
+            color: white;
+            margin-left: 60px;
+            text-align: right;
+        }
+
+        .ai-message-header {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .send-btn {
+            padding: 12px 24px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .send-btn:hover {
+            background: #2563eb;
+        }
+
+        /* Team Performance */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .team-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .team-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .team-role {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .performance-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-excellent {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-good {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-needs-work {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .metrics {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .metric {
+            flex: 1;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1d1d1f;
+        }
+
+        .metric-delta {
+            font-size: 12px;
+            color: #10b981;
+            margin-top: 2px;
+        }
+
+        .metric-delta.negative {
+            color: #ef4444;
+        }
+
+        /* Workflow Status */
+        .workflow-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .workflow-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .workflow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .workflow-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .workflow-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .workflow-status.on-track {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .workflow-status.at-risk {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .workflow-status.overdue {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .workflow-progress {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            transition: width 0.3s;
+        }
+
+        .progress-fill.on-track {
+            background: #10b981;
+        }
+
+        .progress-fill.at-risk {
+            background: #f59e0b;
+        }
+
+        .progress-fill.overdue {
+            background: #ef4444;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .suggestion-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .suggestion-item {
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .suggestion-item.critical {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .suggestion-item.opportunity {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .suggestion-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .suggestion-desc {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .highlight-box h4 {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .highlight-box p {
+            font-size: 13px;
+            color: #78350f;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        /* Workflow Builder Modal */
+        .workflow-builder {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 500px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+        }
+
+        .builder-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .builder-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f5f5f7;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            background: #e8e8ed;
+        }
+
+        .builder-content {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .builder-step {
+            margin-bottom: 24px;
+        }
+
+        .builder-step label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        .builder-step input,
+        .builder-step textarea,
+        .builder-step select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .builder-step textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .builder-step select {
+            cursor: pointer;
+        }
+
+        .ai-suggestion-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .ai-suggestion-box .icon {
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .checkboxes {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .priority-badges {
+            display: flex;
+            gap: 8px;
+        }
+
+        .priority-badge {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .priority-badge:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .priority-badge.selected {
+            border-color: #3b82f6;
+            background: #3b82f6;
+            color: white;
+        }
+
+        .builder-actions {
+            padding: 16px 24px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-cancel {
+            flex: 1;
+            padding: 12px;
+            background: #f5f5f7;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-create {
+            flex: 1;
+            padding: 12px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-create:hover {
+            background: #2563eb;
+        }
+
+        .suggestion-item-clickable {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .suggestion-item-clickable:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1>TechParts Manufacturing</h1>
+            <p>Executive AI Dashboard</p>
+        </div>
+        <div class="header-right">
+            <div class="ai-status">
+                <div class="status-dot"></div>
+                <span>Llama 3 Analyzing Operations</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="dashboard-grid">
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- AI Insights -->
+                <div class="ai-insights-panel">
+                    <div class="section-header">
+                        <span style="font-size: 24px;">🤖</span>
+                        <h2>AI Strategic Insights</h2>
+                    </div>
+                    
+                    <div class="ai-chat" id="chatContainer">
+                        <div class="ai-message user">
+                            <div class="ai-message-header">You</div>
+                            <div>Which teams are excelling and where should we focus improvement efforts?</div>
+                        </div>
+                        
+                        <div class="ai-message ai">
+                            <div class="ai-message-header">AI Analysis</div>
+                            <div>
+                                <strong>Top Performers:</strong> Assembly Team (95% on-time, quality up 12%), Quality Control (zero defects this month).<br><br>
+                                <strong>Areas for Improvement:</strong> Shipping is 15% slower than target due to manual packing verification. Also detected a workflow bottleneck in component sourcing - orders taking 3 days instead of 1.<br><br>
+                                <strong>Opportunity:</strong> The assembly team's success comes from pre-staging components. This pattern could be applied to other teams.
+                            </div>
+                        </div>
+
+                        <div class="ai-message user">
+                            <div class="ai-message-header">You</div>
+                            <div>Show me the workflow bottlenecks in detail</div>
+                        </div>
+
+                        <div class="ai-message ai">
+                            <div class="ai-message-header">AI Analysis</div>
+                            <div>
+                                Three bottlenecks identified:<br><br>
+                                1. <strong>Component Sourcing:</strong> Manual vendor approval adds 2 days average. Consider automated approval for pre-qualified vendors.<br><br>
+                                2. <strong>Shipping Verification:</strong> Staff manually checking packing lists - digitizing this would save 4 hours/day across the team.<br><br>
+                                3. <strong>Quality Documentation:</strong> Paper-based reports causing 1-day delay in material release. Digital workflow would eliminate this.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>🚨 Critical Insight</h4>
+                        <p>Your assembly team's pre-staging workflow increased throughput by 18% without adding staff. This success pattern could be replicated across manufacturing and shipping teams.</p>
+                    </div>
+
+                    <div class="input-area">
+                        <input type="text" id="chatInput" class="input-field" placeholder="Ask AI about team performance, workflows, or optimization opportunities..." onkeypress="handleChatEnter(event)">
+                        <button class="send-btn" onclick="sendChatMessage()">Send</button>
+                    </div>
+                </div>
+
+                <!-- Team Performance -->
+                <div>
+                    <div class="section-header">
+                        <span style="font-size: 24px;">👥</span>
+                        <h2>Team Performance Overview</h2>
+                    </div>
+                    <div class="team-grid">
+                        <div class="team-card">
+                            <div class="team-header">
+                                <div>
+                                    <div class="team-name">Assembly Team</div>
+                                    <div class="team-role">8 employees</div>
+                                </div>
+                                <div class="performance-badge badge-excellent">Excellent</div>
+                            </div>
+                            <div class="metrics">
+                                <div class="metric">
+                                    <div class="metric-label">On-Time Rate</div>
+                                    <div class="metric-value">95%</div>
+                                    <div class="metric-delta">+5% vs last month</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Quality</div>
+                                    <div class="metric-value">98%</div>
+                                    <div class="metric-delta">+12% vs last month</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="team-card">
+                            <div class="team-header">
+                                <div>
+                                    <div class="team-name">Quality Control</div>
+                                    <div class="team-role">6 employees</div>
+                                </div>
+                                <div class="performance-badge badge-excellent">Excellent</div>
+                            </div>
+                            <div class="metrics">
+                                <div class="metric">
+                                    <div class="metric-label">Defect Rate</div>
+                                    <div class="metric-value">0%</div>
+                                    <div class="metric-delta">-2% vs last month</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Inspection Time</div>
+                                    <div class="metric-value">2.3h</div>
+                                    <div class="metric-delta">-0.4h avg</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="team-card">
+                            <div class="team-header">
+                                <div>
+                                    <div class="team-name">Shipping & Logistics</div>
+                                    <div class="team-role">5 employees</div>
+                                </div>
+                                <div class="performance-badge badge-needs-work">Needs Work</div>
+                            </div>
+                            <div class="metrics">
+                                <div class="metric">
+                                    <div class="metric-label">On-Time Rate</div>
+                                    <div class="metric-value">73%</div>
+                                    <div class="metric-delta negative">-3% vs last month</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Pack Time</div>
+                                    <div class="metric-value">4.2h</div>
+                                    <div class="metric-delta negative">+0.8h avg</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="team-card">
+                            <div class="team-header">
+                                <div>
+                                    <div class="team-name">Component Sourcing</div>
+                                    <div class="team-role">4 employees</div>
+                                </div>
+                                <div class="performance-badge badge-good">Good</div>
+                            </div>
+                            <div class="metrics">
+                                <div class="metric">
+                                    <div class="metric-label">Order Time</div>
+                                    <div class="metric-value">3.1d</div>
+                                    <div class="metric-delta negative">+1.2d avg</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Cost Variance</div>
+                                    <div class="metric-value">2.3%</div>
+                                    <div class="metric-delta">-0.5% vs target</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflows -->
+                <div>
+                    <div class="section-header">
+                        <span style="font-size: 24px;">🔄</span>
+                        <h2>Active Workflows</h2>
+                    </div>
+                    <div class="workflow-list">
+                        <div class="workflow-item">
+                            <div class="workflow-header">
+                                <div class="workflow-title">Monthly Production Target: 2,400 Units</div>
+                                <div class="workflow-status on-track">On Track</div>
+                            </div>
+                            <div class="workflow-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill on-track" style="width: 68%"></div>
+                                </div>
+                                <div class="progress-text">68% Complete</div>
+                            </div>
+                        </div>
+
+                        <div class="workflow-item">
+                            <div class="workflow-header">
+                                <div class="workflow-title">Q2 Supplier Audit Program</div>
+                                <div class="workflow-status on-track">On Track</div>
+                            </div>
+                            <div class="workflow-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill on-track" style="width: 85%"></div>
+                                </div>
+                                <div class="progress-text">85% Complete</div>
+                            </div>
+                        </div>
+
+                        <div class="workflow-item">
+                            <div class="workflow-header">
+                                <div class="workflow-title">Digital Quality Documentation Migration</div>
+                                <div class="workflow-status at-risk">At Risk</div>
+                            </div>
+                            <div class="workflow-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill at-risk" style="width: 32%"></div>
+                                </div>
+                                <div class="progress-text">32% Complete</div>
+                            </div>
+                        </div>
+
+                        <div class="workflow-item">
+                            <div class="workflow-header">
+                                <div class="workflow-title">Week 4 Shipment Target: 600 units</div>
+                                <div class="workflow-status overdue">Overdue</div>
+                            </div>
+                            <div class="workflow-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill overdue" style="width: 78%"></div>
+                                </div>
+                                <div class="progress-text">78% Complete</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="card">
+                    <h3>🔍 Quick Insights</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-number">9</div>
+                            <div class="stat-label">Active Teams</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">24</div>
+                            <div class="stat-label">Workflows</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">15</div>
+                            <div class="stat-label">AI Insights</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-number">87%</div>
+                            <div class="stat-label">Avg Performance</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>💡 Recommended Actions</h3>
+                    <div class="suggestion-list">
+                        <div class="suggestion-item critical suggestion-item-clickable" onclick="openWorkflowBuilder('Shipment workflow behind schedule. Review packing verification process to reduce delays.', 'shipping')">
+                            <div class="suggestion-title">🚨 Critical</div>
+                            <div class="suggestion-desc">Shipment workflow behind schedule. Review packing verification process to reduce delays.</div>
+                        </div>
+                        <div class="suggestion-item opportunity suggestion-item-clickable" onclick="openWorkflowBuilder('Replicate assembly team\\'s pre-staging pattern to shipping team. Estimated 20% efficiency gain.', 'assembly')">
+                            <div class="suggestion-title">⚡ Opportunity</div>
+                            <div class="suggestion-desc">Replicate assembly team's pre-staging pattern to shipping team. Estimated 20% efficiency gain.</div>
+                        </div>
+                        <div class="suggestion-item suggestion-item-clickable" onclick="openWorkflowBuilder('Digitize component sourcing approval workflow. Could reduce order time from 3 days to 1 day.', 'sourcing')">
+                            <div class="suggestion-title">🔧 Improvement</div>
+                            <div class="suggestion-desc">Digitize component sourcing approval workflow. Could reduce order time from 3 days to 1 day.</div>
+                        </div>
+                        <div class="suggestion-item opportunity suggestion-item-clickable" onclick="openWorkflowBuilder('Quality control\\'s zero-defect approach should be documented and shared with other teams.', 'quality')">
+                            <div class="suggestion-title">✅ Quick Win</div>
+                            <div class="suggestion-desc">Quality control's zero-defect approach should be documented and shared with other teams.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📊 Team Comparison</h3>
+                    <div class="highlight-box">
+                        <h4>Best Performers</h4>
+                        <p>Assembly (+12% quality) and Quality Control (0% defects) are exceeding targets through systematic workflows.</p>
+                    </div>
+                    <div class="highlight-box" style="background: #fef2f2;">
+                        <h4>Needs Attention</h4>
+                        <p>Shipping team's manual processes are causing delays. Automation opportunity identified.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Builder Modal -->
+    <div class="workflow-builder" id="workflowBuilder" style="display: none;">
+        <div class="builder-header">
+            <h3>📝 Create User Story</h3>
+            <button class="close-btn" onclick="closeWorkflowBuilder()">×</button>
+        </div>
+        
+        <div class="builder-content">
+            <div class="builder-step">
+                <label>Problem Description</label>
+                <textarea id="problemDesc" readonly>Click a recommendation above to start</textarea>
+                <div class="ai-suggestion-box">
+                    <span class="icon">💡 AI Insight</span>
+                    I've identified this opportunity from your dashboard metrics. Let's turn it into an actionable user story.
+                </div>
+            </div>
+
+            <div class="builder-step">
+                <label>User Story Title</label>
+                <input type="text" id="storyTitle" placeholder="e.g., As a shipping manager, I want to..." />
+                <div class="ai-suggestion-box" id="titleSuggestion" style="display: none;">
+                    <span class="icon">🤖 AI Suggestion</span>
+                    <div id="titleSuggestionText"></div>
+                </div>
+            </div>
+
+            <div class="builder-step">
+                <label>User Story Description</label>
+                <textarea id="storyDesc" placeholder="Describe what the user wants to accomplish and why..."></textarea>
+                <div class="ai-suggestion-box" id="descSuggestion" style="display: none;">
+                    <span class="icon">🤖 AI Suggestion</span>
+                    <div id="descSuggestionText"></div>
+                </div>
+            </div>
+
+            <div class="builder-step">
+                <label>Acceptance Criteria</label>
+                <div class="checkboxes">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="criteria1" />
+                        <label for="criteria1">Criteria will be suggested by AI</label>
+                    </div>
+                </div>
+                <textarea id="acceptanceCriteria" placeholder="- Criteria 1&#10;- Criteria 2&#10;- Criteria 3" style="margin-top: 12px;"></textarea>
+                <div class="ai-suggestion-box" id="criteriaSuggestion" style="display: none;">
+                    <span class="icon">🤖 AI Suggestion</span>
+                    <div id="criteriaSuggestionText"></div>
+                </div>
+            </div>
+
+            <div class="builder-step">
+                <label>Assigned Team</label>
+                <select id="assignedTeam">
+                    <option value="">Select a team...</option>
+                    <option value="assembly">Assembly Team</option>
+                    <option value="quality">Quality Control</option>
+                    <option value="shipping">Shipping & Logistics</option>
+                    <option value="sourcing">Component Sourcing</option>
+                </select>
+            </div>
+
+            <div class="builder-step">
+                <label>Priority</label>
+                <div class="priority-badges">
+                    <div class="priority-badge" onclick="selectPriority(this, 'low')">Low</div>
+                    <div class="priority-badge selected" onclick="selectPriority(this, 'medium')">Medium</div>
+                    <div class="priority-badge" onclick="selectPriority(this, 'high')">High</div>
+                    <div class="priority-badge" onclick="selectPriority(this, 'critical')">Critical</div>
+                </div>
+            </div>
+
+            <div class="builder-step">
+                <label>Estimated Impact</label>
+                <textarea id="estimatedImpact" placeholder="What measurable outcomes do you expect? e.g., Reduce shipment time by 30%, Save 4 hours per day..."></textarea>
+                <div class="ai-suggestion-box" id="impactSuggestion" style="display: none;">
+                    <span class="icon">🤖 AI Suggestion</span>
+                    <div id="impactSuggestionText"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="builder-actions">
+            <button class="btn-cancel" onclick="closeWorkflowBuilder()">Cancel</button>
+            <button class="btn-create" onclick="createUserStory()">Create User Story</button>
+        </div>
+    </div>
+
+    <script>
+        let currentProblem = '';
+        let currentCategory = '';
+
+        function openWorkflowBuilder(problem, category) {
+            currentProblem = problem;
+            currentCategory = category;
+            
+            document.getElementById('workflowBuilder').style.display = 'flex';
+            document.getElementById('problemDesc').value = problem;
+            
+            // AI generates suggestions based on the problem
+            generateAISuggestions(problem, category);
+        }
+
+        function closeWorkflowBuilder() {
+            document.getElementById('workflowBuilder').style.display = 'none';
+        }
+
+        function generateAISuggestions(problem, category) {
+            // Simulate AI suggestions based on the problem
+            const suggestions = {
+                shipping: {
+                    title: "As a shipping manager, I want to automate packing verification so that we can reduce shipping delays and improve on-time delivery rates.",
+                    description: "The current manual verification process is slowing down our shipping operations. By digitizing and automating the packing list verification, we can eliminate the 4 hours per day spent on manual checks and reduce our average pack time from 4.2h to under 2h.",
+                    criteria: "• Packing verification completed within 30 seconds\n• Digital packing list automatically validated against order requirements\n• Automatic flag of discrepancies for manual review\n• Audit trail of all verifications maintained",
+                    impact: "Expected to improve on-time rate from 73% to 95%+, reduce pack time by 52%, and free up 20 hours/week of staff time."
+                },
+                assembly: {
+                    title: "As an assembly team lead, I want to replicate our pre-staging workflow in the shipping team so that we can increase their efficiency by 20%.",
+                    description: "Our assembly team's success with pre-staging components has increased quality by 12% and on-time rate to 95%. By applying the same systematic approach to shipping—pre-staging packing materials and organizing orders by destination—we can replicate these results in shipping.",
+                    criteria: "• Packing materials organized by order priority and destination\n• Daily pre-staging session at end of shift\n• Visual workflow guides posted at each station\n• Performance tracking matches assembly metrics",
+                    impact: "Targeted 20% efficiency gain in shipping operations, mirroring assembly team's 18% throughput increase."
+                },
+                sourcing: {
+                    title: "As a sourcing manager, I want to automate approval workflows for pre-qualified vendors so that order processing time is reduced from 3 days to 1 day.",
+                    description: "Currently, every component order requires manual approval, causing a 2-day delay. For vendors we've worked with over 6 months with consistently good performance, we can implement automatic approval while maintaining oversight.",
+                    criteria: "• Automated approval for vendors with 6+ months good standing\n• Automatic notification to manager for review (not approval)\n• Manual approval still required for new vendors or high-value orders\n• Weekly summary report of auto-approved orders",
+                    impact: "Reduce average order time from 3.1 days to 1 day, improving component availability and reducing production delays."
+                },
+                quality: {
+                    title: "As a quality manager, I want to document and share our zero-defect workflow so that other teams can adopt our successful quality practices.",
+                    description: "The quality control team has achieved zero defects this month through a systematic approach that includes checklist verification, peer review, and continuous improvement logging. By formalizing and sharing this process, we can improve quality across all teams.",
+                    criteria: "• Zero-defect checklist created and documented\n• Training materials developed for other teams\n• Quality workflow shared in team knowledge base\n• Monthly quality metrics tracking implemented for all teams",
+                    impact: "Improve overall company quality standards, reduce rework across teams, and establish quality culture organization-wide."
+                }
+            };
+
+            const suggestion = suggestions[category];
+            if (suggestion) {
+                showSuggestion('titleSuggestion', 'titleSuggestionText', suggestion.title);
+                showSuggestion('descSuggestion', 'descSuggestionText', suggestion.description);
+                showSuggestion('criteriaSuggestion', 'criteriaSuggestionText', suggestion.criteria);
+                showSuggestion('impactSuggestion', 'impactSuggestionText', suggestion.impact);
+                
+                document.getElementById('storyTitle').value = suggestion.title;
+                document.getElementById('storyDesc').value = suggestion.description;
+                document.getElementById('acceptanceCriteria').value = suggestion.criteria;
+                document.getElementById('estimatedImpact').value = suggestion.impact;
+            }
+        }
+
+        function showSuggestion(containerId, textId, text) {
+            document.getElementById(containerId).style.display = 'block';
+            document.getElementById(textId).innerText = text;
+        }
+
+        function selectPriority(element, priority) {
+            // Remove selected from all badges
+            document.querySelectorAll('.priority-badge').forEach(b => b.classList.remove('selected'));
+            // Add selected to clicked badge
+            element.classList.add('selected');
+        }
+
+        function createUserStory() {
+            const storyData = {
+                title: document.getElementById('storyTitle').value,
+                description: document.getElementById('storyDesc').value,
+                acceptanceCriteria: document.getElementById('acceptanceCriteria').value,
+                team: document.getElementById('assignedTeam').value,
+                priority: document.querySelector('.priority-badge.selected').innerText,
+                impact: document.getElementById('estimatedImpact').value
+            };
+
+            if (!storyData.title || !storyData.description) {
+                alert('Please complete at least the title and description');
+                return;
+            }
+
+            // Here you would typically save to backend
+            alert('User story created successfully! It has been added to your workflow board.');
+            closeWorkflowBuilder();
+            
+            // Reset form
+            document.getElementById('storyTitle').value = '';
+            document.getElementById('storyDesc').value = '';
+            document.getElementById('acceptanceCriteria').value = '';
+            document.getElementById('assignedTeam').value = '';
+            document.getElementById('estimatedImpact').value = '';
+        }
+
+        function handleChatEnter(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Add user message to chat
+            addChatMessage('user', message);
+            input.value = '';
+
+            // Simulate AI response
+            setTimeout(() => {
+                handleAIResponse(message);
+            }, 500);
+        }
+
+        function addChatMessage(sender, text) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `ai-message ${sender}`;
+            
+            const header = sender === 'user' ? 'You' : 'AI Analysis';
+            messageDiv.innerHTML = `
+                <div class="ai-message-header">${header}</div>
+                <div>${text}</div>
+            `;
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleAIResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Check if user wants to create a workflow improvement
+            if (lowerMessage.includes('improve') || lowerMessage.includes('fix') || lowerMessage.includes('create workflow') || lowerMessage.includes('user story')) {
+                // Identify which area they're talking about
+                let category = null;
+                let problem = '';
+                
+                if (lowerMessage.includes('shipping') || lowerMessage.includes('pack') || lowerMessage.includes('logistics')) {
+                    category = 'shipping';
+                    problem = 'Shipping is 15% slower than target due to manual packing verification.';
+                } else if (lowerMessage.includes('assembly') || lowerMessage.includes('pre-stage')) {
+                    category = 'assembly';
+                    problem = 'Replicate assembly team\'s pre-staging pattern to shipping team for 20% efficiency gain.';
+                } else if (lowerMessage.includes('sourcing') || lowerMessage.includes('component') || lowerMessage.includes('order')) {
+                    category = 'sourcing';
+                    problem = 'Digitize component sourcing approval workflow to reduce order time from 3 days to 1 day.';
+                } else if (lowerMessage.includes('quality') || lowerMessage.includes('defect')) {
+                    category = 'quality';
+                    problem = 'Quality control\'s zero-defect approach should be documented and shared with other teams.';
+                } else {
+                    // Generic response
+                    addChatMessage('ai', 'I can help you create a workflow improvement! Which area would you like to improve? (shipping, assembly, sourcing, or quality)');
+                    return;
+                }
+
+                // Open workflow builder with detected problem
+                if (category) {
+                    addChatMessage('ai', `I'll help you create a workflow improvement for ${category}. Opening the user story builder...`);
+                    setTimeout(() => {
+                        openWorkflowBuilder(problem, category);
+                    }, 800);
+                }
+            } else if (lowerMessage.includes('performance') || lowerMessage.includes('team')) {
+                addChatMessage('ai', 'Assembly Team (95% on-time, quality up 12%) and Quality Control (zero defects) are your top performers. Shipping needs improvement with 73% on-time rate.');
+            } else if (lowerMessage.includes('bottleneck') || lowerMessage.includes('delay')) {
+                addChatMessage('ai', 'Three main bottlenecks: 1) Component sourcing manual approval adds 2 days, 2) Shipping verification wastes 4 hours/day, 3) Quality documentation delays material release by 1 day.');
+            } else {
+                addChatMessage('ai', 'I can help you with performance analysis, workflow improvements, or create user stories. Try asking about specific teams or workflow bottlenecks.');
+            }
+        }
+    </script>
+</body>
+</html>
+
