@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { db, bonusWorkflows, cycleLineItems, payrollCycles, consultants } from '../db';
 import { UpdateBonusWorkflowRequest } from '@vsol-admin/shared';
 import { NotFoundError, ValidationError } from '../middleware/errors';
@@ -13,6 +13,36 @@ export class BonusWorkflowService {
       }
     });
 
+    // If workflow exists but no recipient is set, try to auto-detect
+    if (workflow && workflow.bonusRecipientConsultantId === null) {
+      // Try bonusMonth match first (primary detection)
+      let recipientId = await this.findConsultantByBonusMonth(cycleId);
+      
+      // Fallback to line item detection
+      if (!recipientId) {
+        recipientId = await this.findConsultantWithBonusFields(cycleId);
+      }
+      
+      // If found, update workflow
+      if (recipientId) {
+        await db.update(bonusWorkflows)
+          .set({
+            bonusRecipientConsultantId: recipientId,
+            updatedAt: new Date()
+          })
+          .where(eq(bonusWorkflows.cycleId, cycleId));
+        
+        // Return updated workflow
+        return await db.query.bonusWorkflows.findFirst({
+          where: eq(bonusWorkflows.cycleId, cycleId),
+          with: {
+            cycle: true,
+            consultant: true
+          }
+        });
+      }
+    }
+
     return workflow || null;
   }
 
@@ -23,8 +53,18 @@ export class BonusWorkflowService {
       throw new ValidationError('Bonus workflow already exists for this cycle');
     }
 
+    // Try to auto-detect recipient before creating workflow
+    // Primary: match bonusMonth with cycle month
+    let recipientId = await this.findConsultantByBonusMonth(cycleId);
+    
+    // Fallback: find consultant with bonus fields in line items
+    if (!recipientId) {
+      recipientId = await this.findConsultantWithBonusFields(cycleId);
+    }
+
     const [workflow] = await db.insert(bonusWorkflows).values({
-      cycleId
+      cycleId,
+      bonusRecipientConsultantId: recipientId
     }).returning();
 
     return this.getById(workflow.id);
@@ -88,6 +128,102 @@ export class BonusWorkflowService {
     return this.getByCycleId(cycleId);
   }
 
+  /**
+   * Find consultant whose line item has bonus fields set
+   */
+  private static async findConsultantWithBonusFields(cycleId: number): Promise<number | null> {
+    const lineItems = await db.query.cycleLineItems.findMany({
+      where: eq(cycleLineItems.cycleId, cycleId)
+    });
+    
+    const consultantWithBonus = lineItems.find(item => 
+      item.bonusDate || item.informedDate || item.bonusPaydate
+    );
+    
+    return consultantWithBonus?.consultantId || null;
+  }
+
+  /**
+   * Extract month number (1-12) from cycle monthLabel
+   * Handles formats like "December 2025", "2025-10", "October", etc.
+   */
+  private static extractMonthFromLabel(monthLabel: string): number | null {
+    const monthMap: Record<string, number> = {
+      'january': 1, 'february': 2, 'march': 3, 'april': 4,
+      'may': 5, 'june': 6, 'july': 7, 'august': 8,
+      'september': 9, 'october': 10, 'november': 11, 'december': 12
+    };
+    
+    const label = monthLabel.toLowerCase().trim();
+    
+    // Try full month name first
+    for (const [monthName, monthNum] of Object.entries(monthMap)) {
+      if (label.includes(monthName)) {
+        return monthNum;
+      }
+    }
+    
+    // Try numeric format like "2025-10" or "10/2025"
+    const numericMatch = label.match(/(?:^|\D)(\d{1,2})(?:\D|$)/);
+    if (numericMatch) {
+      const monthNum = parseInt(numericMatch[1]);
+      if (monthNum >= 1 && monthNum <= 12) {
+        return monthNum;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
+   * Find active consultant whose bonusMonth matches the cycle month
+   */
+  private static async findConsultantByBonusMonth(cycleId: number): Promise<number | null> {
+    const cycle = await db.query.payrollCycles.findFirst({
+      where: eq(payrollCycles.id, cycleId)
+    });
+    
+    if (!cycle) {
+      return null;
+    }
+    
+    const cycleMonth = this.extractMonthFromLabel(cycle.monthLabel);
+    if (!cycleMonth) {
+      return null;
+    }
+    
+    // Find active consultant with matching bonusMonth
+    const consultant = await db.query.consultants.findFirst({
+      where: and(
+        eq(consultants.bonusMonth, cycleMonth),
+        isNull(consultants.terminationDate) // Only active consultants
+      )
+    });
+    
+    return consultant?.id || null;
+  }
+
+  /**
+   * Set bonus recipient if not already set (used by line-item-service)
+   */
+  static async setRecipientIfNotSet(cycleId: number, consultantId: number): Promise<void> {
+    const workflow = await this.getByCycleId(cycleId);
+    if (!workflow) {
+      return; // No workflow exists yet
+    }
+    
+    if (workflow.bonusRecipientConsultantId !== null) {
+      return; // Recipient already set, don't override
+    }
+    
+    await db.update(bonusWorkflows)
+      .set({
+        bonusRecipientConsultantId: consultantId,
+        updatedAt: new Date()
+      })
+      .where(eq(bonusWorkflows.cycleId, cycleId));
+  }
+
   private static async clearBonusFieldsFromOtherConsultants(cycleId: number, allowedConsultantId: number) {
     // Get all line items for this cycle
     const lineItems = await db.query.cycleLineItems.findMany({
@@ -110,9 +246,32 @@ export class BonusWorkflowService {
   }
 
   static async generateEmailContent(cycleId: number) {
-    const workflow = await this.getByCycleId(cycleId);
+    let workflow = await this.getByCycleId(cycleId);
     if (!workflow) {
       throw new NotFoundError('Bonus workflow not found for this cycle');
+    }
+
+    // If still no recipient after auto-detection, try one more time before erroring
+    if (!workflow.bonusRecipientConsultantId) {
+      // Try bonusMonth match first
+      let recipientId = await this.findConsultantByBonusMonth(cycleId);
+      
+      // Fallback to line item detection
+      if (!recipientId) {
+        recipientId = await this.findConsultantWithBonusFields(cycleId);
+      }
+      
+      // If found, update and reload workflow
+      if (recipientId) {
+        await db.update(bonusWorkflows)
+          .set({
+            bonusRecipientConsultantId: recipientId,
+            updatedAt: new Date()
+          })
+          .where(eq(bonusWorkflows.cycleId, cycleId));
+        
+        workflow = await this.getByCycleId(cycleId);
+      }
     }
 
     // Check if recipient consultant is selected

@@ -2,6 +2,7 @@ import { eq, and, ne } from 'drizzle-orm';
 import { db, cycleLineItems, bonusWorkflows } from '../db';
 import { UpdateLineItemRequest } from '@vsol-admin/shared';
 import { NotFoundError, ValidationError } from '../middleware/errors';
+import { BonusWorkflowService } from './bonus-workflow-service';
 
 export class LineItemService {
   static async getById(id: number) {
@@ -91,6 +92,18 @@ export class LineItemService {
       .set(updateData)
       .where(eq(cycleLineItems.id, id))
       .returning();
+
+    // If bonus fields were set, try to auto-set workflow recipient if not already set
+    if (isSettingBonusFields) {
+      const workflow = await db.query.bonusWorkflows.findFirst({
+        where: eq(bonusWorkflows.cycleId, existing.cycleId)
+      });
+
+      if (workflow && workflow.bonusRecipientConsultantId === null) {
+        // Auto-set the recipient to the consultant whose line item was just updated
+        await BonusWorkflowService.setRecipientIfNotSet(existing.cycleId, existing.consultantId);
+      }
+    }
 
     return this.getById(id);
   }

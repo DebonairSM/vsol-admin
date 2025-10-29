@@ -55,6 +55,7 @@ export const consultants = sqliteTable('consultants', {
   lastTimeDoctorSync: integer('last_time_doctor_sync', { mode: 'timestamp' }),
   // Bonus
   yearlyBonus: real('yearly_bonus'),
+  bonusMonth: integer('bonus_month'), // 1-12, month when consultant receives yearly bonus
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });

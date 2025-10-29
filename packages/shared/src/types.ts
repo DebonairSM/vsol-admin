@@ -50,6 +50,7 @@ export interface Consultant {
   lastTimeDoctorSync?: Date | null;
   // Bonus
   yearlyBonus?: number | null;
+  bonusMonth?: number | null; // 1-12, month when consultant receives yearly bonus
   createdAt: Date;
   updatedAt: Date;
 }

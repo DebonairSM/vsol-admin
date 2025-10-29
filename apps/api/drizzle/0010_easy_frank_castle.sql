@@ -1,0 +1,1 @@
+ALTER TABLE consultants ADD `bonus_month` integer;

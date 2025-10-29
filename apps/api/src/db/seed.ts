@@ -1,5 +1,56 @@
 import { db, users, consultants, payrollCycles, cycleLineItems } from './index';
 import { hashPassword } from '../lib/bcrypt';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Helper function to parse month abbreviation from "Jul-24" format
+function parseBonusMonth(bonusDateStr: string | null | undefined): number | null {
+  if (!bonusDateStr || !bonusDateStr.trim()) return null;
+  
+  const monthMap: Record<string, number> = {
+    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4,
+    'may': 5, 'jun': 6, 'jul': 7, 'aug': 8,
+    'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+  };
+  
+  // Extract month abbreviation (first 3 letters)
+  const monthAbbr = bonusDateStr.trim().toLowerCase().substring(0, 3);
+  return monthMap[monthAbbr] || null;
+}
+
+// Parse CSV to extract bonus months for consultants
+function parseCSVForBonusMonths(): Map<string, number> {
+  const csvPath = join(__dirname, '../../../../seeding/vsol-admin-excel.csv');
+  let content: string;
+  
+  try {
+    content = readFileSync(csvPath, 'utf-8');
+  } catch (error) {
+    console.warn('⚠️  Could not read CSV file, bonusMonth will not be populated from CSV');
+    return new Map();
+  }
+  
+  const lines = content.split('\n').filter(line => line.trim());
+  const bonusMonthMap = new Map<string, number>();
+  
+  // Skip header (line 0) and process data rows
+  for (let i = 1; i < lines.length; i++) {
+    const columns = lines[i].split(',');
+    if (columns.length < 5) continue; // Skip incomplete rows
+    
+    const contractorName = columns[0]?.trim();
+    const bonusDate = columns[4]?.trim(); // Bonus Date column (5th column, index 4)
+    
+    if (contractorName && bonusDate && contractorName !== '') {
+      const month = parseBonusMonth(bonusDate);
+      if (month) {
+        bonusMonthMap.set(contractorName, month);
+      }
+    }
+  }
+  
+  return bonusMonthMap;
+}
 
 async function seed() {
   console.log('🌱 Starting database seed...');
@@ -27,20 +78,32 @@ async function seed() {
       }
     ]);
 
+    // Parse CSV to get bonus months
+    console.log('Parsing CSV for bonus month assignments...');
+    const bonusMonthMap = parseCSVForBonusMonths();
+
     // Create consultants with exact data from CSV
     console.log('Creating consultants...');
     const consultantData = [
-      { name: 'Gustavo Moutella Vilela', hourlyRate: 30.00, startDate: new Date('2012-09-24') },
-      { name: 'Enzo Gehlen', hourlyRate: 26.05, startDate: new Date('2018-07-07') },
-      { name: 'Fabiano Louback Gonçalves', hourlyRate: 18.60, startDate: new Date('2020-05-12') },
-      { name: 'Rafael Celegato', hourlyRate: 35.00, startDate: new Date('2021-10-06') },
-      { name: 'Kristof Berge', hourlyRate: 17.93, startDate: new Date('2021-11-16') },
-      { name: 'Lucas R. L. Martins', hourlyRate: 22.00, startDate: new Date('2021-11-29') },
-      { name: 'Arthur Felix', hourlyRate: 26.00, startDate: new Date('2022-01-03') },
-      { name: 'Tiago Lima', hourlyRate: 23.12, startDate: new Date('2022-07-04') },
-      { name: 'Fernando Motta', hourlyRate: 13.00, startDate: new Date('2023-01-02') },
-      { name: 'Guilherme Martini Bronzatti', hourlyRate: 12.50, startDate: new Date('2022-05-30') }
+      { name: 'Gustavo Moutella Vilela', hourlyRate: 30.00, startDate: new Date('2012-09-24'), bonusMonth: bonusMonthMap.get('Gustavo Moutella Vilela') || null },
+      { name: 'Enzo Gehlen', hourlyRate: 26.05, startDate: new Date('2018-07-07'), bonusMonth: bonusMonthMap.get('Enzo Gehlen') || null },
+      { name: 'Fabiano Louback Gonçalves', hourlyRate: 18.60, startDate: new Date('2020-05-12'), bonusMonth: bonusMonthMap.get('Fabiano Louback Gonçalves') || bonusMonthMap.get('Fabiano Louback Gonalves') || null },
+      { name: 'Rafael Celegato', hourlyRate: 35.00, startDate: new Date('2021-10-06'), bonusMonth: bonusMonthMap.get('Rafael Celegato') || null },
+      { name: 'Kristof Berge', hourlyRate: 17.93, startDate: new Date('2021-11-16'), bonusMonth: bonusMonthMap.get('Kristof Berge') || null },
+      { name: 'Lucas R. L. Martins', hourlyRate: 22.00, startDate: new Date('2021-11-29'), bonusMonth: bonusMonthMap.get('Lucas R. L. Martins') || null },
+      { name: 'Arthur Felix', hourlyRate: 26.00, startDate: new Date('2022-01-03'), bonusMonth: bonusMonthMap.get('Arthur Felix') || null },
+      { name: 'Tiago Lima', hourlyRate: 23.12, startDate: new Date('2022-07-04'), bonusMonth: bonusMonthMap.get('Tiago Lima') || null },
+      { name: 'Fernando Motta', hourlyRate: 13.00, startDate: new Date('2023-01-02'), bonusMonth: bonusMonthMap.get('Fernando Motta') || null },
+      { name: 'Guilherme Martini Bronzatti', hourlyRate: 12.50, startDate: new Date('2022-05-30'), bonusMonth: bonusMonthMap.get('Guilherme Martini Bronzatti') || null }
     ];
+    
+    // Log bonus month assignments for verification
+    consultantData.forEach(c => {
+      if (c.bonusMonth) {
+        const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        console.log(`   ${c.name}: Bonus month = ${monthNames[c.bonusMonth]} (${c.bonusMonth})`);
+      }
+    });
 
     const createdConsultants = await db.insert(consultants).values(consultantData).returning();
 
