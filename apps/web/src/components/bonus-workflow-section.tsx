@@ -135,7 +135,11 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
             onValueChange={(value) => setSelectedConsultantId(value ? parseInt(value) : null)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select consultant who will receive the bonus" />
+              <SelectValue placeholder="Select consultant who will receive the bonus">
+                {selectedConsultantId && cycleLines
+                  ? cycleLines.find(line => line.consultant.id === selectedConsultantId)?.consultant.name || 'Select a consultant'
+                  : 'Select consultant who will receive the bonus'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {cycleLines?.map((line) => {

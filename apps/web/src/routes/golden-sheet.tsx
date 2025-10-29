@@ -165,15 +165,15 @@ export default function GoldenSheetPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely certain?</AlertDialogTitle>
               <AlertDialogDescription className="space-y-2">
-                <p className="font-semibold text-red-600">
+                <div className="font-semibold text-red-600">
                   This action cannot be undone. Once archived, this payroll cycle will be permanently removed from the active cycles list.
-                </p>
-                <p>
+                </div>
+                <div>
                   This will archive the cycle <strong>{cycle.monthLabel}</strong> and all associated line items, invoices, and payments. The data will be preserved but hidden from normal operations.
-                </p>
-                <p className="text-sm text-muted-foreground">
+                </div>
+                <div className="text-sm text-muted-foreground">
                   If you proceed, you will need to contact a system administrator to restore this cycle in the future.
-                </p>
+                </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
