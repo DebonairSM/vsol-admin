@@ -434,7 +434,11 @@ export default function ConsultantRegistrationForm({ onSubmit, loading = false }
               onValueChange={(value) => handleInputChange('bonusMonth', value ? parseInt(value) : undefined)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o mês" />
+                <SelectValue placeholder="Nenhum">
+                  {formState.bonusMonth 
+                    ? getMonthsList().find(m => m.value === formState.bonusMonth)?.label 
+                    : 'Nenhum'}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">Nenhum</SelectItem>

@@ -1,0 +1,1 @@
+ALTER TABLE payroll_cycles ADD `archived_at` integer;

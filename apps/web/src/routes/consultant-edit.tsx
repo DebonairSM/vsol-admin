@@ -489,7 +489,11 @@ export default function ConsultantEditPage() {
                   onValueChange={(value) => handleInputChange('bonusMonth', value ? parseInt(value) : null)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Month" />
+                    <SelectValue placeholder="None">
+                      {formState.bonusMonth 
+                        ? getMonthsList().find(m => m.value === formState.bonusMonth)?.label 
+                        : 'None'}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">None</SelectItem>

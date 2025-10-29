@@ -82,3 +82,14 @@ export function useCalculatePayment() {
     },
   });
 }
+
+export function useDeleteCycle() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: number) => apiClient.deleteCycle(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cycles'] });
+    },
+  });
+}

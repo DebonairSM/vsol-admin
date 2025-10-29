@@ -106,4 +106,17 @@ router.put('/:cycleId/lines/:lineId',
   }
 );
 
+// DELETE /api/cycles/:id
+router.delete('/:id',
+  auditMiddleware('ARCHIVE_CYCLE', 'cycle'),
+  async (req, res, next) => {
+    try {
+      const cycle = await CycleService.archive(parseInt(req.params.id));
+      res.json(cycle);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;

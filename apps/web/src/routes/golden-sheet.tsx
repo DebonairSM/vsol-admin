@@ -1,13 +1,26 @@
-import { useParams } from 'react-router-dom';
-import { useCycle, useCycleSummary, useUpdateLineItem, useUpdateCycle } from '@/hooks/use-cycles';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useCycle, useCycleSummary, useUpdateLineItem, useUpdateCycle, useDeleteCycle } from '@/hooks/use-cycles';
 import { useBonusWorkflow } from '@/hooks/use-bonus-workflow';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useState } from 'react';
+import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import BonusInfoCell from '@/components/bonus-info-cell';
 import WorkflowTracker from '@/components/workflow-tracker';
 import BonusWorkflowSection from '@/components/bonus-workflow-section';
@@ -15,12 +28,14 @@ import BonusWorkflowSection from '@/components/bonus-workflow-section';
 export default function GoldenSheetPage() {
   const { id } = useParams<{ id: string }>();
   const cycleId = parseInt(id!);
+  const navigate = useNavigate();
   
   const { data: cycle, isLoading: cycleLoading } = useCycle(cycleId);
   const { data: summary, isLoading: summaryLoading } = useCycleSummary(cycleId);
   const { data: bonusWorkflow } = useBonusWorkflow(cycleId);
   const updateLineItem = useUpdateLineItem();
   const updateCycle = useUpdateCycle();
+  const deleteCycle = useDeleteCycle();
 
   const [editingCell, setEditingCell] = useState<{ lineId: number; field: string } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -90,6 +105,16 @@ export default function GoldenSheetPage() {
     }
   };
 
+  const handleDeleteCycle = async () => {
+    try {
+      await deleteCycle.mutateAsync(cycleId);
+      toast.success('Cycle archived successfully');
+      navigate('/');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to archive cycle');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -98,6 +123,39 @@ export default function GoldenSheetPage() {
           <h1 className="text-3xl font-bold text-gray-900">Golden Sheet</h1>
           <p className="text-gray-600">{cycle.monthLabel} Payroll Cycle</p>
         </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Cycle
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely certain?</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <p className="font-semibold text-red-600">
+                  This action cannot be undone. Once archived, this payroll cycle will be permanently removed from the active cycles list.
+                </p>
+                <p>
+                  This will archive the cycle <strong>{cycle.monthLabel}</strong> and all associated line items, invoices, and payments. The data will be preserved but hidden from normal operations.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  If you proceed, you will need to contact a system administrator to restore this cycle in the future.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteCycle}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Yes, Archive This Cycle
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Workflow Tracker */}

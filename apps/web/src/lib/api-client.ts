@@ -211,6 +211,12 @@ class ApiClient {
     });
   }
 
+  async deleteCycle(id: number) {
+    return this.request<any>(`/cycles/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Invoice methods
   async getInvoices(cycleId?: number) {
     const query = cycleId ? `?cycleId=${cycleId}` : '';

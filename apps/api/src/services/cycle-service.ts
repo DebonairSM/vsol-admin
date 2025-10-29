@@ -6,11 +6,12 @@ import { NotFoundError, ValidationError } from '../middleware/errors';
 export class CycleService {
   static async getAll() {
     return db.query.payrollCycles.findMany({
+      where: isNull(payrollCycles.archivedAt),
       orderBy: (cycles, { desc }) => [desc(cycles.monthLabel)]
     });
   }
 
-  static async getById(id: number) {
+  static async getById(id: number, includeArchived: boolean = true) {
     const cycle = await db.query.payrollCycles.findFirst({
       where: eq(payrollCycles.id, id),
       with: {
@@ -33,6 +34,10 @@ export class CycleService {
     });
 
     if (!cycle) {
+      throw new NotFoundError('Payroll cycle not found');
+    }
+    
+    if (!includeArchived && cycle.archivedAt) {
       throw new NotFoundError('Payroll cycle not found');
     }
 
@@ -268,5 +273,22 @@ export class CycleService {
       usdTotal: summary.usdTotal,
       anomalies: summary.anomalies
     };
+  }
+
+  static async archive(id: number) {
+    const existing = await this.getById(id);
+    
+    if (existing.archivedAt) {
+      throw new ValidationError('Cycle is already archived');
+    }
+
+    await db.update(payrollCycles)
+      .set({
+        archivedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(payrollCycles.id, id));
+
+    return this.getById(id);
   }
 }
