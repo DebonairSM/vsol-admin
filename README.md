@@ -58,7 +58,7 @@ flowchart TD
   end
 
   %% Payroll Cycle Management
-  subgraph Cycle Management
+  subgraph CycleManagement["Cycle Management"]
     B --> C[Create Cycle]
     C -->|Auto-snapshot rates| D[Auto Line Items]
     D --> E[Golden Sheet Inline Edit]
@@ -68,7 +68,7 @@ flowchart TD
   end
 
   %% 9-Step Workflow Dates tracked on cycle header
-  subgraph Workflow Dates (9)
+  subgraph WorkflowDates["Workflow Dates - 9 Steps"]
     direction LR
     W1[Send Invoice] --> W2[Invoice Accepted]
     W2 --> W3[Client Payment Scheduled]
@@ -81,7 +81,7 @@ flowchart TD
   end
 
   %% Bonus Workflow (Omnigo bonus)
-  subgraph Bonus Workflow
+  subgraph BonusWorkflow["Bonus Workflow"]
     C --> BW0[Create Bonus Workflow]
     BW0 --> BW1[Select Recipient\n(auto-detect from line items)]
     BW1 --> BW2[Set Announcement Date]
@@ -91,20 +91,20 @@ flowchart TD
   end
 
   %% Invoices & Payments
-  subgraph Invoices & Payments
+  subgraph InvoicesPayments["Invoices & Payments"]
     I1[Create/Edit Invoices] --> I2[Record Payments\nPIX / Inter]
     I2 --> W5
   end
 
   %% Work Hours Management
-  subgraph Work Hours
+  subgraph WorkHours["Work Hours"]
     WH1[Import Work Hours JSON] --> WH2[Track Monthly Hours]
     WH2 --> WH3[Suggest Hours for New Cycle]
     WH3 --> C
   end
 
   %% Time Doctor Integration
-  subgraph Time Doctor
+  subgraph TimeDoctor["Time Doctor"]
     TD1[Sync All / One Consultant] --> TD2[Toggle Sync per Consultant]
     TD1 --> D
     TD2 --> D
