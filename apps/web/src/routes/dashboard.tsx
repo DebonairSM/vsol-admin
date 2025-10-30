@@ -3,7 +3,7 @@ import { useCycles } from '@/hooks/use-cycles';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Plus, Calendar, DollarSign, Users, FileText } from 'lucide-react';
+import { Plus, Calendar, DollarSign, Users, FileText, CalendarCheck } from 'lucide-react';
 
 export default function DashboardPage() {
   const { data: cycles, isLoading } = useCycles();
@@ -47,12 +47,24 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600">VSol Admin - Golden Sheet Management</p>
         </div>
-        <Button asChild>
-          <Link to="/cycles/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Cycle
-          </Link>
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" asChild>
+            <a
+              href="https://calendly.com/vsol/meeting-with-bandeira"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <CalendarCheck className="mr-2 h-4 w-4" />
+              Schedule Meeting
+            </a>
+          </Button>
+          <Button asChild>
+            <Link to="/cycles/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Cycle
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Quick Stats */}

@@ -13,7 +13,8 @@ import {
   Table,
   Laptop,
   Clock,
-  Settings
+  Settings,
+  Calendar
 } from 'lucide-react';
 
 const navigation = [
@@ -65,6 +66,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             })}
+            {/* Calendly Link */}
+            <a
+              href="https://calendly.com/vsol/meeting-with-bandeira"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            >
+              <Calendar className="mr-3 h-5 w-5" />
+              Schedule Meeting
+            </a>
           </nav>
 
           {/* User info and logout */}

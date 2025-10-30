@@ -146,6 +146,38 @@
         .feed-content::-webkit-scrollbar-track { background: #f1f1f1; }
         .feed-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .feed-content::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Financial Efficiency Metrics */
+        .financial-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; margin-bottom:8px; }
+        .financial-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+        .financial-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+        .financial-title { font-size:13px; font-weight:600; color:#374151; }
+        .financial-badge { padding:4px 10px; border-radius:12px; font-size:11px; font-weight:700; background:#e0e7ff; color:#3730a3; }
+        .financial-display { display:flex; align-items:baseline; gap:8px; }
+        .financial-number { font-size:32px; font-weight:700; color:#111827; }
+        .financial-trend { font-size:12px; font-weight:600; margin-top:8px; }
+        
+        /* AI Insights Card */
+        .ai-insights-card { background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border:1px solid #f59e0b; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(245,158,11,0.15); margin-bottom:24px; }
+        .ai-insights-header { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+        .ai-insights-title { font-size:14px; font-weight:700; color:#78350f; }
+        .ai-insights-content { font-size:13px; color:#92400e; line-height:1.6; }
+        .ai-insights-icon { color:#d97706; }
+        
+        /* Human Capital Pulse */
+        .capital-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05); margin-top:24px; }
+        .capital-header { font-weight:600; font-size:14px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+        .capital-value { font-size:36px; font-weight:700; color:#3b82f6; margin-bottom:4px; }
+        .capital-label { font-size:12px; color:#6b7280; }
+        
+        /* Trend Arrow Indicator */
+        .trend-arrow { font-size:14px; margin-left:4px; vertical-align:middle; }
+        .trend-up { color:#10b981; }
+        .trend-down { color:#ef4444; }
+        .trend-neutral { color:#6b7280; }
+        
+        /* Badge additions */
+        .badge-financial { background:#e0e7ff; color:#3730a3; }
     </style>
 </head>
 <body>
@@ -187,6 +219,40 @@
                 <div class="hero-label">Production OEE</div>
                 <div class="hero-value" id="hero-oee">87.3%</div>
                 <div class="hero-trend"><span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle;">trending_up</span> Avail: 94% • Perf: 92% • Qual: 96%</div>
+            </div>
+        </div>
+
+        <!-- Financial Efficiency Metrics -->
+        <div>
+            <div class="section-title">
+                <span class="material-symbols-outlined" style="color:#6366f1;">account_balance</span>
+                Financial Efficiency
+            </div>
+            <div class="financial-grid">
+                <div class="financial-card">
+                    <div class="financial-header">
+                        <div class="financial-title">Gross Margin %</div>
+                        <span class="financial-badge badge-financial">FIN</span>
+                    </div>
+                    <div class="financial-display">
+                        <span class="financial-number" id="metric-gross-margin">34.2%</span>
+                        <span class="metric-change change-up"><span class="trend-arrow trend-up">↑</span> +0.8%</span>
+                    </div>
+                    <div class="financial-trend" style="color:#6b7280; font-size:11px;">7-day avg vs previous week</div>
+                    <div class="mini-sparkline"></div>
+                </div>
+                <div class="financial-card">
+                    <div class="financial-header">
+                        <div class="financial-title">Accounts Receivable Days (DSO)</div>
+                        <span class="financial-badge badge-financial">FIN</span>
+                    </div>
+                    <div class="financial-display">
+                        <span class="financial-number" id="metric-dso">28</span>
+                        <span class="metric-change change-down"><span class="trend-arrow trend-down">↓</span> -2 days</span>
+                    </div>
+                    <div class="financial-trend" style="color:#6b7280; font-size:11px;">Target: <30 days (healthy)</div>
+                    <div class="mini-sparkline"></div>
+                </div>
             </div>
         </div>
 
@@ -332,7 +398,7 @@
                     </div>
                     <div class="metric-display">
                         <span class="metric-number" id="metric-quality">3</span>
-                        <span class="metric-change change-down">-5</span>
+                        <span class="metric-change change-down"><span class="trend-arrow trend-down">↓</span> -5</span>
                     </div>
                     <div class="metric-target">All CAPAs on track</div>
                 </div>
@@ -369,10 +435,61 @@
                     </div>
                     <div class="metric-display">
                         <span class="metric-number" id="metric-delivery">96.2%</span>
-                        <span class="metric-change change-up">+2.4%</span>
+                        <span class="metric-change change-up"><span class="trend-arrow trend-up">↑</span> +2.4%</span>
                     </div>
                     <div class="metric-target">On-time delivery rate</div>
                     <div class="mini-sparkline"></div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Throughput Rate</div>
+                        <span class="metric-badge badge-mes">MES</span>
+                    </div>
+                    <div class="metric-display">
+                        <span class="metric-number" id="metric-throughput">4.2h</span>
+                        <span class="metric-change change-down"><span class="trend-arrow trend-down">↓</span> -0.3h</span>
+                    </div>
+                    <div class="metric-target">Avg cycle time per work order</div>
+                    <div class="mini-sparkline"></div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Capacity Utilization</div>
+                        <span class="metric-badge badge-mes">MES</span>
+                    </div>
+                    <div class="metric-display">
+                        <span class="metric-number" id="metric-capacity">82%</span>
+                        <span class="metric-change change-up"><span class="trend-arrow trend-up">↑</span> +3%</span>
+                    </div>
+                    <div class="metric-target">Optimal range: 75-85%</div>
+                    <div class="mini-sparkline"></div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">First Pass Yield (FPY)</div>
+                        <span class="metric-badge badge-qms">QMS</span>
+                    </div>
+                    <div class="metric-display">
+                        <span class="metric-number" id="metric-fpy">94.8%</span>
+                        <span class="metric-change change-up"><span class="trend-arrow trend-up">↑</span> +0.5%</span>
+                    </div>
+                    <div class="metric-target">Units passing QC first time</div>
+                    <div class="mini-sparkline"></div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <div class="metric-title">Return Rate</div>
+                        <span class="metric-badge badge-qms">QMS</span>
+                    </div>
+                    <div class="metric-display">
+                        <span class="metric-number" id="metric-returns">0.8%</span>
+                        <span class="metric-change change-down"><span class="trend-arrow trend-down">↓</span> -0.2%</span>
+                    </div>
+                    <div class="metric-target">Customer returns & complaints</div>
                 </div>
             </div>
         </div>
@@ -407,6 +524,19 @@
                         <span class="integration-status status-connected">Synced</span>
                     </div>
                 </div>
+                
+                <!-- AI Insights Card -->
+                <div class="ai-insights-card">
+                    <div class="ai-insights-header">
+                        <span class="material-symbols-outlined ai-insights-icon">smart_toy</span>
+                        <div class="ai-insights-title">AI Insights</div>
+                    </div>
+                    <div class="ai-insights-content" id="ai-insights-text">
+                        Top delay: Supplier X, +2 days lead time on Circuit Board components. Recommendation: Consider alternate supplier.
+                    </div>
+                    <div style="font-size:11px; color:#92400e; margin-top:8px; opacity:0.8;">Updated 5 min ago</div>
+                </div>
+                
                 <div class="section-title">
                     <span class="material-symbols-outlined">hub</span>
                     System Health
@@ -422,6 +552,17 @@
                         <span class="material-symbols-outlined">feed</span> Live Activity
                     </div>
                     <div class="feed-content" id="activity-feed"></div>
+                </div>
+                
+                <!-- Human Capital Pulse -->
+                <div class="capital-card">
+                    <div class="capital-header">
+                        <span class="material-symbols-outlined" style="color:#3b82f6;">people</span>
+                        Human Capital Pulse
+                    </div>
+                    <div class="capital-value" id="capital-coverage">94%</div>
+                    <div class="capital-label">of planned workforce certified for active jobs today</div>
+                    <div style="font-size:11px; color:#6b7280; margin-top:8px;">Skill coverage across all active work orders</div>
                 </div>
             </div>
         </div>
@@ -520,7 +661,10 @@
             { type: 'quality', templates: [
                 'Quality check passed for LOT-{num}',
                 'Non-conformance NC-{num} logged in {product}',
-                'CAPA initiated for quality issue'
+                'CAPA initiated for quality issue',
+                'Return processed: Order ORD-{num} from {customer}',
+                'Customer complaint logged for {product}',
+                'Quality improvement: FPY increased to 94.8%'
             ] },
             { type: 'payment', templates: [
                 'Payment ${num}k received from {customer}',
@@ -547,6 +691,28 @@
             shipped: 15,
             delivered: 42
         };
+        
+        // New metrics state
+        let metricsState = {
+            grossMargin: 34.2,
+            dso: 28,
+            throughput: 4.2,
+            capacity: 82,
+            fpy: 94.8,
+            returns: 0.8,
+            capitalCoverage: 94
+        };
+        
+        // AI Insights messages pool
+        const aiInsightsMessages = [
+            'Top delay: Supplier X, +2 days lead time on Circuit Board components. Recommendation: Consider alternate supplier.',
+            'Bottleneck detected: Machine Line 3 showing 15% slower cycle times. Schedule maintenance check.',
+            'Inventory optimization: Component stock levels above optimal. Consider reducing order frequency.',
+            'Quality trend: First pass yield improving 2% week-over-week. Keep current process parameters.',
+            'Delivery alert: 3 orders approaching SLA deadline. Expedite through production queue.',
+            'Capacity utilization at 82% - optimal range maintained. No immediate scaling needed.',
+            'Supplier performance: Vendor Y consistently late. Evaluate alternative suppliers for next quarter.'
+        ];
 
         // Initialize systems
         function initSystems() {
@@ -669,6 +835,79 @@
             return Math.max(minVal, Math.min(maxVal, current + change));
         }
 
+        // Update financial metrics
+        function updateFinancialMetrics() {
+            // Gross Margin with small variance
+            const marginChange = (Math.random() - 0.5) * 0.4;
+            metricsState.grossMargin = Math.max(32, Math.min(37, metricsState.grossMargin + marginChange));
+            const marginEl = document.getElementById('metric-gross-margin');
+            if (marginEl) {
+                marginEl.textContent = metricsState.grossMargin.toFixed(1) + '%';
+            }
+            
+            // DSO with small variance
+            const dsoChange = Math.floor((Math.random() - 0.5) * 2);
+            metricsState.dso = Math.max(25, Math.min(32, metricsState.dso + dsoChange));
+            const dsoEl = document.getElementById('metric-dso');
+            if (dsoEl) {
+                dsoEl.textContent = metricsState.dso;
+            }
+        }
+        
+        // Update operational metrics
+        function updateOperationalMetrics() {
+            // Throughput Rate
+            const throughputChange = (Math.random() - 0.5) * 0.2;
+            metricsState.throughput = Math.max(3.8, Math.min(5.0, metricsState.throughput + throughputChange));
+            const throughputEl = document.getElementById('metric-throughput');
+            if (throughputEl) {
+                throughputEl.textContent = metricsState.throughput.toFixed(1) + 'h';
+            }
+            
+            // Capacity Utilization
+            const capacityChange = Math.floor((Math.random() - 0.5) * 2);
+            metricsState.capacity = Math.max(75, Math.min(88, metricsState.capacity + capacityChange));
+            const capacityEl = document.getElementById('metric-capacity');
+            if (capacityEl) {
+                capacityEl.textContent = metricsState.capacity + '%';
+            }
+            
+            // First Pass Yield
+            const fpyChange = (Math.random() - 0.5) * 0.3;
+            metricsState.fpy = Math.max(92, Math.min(97, metricsState.fpy + fpyChange));
+            const fpyEl = document.getElementById('metric-fpy');
+            if (fpyEl) {
+                fpyEl.textContent = metricsState.fpy.toFixed(1) + '%';
+            }
+            
+            // Return Rate
+            const returnsChange = (Math.random() - 0.5) * 0.1;
+            metricsState.returns = Math.max(0.5, Math.min(1.5, metricsState.returns + returnsChange));
+            const returnsEl = document.getElementById('metric-returns');
+            if (returnsEl) {
+                returnsEl.textContent = metricsState.returns.toFixed(1) + '%';
+            }
+        }
+        
+        // Update Human Capital Pulse
+        function updateCapitalPulse() {
+            const coverageChange = Math.floor((Math.random() - 0.5) * 2);
+            metricsState.capitalCoverage = Math.max(90, Math.min(98, metricsState.capitalCoverage + coverageChange));
+            const coverageEl = document.getElementById('capital-coverage');
+            if (coverageEl) {
+                coverageEl.textContent = metricsState.capitalCoverage + '%';
+            }
+        }
+        
+        // Rotate AI Insights
+        function rotateAIInsights() {
+            const insightsEl = document.getElementById('ai-insights-text');
+            if (insightsEl) {
+                const randomMessage = aiInsightsMessages[Math.floor(Math.random() * aiInsightsMessages.length)];
+                insightsEl.textContent = randomMessage;
+            }
+        }
+        
         // Simulation loops
         function startSimulation() {
             // Activity feed updates
@@ -683,6 +922,18 @@
             
             // Pipeline animation
             setInterval(updatePipelineAnimation, 4000);
+            
+            // Financial metrics updates
+            setInterval(updateFinancialMetrics, 12000);
+            
+            // Operational metrics updates
+            setInterval(updateOperationalMetrics, 10000);
+            
+            // Human Capital Pulse updates
+            setInterval(updateCapitalPulse, 15000);
+            
+            // AI Insights rotation
+            setInterval(rotateAIInsights, 30000);
             
             // Progress bar updates
             let progressValues = {

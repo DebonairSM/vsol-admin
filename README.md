@@ -83,16 +83,16 @@ flowchart TD
   %% Bonus Workflow (Omnigo bonus)
   subgraph BonusWorkflow["Bonus Workflow"]
     C --> BW0[Create Bonus Workflow]
-    BW0 --> BW1[Select Recipient\n(auto-detect from line items)]
+    BW0 --> BW1["Select Recipient<br/>(auto-detect from line items)"]
     BW1 --> BW2[Set Announcement Date]
-    BW2 --> BW3[Generate Email\nnetBonus = omnigoBonus - bonusAdvance]
+    BW2 --> BW3["Generate Email<br/>netBonus = omnigoBonus - bonusAdvance"]
     BW3 --> BW4[Mark Paid With Payroll]
     BW4 --> BW5[Set Bonus Payment Date]
   end
 
   %% Invoices & Payments
   subgraph InvoicesPayments["Invoices & Payments"]
-    I1[Create/Edit Invoices] --> I2[Record Payments\nPIX / Inter]
+    I1[Create/Edit Invoices] --> I2["Record Payments<br/>PIX / Inter"]
     I2 --> W5
   end
 
@@ -129,29 +129,28 @@ flowchart TD
     ST1[Update Default Omnigo Bonus] --> C
   end
 
-  %% Audit Logging (parallel to all mutations)
+  %% Domain Models
+  subgraph DomainModels["Domain Models"]
+    direction TB
+    DM1[User]
+    DM2[Consultant]
+    DM3[PayrollCycle]
+    DM4[CycleLineItem]
+    DM5[Invoice]
+    DM6[Payment]
+    DM7[ConsultantEquipment]
+    DM8[MonthlyWorkHours]
+    DM9[BonusWorkflow]
+    DM10[SystemSettings]
+  end
+
+  %% Audit Log (separate, not linked)
+  subgraph AuditSystem["Audit System"]
+    AL1[(AuditLog)]
+  end
+
   classDef audit fill:#ffeaea,stroke:#ff6b6b,stroke-width:1px,color:#993333;
-  A -->|Audit| AL1[(Audit Log)]:::audit
-  C -->|Audit| AL1:::audit
-  D -->|Audit| AL1:::audit
-  E -->|Audit| AL1:::audit
-  F -->|Audit| AL1:::audit
-  G -->|Audit| AL1:::audit
-  BW0 -->|Audit| AL1:::audit
-  BW1 -->|Audit| AL1:::audit
-  BW2 -->|Audit| AL1:::audit
-  BW3 -->|Audit| AL1:::audit
-  BW4 -->|Audit| AL1:::audit
-  I1 -->|Audit| AL1:::audit
-  I2 -->|Audit| AL1:::audit
-  WH1 -->|Audit| AL1:::audit
-  TD1 -->|Audit| AL1:::audit
-  TD2 -->|Audit| AL1:::audit
-  EQ1 -->|Audit| AL1:::audit
-  EQ3 -->|Audit| AL1:::audit
-  ST1 -->|Audit| AL1:::audit
-  CO1 -->|Audit| AL1:::audit
-  CO2 -->|Audit| AL1:::audit
+  AL1:::audit
 ```
 
 ## Formulas
