@@ -21,10 +21,40 @@
         .hero { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 16px; }
         .hero h2 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #111827; }
         .hero p { font-size: 15px; color: #4b5563; margin-bottom: 20px; }
-        .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+        .hero-ctas { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+        .hero-ctas::-webkit-scrollbar { height: 4px; }
+        .hero-ctas::-webkit-scrollbar-track { background: transparent; }
+        .hero-ctas::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+        .hero-ctas button { flex-shrink: 0; white-space: nowrap; padding: 10px 14px; font-size: 12px; }
         .btn { padding: 12px 16px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; font-weight: 600; color: #111827; font-size: 13px; }
         .btn.primary { background: #3b82f6; color: #fff; border-color: #3b82f6; }
         .btn:hover { filter: brightness(0.98); }
+        .btn.ai-gradient { 
+            background: linear-gradient(135deg, #00f5ff 0%, #8338ec 50%, #ff006e 100%);
+            border: none;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(131, 56, 236, 0.4), 0 0 20px rgba(0, 245, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn.ai-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.5s;
+        }
+        .btn.ai-gradient:hover {
+            box-shadow: 0 6px 20px rgba(131, 56, 236, 0.6), 0 0 30px rgba(0, 245, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        .btn.ai-gradient:hover::before {
+            left: 100%;
+        }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
         .section-title { font-size: 20px; font-weight: 700; color: #111827; margin: 24px 0 16px 0; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
         .footer { max-width: 1400px; margin: 16px auto 32px; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; color: #6b7280; font-size: 12px; flex-wrap: wrap; gap: 12px; }
@@ -40,7 +70,6 @@
         .kpi .box { text-align: center; padding: 12px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; }
         .kpi .num { font-size: 22px; font-weight: 700; color: #3b82f6; }
         .kpi .lbl { font-size: 11px; color: #6b7280; margin-top: 4px; }
-        .cta-strip { margin-top: 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: space-between; }
         .footer { max-width: 1200px; margin: 16px auto 32px; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; color: #6b7280; font-size: 12px; }
         .footer .links a { color: #6b7280; text-decoration: none; margin-right: 12px; }
     </style>
@@ -59,6 +88,7 @@
             <a href="./techparts-owner-dashboard.html">Dashboard</a>
             <a href="./techparts-crm.html">CRM</a>
             <a href="./techparts-erp.html">ERP</a>
+            <a href="./techparts-hris.html">HRIS</a>
             <a href="./techparts-oms.html">OMS</a>
             <a href="./techparts-qms.html">QMS</a>
             <a href="./techparts-mes.html">MES</a>
@@ -72,15 +102,23 @@
             <div class="hero">
                 <h2>Tailor-built, never template-bound.</h2>
                 <p>We map your existing process exactly as it runs today and build your MVP around it — local-first, private, and ready in one week. When you decide to evolve, your system evolves with you.</p>
-                <div class="hero-ctas">
-                    <button class="btn primary" onclick="go('./techparts-owner-dashboard.html')"><span class="material-symbols-outlined">dashboard</span> Dashboard</button>
-                    <button class="btn" onclick="go('./techparts-crm.html')"><span class="material-symbols-outlined">account_circle</span> CRM</button>
-                    <button class="btn" onclick="go('./techparts-erp.html')"><span class="material-symbols-outlined">inventory_2</span> ERP</button>
-                    <button class="btn" onclick="go('./techparts-oms.html')"><span class="material-symbols-outlined">shopping_cart</span> OMS</button>
-                    <button class="btn" onclick="go('./techparts-qms.html')"><span class="material-symbols-outlined">check_circle</span> QMS</button>
-                    <button class="btn" onclick="go('./techparts-mes.html')"><span class="material-symbols-outlined">memory</span> MES</button>
-                    <button class="btn" onclick="go('./techparts-wms.html')"><span class="material-symbols-outlined">warehouse</span> WMS</button>
-                    <button class="btn" onclick="go('./techparts-automation.html')"><span class="material-symbols-outlined">smart_toy</span> Automation</button>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+                    <button class="btn primary" onclick="window.open('https://calendly.com/vsol/meeting-with-bandeira', '_blank')" style="padding: 14px 20px; font-size: 14px;"><span class="material-symbols-outlined">event</span> Schedule Meeting</button>
+                    <button class="btn" onclick="go('./vsol-onepager.html')" style="padding: 14px 20px; font-size: 14px;"><span class="material-symbols-outlined">print</span> Print One-Pager</button>
+                    <button class="btn" onclick="go('./techparts-owner-dashboard.html')" style="padding: 14px 20px; font-size: 14px;"><span class="material-symbols-outlined">dashboard</span> View Dashboard</button>
+                </div>
+                <div style="padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <div style="font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Explore Modules</div>
+                    <div class="hero-ctas" style="gap: 8px;">
+                        <button class="btn" onclick="go('./techparts-crm.html')"><span class="material-symbols-outlined">account_circle</span> CRM</button>
+                        <button class="btn" onclick="go('./techparts-erp.html')"><span class="material-symbols-outlined">inventory_2</span> ERP</button>
+                        <button class="btn" onclick="go('./techparts-hris.html')"><span class="material-symbols-outlined">people</span> HRIS</button>
+                        <button class="btn" onclick="go('./techparts-oms.html')"><span class="material-symbols-outlined">shopping_cart</span> OMS</button>
+                        <button class="btn" onclick="go('./techparts-qms.html')"><span class="material-symbols-outlined">check_circle</span> QMS</button>
+                        <button class="btn" onclick="go('./techparts-mes.html')"><span class="material-symbols-outlined">memory</span> MES</button>
+                        <button class="btn" onclick="go('./techparts-wms.html')"><span class="material-symbols-outlined">warehouse</span> WMS</button>
+                        <button class="btn ai-gradient" onclick="go('./techparts-automation.html')"><span class="material-symbols-outlined">smart_toy</span> Automation</button>
+                    </div>
                 </div>
             </div>
 
@@ -103,6 +141,18 @@
                         <li>Basic time and task tracking</li>
                         <li>Inventory light for services/products</li>
                         <li>QuickBooks export, full accounting integration</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3><span class="material-symbols-outlined" style="font-size:18px;">people</span> Human Resources Information System (HRIS)</h3>
+                    <p>People management, performance, and compliance tailored to your policies.</p>
+                    <ul>
+                        <li>Employee profiles with custom fields</li>
+                        <li>Vacation, time-off, and attendance tracking</li>
+                        <li>Performance reviews and bonus management</li>
+                        <li>Equipment and parking assignments</li>
+                        <li>Onboarding and termination workflows</li>
+                        <li>Payroll integration and benefits tracking</li>
                     </ul>
                 </div>
                 <div class="card">
@@ -184,14 +234,14 @@
                     </ul>
                 </div>
                 <div class="card">
-                    <h3><span class="material-symbols-outlined" style="font-size:18px;">people</span> HR & Training Portal</h3>
+                    <h3><span class="material-symbols-outlined" style="font-size:18px;">school</span> Training & Safety Portal</h3>
                     <p>Certification tracking for OSHA and ISO audits.</p>
                     <ul>
-                        <li>Skill matrix per employee</li>
+                        <li>Skill matrix per employee (linked to HRIS)</li>
                         <li>Safety checklist assignments</li>
-                        <li>Attendance and basic leave tracking</li>
                         <li>Training completion records</li>
                         <li>Safety incident tracking (EHS)</li>
+                        <li>Compliance reporting for audits</li>
                     </ul>
                 </div>
                 <div class="card">
@@ -216,24 +266,6 @@
                     </ul>
                 </div>
             </div>
-            
-            <div style="margin-top:24px; padding:20px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:12px;">
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                    <span class="material-symbols-outlined" style="color:#3b82f6;">extension</span>
-                    <strong style="color:#111827;">Optional Extensions</strong>
-                </div>
-                <p style="font-size:13px; color:#6b7280; margin:0;">
-                    CMMS (maintenance scheduling & downtime tracking), Production Scheduling (capacity planning & Gantt charts), Mobile/Tablet UI for shop floor and warehouse operations
-                </p>
-            </div>
-
-            <div class="cta-strip">
-                <div>
-                    <strong>1 Week • 1 MVP • Zero Risk</strong>
-                    <div style="color:#6b7280; font-size:13px;">If it doesn’t fit like a glove, you don’t pay. QR placeholder → book kickoff.</div>
-                </div>
-                <button class="btn primary" onclick="go('./techparts-automation.html')"><span class="material-symbols-outlined">qr_code</span> View Automation</button>
-            </div>
         </section>
 
         <aside class="sidebar">
@@ -246,9 +278,28 @@
                     <div class="box"><div class="num">87%</div><div class="lbl">Avg Perf</div></div>
                 </div>
             </div>
+            
             <div class="card">
                 <h3><span class="material-symbols-outlined" style="font-size:18px;">lightbulb</span> Why Local-First</h3>
                 <p>Own your data. Run privately. Scale to cloud later without rework.</p>
+            </div>
+            
+            <div class="card">
+                <h3><span class="material-symbols-outlined" style="font-size:18px;">extension</span> Optional Extensions</h3>
+                <p style="font-size:14px; color:#4b5563; margin:0;">
+                    CMMS (maintenance scheduling & downtime tracking), Production Scheduling (capacity planning & Gantt charts), Mobile/Tablet UI for shop floor and warehouse operations
+                </p>
+            </div>
+            
+            <div class="card">
+                <h3><span class="material-symbols-outlined" style="font-size:18px;">rocket_launch</span> 1 Week • 1 MVP • Zero Risk</h3>
+                <p style="font-size:14px; color:#4b5563; margin-bottom:16px;">If it doesn't fit like a glove, you don't pay. No templates. No guesswork. Just your process, built exactly how you need it.</p>
+                <button class="btn primary" onclick="window.open('https://calendly.com/vsol/meeting-with-bandeira', '_blank')" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:8px;">
+                    <span class="material-symbols-outlined">event</span> Schedule Meeting
+                </button>
+                <button class="btn ai-gradient" onclick="go('./techparts-automation.html')" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span class="material-symbols-outlined">qr_code</span> View Automation
+                </button>
             </div>
         </aside>
     </main>
@@ -256,9 +307,11 @@
     <div class="footer">
         <div class="links">
             <a href="./techparts-landing.html">Landing</a>
+            <a href="./vsol-onepager.html">One-Pager</a>
             <a href="./techparts-owner-dashboard.html">Dashboard</a>
             <a href="./techparts-crm.html">CRM</a>
             <a href="./techparts-erp.html">ERP</a>
+            <a href="./techparts-hris.html">HRIS</a>
             <a href="./techparts-oms.html">OMS</a>
             <a href="./techparts-qms.html">QMS</a>
             <a href="./techparts-mes.html">MES</a>
