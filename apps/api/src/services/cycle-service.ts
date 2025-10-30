@@ -51,13 +51,17 @@ export class CycleService {
   }
 
   static async create(data: CreateCycleRequest) {
-    // Check if monthLabel already exists
+    // Check if monthLabel already exists for non-archived cycles only
+    // Archived cycles can have their month labels reused
     const existing = await db.query.payrollCycles.findFirst({
       where: eq(payrollCycles.monthLabel, data.monthLabel)
     });
 
-    if (existing) {
-      throw new ValidationError('Cycle with this month label already exists');
+    if (existing && !existing.archivedAt) {
+      throw new ValidationError(
+        `Cycle with month label "${data.monthLabel}" already exists. ` +
+        `Please use a different month label or archive the existing cycle first.`
+      );
     }
 
     // Get all active consultants
@@ -98,14 +102,17 @@ export class CycleService {
   static async update(id: number, data: UpdateCycleRequest) {
     const existing = await this.getById(id);
 
-    // Check if monthLabel change conflicts
+    // Check if monthLabel change conflicts with non-archived cycles
     if (data.monthLabel && data.monthLabel !== existing.monthLabel) {
       const conflict = await db.query.payrollCycles.findFirst({
         where: eq(payrollCycles.monthLabel, data.monthLabel)
       });
 
-      if (conflict) {
-        throw new ValidationError('Cycle with this month label already exists');
+      if (conflict && !conflict.archivedAt) {
+        throw new ValidationError(
+          `Cycle with month label "${data.monthLabel}" already exists. ` +
+          `Please use a different month label or archive the existing cycle first.`
+        );
       }
     }
 

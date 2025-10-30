@@ -63,7 +63,7 @@ export const consultants = sqliteTable('consultants', {
 // Payroll cycles table
 export const payrollCycles = sqliteTable('payroll_cycles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  monthLabel: text('month_label').notNull().unique(),
+  monthLabel: text('month_label').notNull(),
   // Header dates
   calculatedPaymentDate: integer('calculated_payment_date', { mode: 'timestamp' }),
   paymentArrivalDate: integer('payment_arrival_date', { mode: 'timestamp' }),
@@ -102,6 +102,7 @@ export const cycleLineItems = sqliteTable('cycle_line_items', {
   workHours: integer('work_hours'), // Override for cycle.globalWorkHours
   additionalPaidAmount: real('additional_paid_amount'),
   additionalPaidDate: integer('additional_paid_date', { mode: 'timestamp' }),
+  additionalPaidMethod: text('additional_paid_method', { enum: ['PIX', 'INTER', 'OTHER'] }),
   comments: text('comments'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())

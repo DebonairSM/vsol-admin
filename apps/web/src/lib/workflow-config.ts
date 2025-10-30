@@ -33,8 +33,8 @@ export const workflowSteps: WorkflowStep[] = [
   },
   {
     id: 'client-invoice-payment-date',
-    title: 'Client Invoice Payment Date',
-    description: 'Date when client invoice payment is confirmed in Bill.com',
+    title: 'Invoice accepted',
+    description: 'Invoice accepted by Omnigo',
     fieldName: 'clientInvoicePaymentDate',
     icon: UserCheck,
     color: {

@@ -73,6 +73,20 @@ export class LineItemService {
     }
     if (data.informedDate !== undefined) {
       updateData.informedDate = data.informedDate ? new Date(data.informedDate) : null;
+      
+      // Sync to workflow's bonusAnnouncementDate if this consultant is the bonus recipient
+      const workflow = await db.query.bonusWorkflows.findFirst({
+        where: eq(bonusWorkflows.cycleId, existing.cycleId)
+      });
+      
+      if (workflow && workflow.bonusRecipientConsultantId === existing.consultantId) {
+        await db.update(bonusWorkflows)
+          .set({
+            bonusAnnouncementDate: updateData.informedDate,
+            updatedAt: new Date()
+          })
+          .where(eq(bonusWorkflows.cycleId, existing.cycleId));
+      }
     }
     if (data.bonusPaydate !== undefined) {
       updateData.bonusPaydate = data.bonusPaydate ? new Date(data.bonusPaydate) : null;
@@ -86,6 +100,7 @@ export class LineItemService {
     if (data.additionalPaidDate !== undefined) {
       updateData.additionalPaidDate = data.additionalPaidDate ? new Date(data.additionalPaidDate) : null;
     }
+    if (data.additionalPaidMethod !== undefined) updateData.additionalPaidMethod = data.additionalPaidMethod;
     if (data.comments !== undefined) updateData.comments = data.comments;
 
     const [lineItem] = await db.update(cycleLineItems)

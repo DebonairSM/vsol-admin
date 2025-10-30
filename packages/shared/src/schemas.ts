@@ -171,6 +171,7 @@ export const updateLineItemSchema = z.object({
   workHours: z.number().int().positive().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
   additionalPaidAmount: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
   additionalPaidDate: z.string().datetime().nullable().optional(),
+  additionalPaidMethod: z.enum(['PIX', 'INTER', 'OTHER']).nullable().optional(),
   comments: z.string().nullable().optional()
 });
 

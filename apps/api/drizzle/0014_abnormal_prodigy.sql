@@ -1,0 +1,1 @@
+ALTER TABLE cycle_line_items ADD `additional_paid_method` text;

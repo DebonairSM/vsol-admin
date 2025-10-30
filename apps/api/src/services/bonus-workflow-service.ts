@@ -112,6 +112,26 @@ export class BonusWorkflowService {
     }
     if (data.bonusAnnouncementDate !== undefined) {
       updateData.bonusAnnouncementDate = data.bonusAnnouncementDate ? new Date(data.bonusAnnouncementDate) : null;
+      
+      // Sync to line item's informedDate if bonus recipient is set
+      const recipientId = newRecipientId;
+      if (recipientId !== null) {
+        const recipientLineItem = await db.query.cycleLineItems.findFirst({
+          where: and(
+            eq(cycleLineItems.cycleId, cycleId),
+            eq(cycleLineItems.consultantId, recipientId)
+          )
+        });
+        
+        if (recipientLineItem) {
+          await db.update(cycleLineItems)
+            .set({
+              informedDate: updateData.bonusAnnouncementDate,
+              updatedAt: new Date()
+            })
+            .where(eq(cycleLineItems.id, recipientLineItem.id));
+        }
+      }
     }
     if (data.emailGenerated !== undefined) updateData.emailGenerated = data.emailGenerated;
     if (data.emailContent !== undefined) updateData.emailContent = data.emailContent;

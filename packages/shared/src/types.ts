@@ -94,6 +94,7 @@ export interface CycleLineItem {
   workHours?: number | null; // Override for cycle.globalWorkHours
   additionalPaidAmount?: number | null;
   additionalPaidDate?: Date | null;
+  additionalPaidMethod?: 'PIX' | 'INTER' | 'OTHER' | null;
   comments?: string | null;
   createdAt: Date;
   updatedAt: Date;

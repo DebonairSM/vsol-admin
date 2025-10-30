@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS `payroll_cycles_month_label_unique`;

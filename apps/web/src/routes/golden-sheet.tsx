@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import BonusInfoCell from '@/components/bonus-info-cell';
 import WorkflowTracker from '@/components/workflow-tracker';
 import BonusWorkflowSection from '@/components/bonus-workflow-section';
+import AdditionalPaidModal from '@/components/additional-paid-modal';
 
 export default function GoldenSheetPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +41,7 @@ export default function GoldenSheetPage() {
   const [editingCell, setEditingCell] = useState<{ lineId: number; field: string } | null>(null);
   const [editingCycleField, setEditingCycleField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [additionalPaidModalOpen, setAdditionalPaidModalOpen] = useState<number | null>(null);
 
   if (cycleLoading || summaryLoading) {
     return (
@@ -69,11 +71,11 @@ export default function GoldenSheetPage() {
       let value: any = editValue;
       
       // Convert value based on field type
-      if (['adjustmentValue', 'workHours', 'additionalPaidAmount'].includes(editingCell.field)) {
+      if (['adjustmentValue', 'workHours', 'bonusAdvance'].includes(editingCell.field)) {
         value = editValue ? parseFloat(editValue) : null;
       } else if (editingCell.field === 'invoiceSent') {
         value = editValue === 'true';
-      } else if (editingCell.field === 'additionalPaidDate') {
+      } else if (editingCell.field === 'advanceDate') {
         value = editValue ? new Date(editValue).toISOString() : null;
       }
 
@@ -216,8 +218,9 @@ export default function GoldenSheetPage() {
                   <TableHead>Adjustment Value</TableHead>
                   <TableHead>Comments</TableHead>
                   <TableHead>Bonus Information</TableHead>
-                  <TableHead>Additional Paid Amount</TableHead>
-                  <TableHead>Additional Paid Date</TableHead>
+                  <TableHead>Bonus Advance</TableHead>
+                  <TableHead>Advance Date</TableHead>
+                  <TableHead>Additional Paid</TableHead>
                   <TableHead>Rate/Hour</TableHead>
                   <TableHead>Subtotal</TableHead>
                 </TableRow>
@@ -316,9 +319,9 @@ export default function GoldenSheetPage() {
                       />
                     </TableCell>
 
-                    {/* Additional Paid Amount */}
+                    {/* Bonus Advance */}
                     <TableCell>
-                      {editingCell?.lineId === line.id && editingCell?.field === 'additionalPaidAmount' ? (
+                      {editingCell?.lineId === line.id && editingCell?.field === 'bonusAdvance' ? (
                         <div className="flex gap-2">
                           <Input
                             type="number"
@@ -337,16 +340,16 @@ export default function GoldenSheetPage() {
                       ) : (
                         <div
                           className="cursor-pointer hover:bg-gray-100 p-1 rounded"
-                          onClick={() => handleCellEdit(line.id, 'additionalPaidAmount', line.additionalPaidAmount)}
+                          onClick={() => handleCellEdit(line.id, 'bonusAdvance', line.bonusAdvance)}
                         >
-                          {line.additionalPaidAmount ? formatCurrency(line.additionalPaidAmount) : '-'}
+                          {line.bonusAdvance ? formatCurrency(line.bonusAdvance) : '-'}
                         </div>
                       )}
                     </TableCell>
 
-                    {/* Additional Paid Date */}
+                    {/* Advance Date */}
                     <TableCell>
-                      {editingCell?.lineId === line.id && editingCell?.field === 'additionalPaidDate' ? (
+                      {editingCell?.lineId === line.id && editingCell?.field === 'advanceDate' ? (
                         <div className="flex gap-2">
                           <Input
                             type="date"
@@ -364,12 +367,35 @@ export default function GoldenSheetPage() {
                       ) : (
                         <div
                           className="cursor-pointer hover:bg-gray-100 p-1 rounded"
-                          onClick={() => handleCellEdit(line.id, 'additionalPaidDate', line.additionalPaidDate ? new Date(line.additionalPaidDate).toISOString().split('T')[0] : '')}
+                          onClick={() => handleCellEdit(line.id, 'advanceDate', line.advanceDate ? new Date(line.advanceDate).toISOString().split('T')[0] : '')}
                         >
-                          {line.additionalPaidDate ? formatDate(line.additionalPaidDate) : '-'}
+                          {line.advanceDate ? formatDate(line.advanceDate) : '-'}
                         </div>
                       )}
                     </TableCell>
+
+                    {/* Additional Paid */}
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAdditionalPaidModalOpen(line.id)}
+                        className="w-full justify-start"
+                      >
+                        {line.additionalPaidAmount || line.additionalPaidDate || line.additionalPaidMethod
+                          ? (
+                              <>
+                                {line.additionalPaidAmount && formatCurrency(line.additionalPaidAmount)}
+                                {line.additionalPaidAmount && (line.additionalPaidDate || line.additionalPaidMethod) && ' • '}
+                                {line.additionalPaidDate && formatDate(line.additionalPaidDate)}
+                                {line.additionalPaidDate && line.additionalPaidMethod && ' • '}
+                                {line.additionalPaidMethod}
+                              </>
+                            )
+                          : 'Set additional payment'}
+                      </Button>
+                    </TableCell>
+
 
                     <TableCell className="font-mono">
                       {formatCurrency(line.ratePerHour)}
@@ -551,6 +577,16 @@ export default function GoldenSheetPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Additional Paid Modal */}
+        {additionalPaidModalOpen !== null && cycle.lines?.find((line: any) => line.id === additionalPaidModalOpen) && (
+          <AdditionalPaidModal
+            open={additionalPaidModalOpen !== null}
+            onOpenChange={(open) => !open && setAdditionalPaidModalOpen(null)}
+            lineItem={cycle.lines?.find((line: any) => line.id === additionalPaidModalOpen)!}
+            onUpdate={(lineId, data) => updateLineItem.mutateAsync({ cycleId, lineId, data })}
+          />
+        )}
       </div>
     </div>
   );
