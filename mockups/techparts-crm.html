@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechParts — CRM</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <style>
+        .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align: middle; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif; background:#f8f9fa; color:#1d1d1f; }
+        .header { background:#fff; padding:20px 40px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+        .header-left h1 { font-size:22px; font-weight:600; margin-bottom:4px; }
+        .header-left p { font-size:13px; opacity:0.9; }
+        .nav { display:flex; gap:12px; flex-wrap:wrap; }
+        .nav a { text-decoration:none; color:#374151; font-weight:600; font-size:13px; padding:8px 10px; border-radius:8px; position:relative; }
+        .nav a:hover { background:#f3f4f6; }
+        .nav a.active { color:#3b82f6; }
+        .nav a.active::after { content:''; position:absolute; bottom:0; left:10px; right:10px; height:2px; background:#3b82f6; }
+        .container { max-width:1400px; margin:0 auto; padding:24px; display:grid; grid-template-columns:1fr 360px; gap:24px; }
+        .panel { background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+        .panel-header { padding:16px 20px; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; gap:12px; align-items:center; }
+        .search { display:flex; gap:8px; align-items:center; }
+        .input { padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; min-width:240px; }
+        .btn { padding:10px 12px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; font-weight:600; cursor:pointer; }
+        .btn.primary { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+        table { width:100%; border-collapse:collapse; }
+        th, td { text-align:left; padding:12px 16px; border-bottom:1px solid #f1f5f9; font-size:14px; }
+        th { color:#6b7280; font-weight:600; background:#f9fafb; }
+        .status { padding:4px 10px; border-radius:12px; font-size:12px; font-weight:700; display:inline-block; }
+        .status.open { background:#dbeafe; color:#1e40af; }
+        .status.won { background:#d1fae5; color:#065f46; }
+        .status.lost { background:#fee2e2; color:#991b1b; }
+        .detail { padding:16px 20px; }
+        .detail h3 { font-size:16px; font-weight:600; margin-bottom:8px; }
+        .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:14px; color:#374151; }
+        .sidebar { display:flex; flex-direction:column; gap:16px; }
+        .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+        .card h3 { font-size:16px; font-weight:600; margin-bottom:12px; }
+        .list { display:flex; flex-direction:column; gap:10px; }
+        .item { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:10px 12px; }
+        .footer { max-width:1400px; margin:16px auto 32px; padding:0 24px; display:flex; justify-content:space-between; color:#6b7280; font-size:12px; flex-wrap:wrap; gap:12px; }
+        .footer .links { display:flex; flex-wrap:wrap; gap:8px; }
+        .footer .links a { color:#6b7280; text-decoration:none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1>TechParts Manufacturing</h1>
+            <p>Custom CRM — tailor-built to your stages and language</p>
+        </div>
+        <nav class="nav">
+            <a href="./techparts-landing.html">Landing</a>
+            <a href="./techparts-owner-dashboard.html">Dashboard</a>
+            <a href="./techparts-crm.html" class="active">CRM</a>
+            <a href="./techparts-erp.html">ERP</a>
+            <a href="./techparts-oms.html">OMS</a>
+            <a href="./techparts-qms.html">QMS</a>
+            <a href="./techparts-mes.html">MES</a>
+            <a href="./techparts-wms.html">WMS</a>
+            <a href="./techparts-automation.html">Automation</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <div>
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="search">
+                        <span class="material-symbols-outlined">search</span>
+                        <input class="input" placeholder="Search accounts, owners, or stages (mock)" />
+                        <button class="btn">Filters</button>
+                    </div>
+                    <div>
+                        <button class="btn primary"><span class="material-symbols-outlined">add</span> New Account</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Stage</th>
+                            <th>Owner</th>
+                            <th>Last Activity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Acme Components</td>
+                            <td>Customer</td>
+                            <td><span class="status open">Negotiation</span></td>
+                            <td>Alex Chen</td>
+                            <td>2d ago</td>
+                        </tr>
+                        <tr>
+                            <td>Bright Logistics</td>
+                            <td>Partner</td>
+                            <td><span class="status won">Won</span></td>
+                            <td>Sarah Johnson</td>
+                            <td>Today</td>
+                        </tr>
+                        <tr>
+                            <td>Delta Plastics</td>
+                            <td>Supplier</td>
+                            <td><span class="status open">Proposal</span></td>
+                            <td>Mike Rivera</td>
+                            <td>5d ago</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="detail">
+                    <h3><span class="material-symbols-outlined" style="font-size:18px;">account_circle</span> Account Preview — Acme Components</h3>
+                    <div class="detail-grid">
+                        <div><strong>Stage:</strong> Negotiation</div>
+                        <div><strong>Owner:</strong> Alex Chen</div>
+                        <div><strong>Last Contact:</strong> 2d ago (call)</div>
+                        <div><strong>Next Step:</strong> Send updated terms</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="sidebar">
+            <div class="card">
+                <h3><span class="material-symbols-outlined" style="font-size:18px;">history</span> Recent Activity</h3>
+                <div class="list">
+                    <div class="item">Email logged — Acme Components</div>
+                    <div class="item">Stage changed to Won — Bright Logistics</div>
+                    <div class="item">Call note — Delta Plastics</div>
+                </div>
+            </div>
+            <div class="card">
+                <h3><span class="material-symbols-outlined" style="font-size:18px;">lightbulb</span> Suggested Actions</h3>
+                <div class="list">
+                    <div class="item">Add "Vendor Score" custom field for suppliers</div>
+                    <div class="item">Define "Legal Review" stage for enterprise deals</div>
+                    <div class="item">Upload call script template for SDRs</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div class="footer">
+        <div class="links">
+            <a href="./techparts-landing.html">Landing</a>
+            <a href="./techparts-owner-dashboard.html">Dashboard</a>
+            <a href="./techparts-crm.html">CRM</a>
+            <a href="./techparts-erp.html">ERP</a>
+            <a href="./techparts-oms.html">OMS</a>
+            <a href="./techparts-qms.html">QMS</a>
+            <a href="./techparts-mes.html">MES</a>
+            <a href="./techparts-wms.html">WMS</a>
+            <a href="./techparts-automation.html">Automation</a>
+        </div>
+        <div>© TechParts (demo) • MVP Mockups</div>
+    </div>
+</body>
+</html>
+
+

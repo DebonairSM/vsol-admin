@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechParts — Owner Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <style>
+        .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; vertical-align: middle; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif; background:#f8f9fa; color:#1d1d1f; }
+        .header { background:#fff; padding:20px 40px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+        .header-left h1 { font-size:22px; font-weight:600; margin-bottom:4px; }
+        .header-left p { font-size:13px; opacity:0.9; }
+        .nav { display:flex; gap:12px; flex-wrap:wrap; }
+        .nav a { text-decoration:none; color:#374151; font-weight:600; font-size:13px; padding:8px 10px; border-radius:8px; position:relative; }
+        .nav a:hover { background:#f3f4f6; }
+        .nav a.active { color:#3b82f6; }
+        .nav a.active::after { content:''; position:absolute; bottom:0; left:10px; right:10px; height:2px; background:#3b82f6; }
+        .container { max-width:1600px; margin:0 auto; padding:24px; display:flex; flex-direction:column; gap:24px; }
+        .kpi-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; }
+        .kpi-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+        .kpi-label { font-size:12px; color:#6b7280; margin-bottom:8px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+        .kpi-value { font-size:32px; font-weight:700; color:#111827; }
+        .kpi-icon { font-size:24px; margin-bottom:8px; }
+        .main-grid { display:grid; grid-template-columns:2fr 1fr; gap:24px; }
+        .system-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
+        .system-card { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.1); transition:all 0.3s; position:relative; overflow:hidden; }
+        .system-card.active { animation:glow 2s ease-in-out; box-shadow:0 0 12px rgba(59,130,246,0.3); }
+        .system-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+        .status-dot { width:10px; height:10px; border-radius:50%; animation:pulse 2s infinite; }
+        .status-dot.green { background:#10b981; }
+        .status-dot.yellow { background:#f59e0b; }
+        .status-dot.red { background:#ef4444; }
+        .activity-count { font-size:18px; font-weight:700; color:#3b82f6; }
+        .activity-label { font-size:11px; color:#6b7280; }
+        .last-action { font-size:11px; color:#9ca3af; margin-top:8px; }
+        .activity-feed { background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+        .feed-header { padding:16px 20px; border-bottom:1px solid #e5e7eb; font-weight:600; display:flex; align-items:center; gap:8px; }
+        .feed-content { padding:16px; max-height:600px; overflow-y:auto; }
+        .feed-item { padding:12px; margin-bottom:8px; border-left:3px solid #e5e7eb; border-radius:4px; animation:fadeIn 0.5s; background:#f9fafb; }
+        .feed-item.removing { animation:slideUp 0.5s forwards; }
+        .feed-time { font-size:11px; color:#9ca3af; margin-top:4px; }
+        .progress-section { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:24px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+        .progress-item { margin-bottom:20px; }
+        .progress-label { font-size:13px; color:#374151; margin-bottom:8px; display:flex; justify-content:space-between; font-weight:600; }
+        .progress-bar { height:12px; background:#e5e7eb; border-radius:6px; overflow:hidden; }
+        .progress-fill { height:100%; background:#3b82f6; transition:width 0.8s ease-out; border-radius:6px; }
+        .footer { max-width:1600px; margin:16px auto 32px; padding:0 24px; display:flex; justify-content:space-between; color:#6b7280; font-size:12px; flex-wrap:wrap; gap:12px; }
+        .footer .links { display:flex; flex-wrap:wrap; gap:8px; }
+        .footer .links a { color:#6b7280; text-decoration:none; }
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+            from { opacity: 1; transform: translateY(0); max-height: 100px; }
+            to { opacity: 0; transform: translateY(-10px); max-height: 0; margin: 0; padding: 0; }
+        }
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+            50% { box-shadow: 0 0 12px rgba(59,130,246,0.3); }
+        }
+        /* Scrollbar styling */
+        .feed-content::-webkit-scrollbar { width: 6px; }
+        .feed-content::-webkit-scrollbar-track { background: #f1f1f1; }
+        .feed-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .feed-content::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1>TechParts Manufacturing</h1>
+            <p>Owner Dashboard — Live operational overview</p>
+        </div>
+        <nav class="nav">
+            <a href="./techparts-landing.html">Landing</a>
+            <a href="./techparts-owner-dashboard.html" class="active">Dashboard</a>
+            <a href="./techparts-crm.html">CRM</a>
+            <a href="./techparts-erp.html">ERP</a>
+            <a href="./techparts-oms.html">OMS</a>
+            <a href="./techparts-qms.html">QMS</a>
+            <a href="./techparts-mes.html">MES</a>
+            <a href="./techparts-wms.html">WMS</a>
+            <a href="./techparts-automation.html">Automation</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="color:#10b981;"><span class="material-symbols-outlined">attach_money</span></div>
+                <div class="kpi-label">Revenue Today</div>
+                <div class="kpi-value" id="kpi-revenue">$45,230</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="color:#3b82f6;"><span class="material-symbols-outlined">inventory</span></div>
+                <div class="kpi-label">Active Orders</div>
+                <div class="kpi-value" id="kpi-orders">23</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="color:#ef4444;"><span class="material-symbols-outlined">warning</span></div>
+                <div class="kpi-label">Quality Issues</div>
+                <div class="kpi-value" id="kpi-quality">8</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="color:#f59e0b;"><span class="material-symbols-outlined">notifications</span></div>
+                <div class="kpi-label">Inventory Alerts</div>
+                <div class="kpi-value" id="kpi-inventory">5</div>
+            </div>
+        </div>
+
+        <!-- Main Grid: Systems + Activity Feed -->
+        <div class="main-grid">
+            <div>
+                <div class="system-grid" id="systems-container">
+                    <!-- Systems will be generated by JavaScript -->
+                </div>
+            </div>
+            <div>
+                <div class="activity-feed">
+                    <div class="feed-header">
+                        <span class="material-symbols-outlined">feed</span> Live Activity
+                    </div>
+                    <div class="feed-content" id="activity-feed"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bars -->
+        <div class="progress-section">
+            <div class="progress-item">
+                <div class="progress-label">
+                    <span>Monthly Revenue Target</span>
+                    <span id="progress-revenue-percent">68%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-revenue" style="width:68%"></div>
+                </div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">
+                    <span>Production Capacity</span>
+                    <span id="progress-capacity-percent">82%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-capacity" style="width:82%"></div>
+                </div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">
+                    <span>Quality Pass Rate</span>
+                    <span id="progress-quality-percent">94%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-quality" style="width:94%"></div>
+                </div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">
+                    <span>On-Time Delivery</span>
+                    <span id="progress-delivery-percent">89%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-delivery" style="width:89%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="links">
+            <a href="./techparts-landing.html">Landing</a>
+            <a href="./techparts-owner-dashboard.html">Dashboard</a>
+            <a href="./techparts-crm.html">CRM</a>
+            <a href="./techparts-erp.html">ERP</a>
+            <a href="./techparts-oms.html">OMS</a>
+            <a href="./techparts-qms.html">QMS</a>
+            <a href="./techparts-mes.html">MES</a>
+            <a href="./techparts-wms.html">WMS</a>
+            <a href="./techparts-automation.html">Automation</a>
+        </div>
+        <div>© TechParts (demo) • MVP Mockups</div>
+    </div>
+
+    <script>
+        // Data pools
+        const customers = ['Acme Corp', 'Bolt Industries', 'Crane Manufacturing', 'Delta Products', 'Echo Systems', 'Falcon Components', 'Gamma Industries', 'Helix Corp', 'Ionic Parts', 'Jupiter Systems', 'Kappa Manufacturing', 'Lambda Industries', 'Metro Corp', 'Nova Parts', 'Omega Systems'];
+        const products = ['Gear Assembly', 'Hydraulic Pump', 'Circuit Board', 'Valve System', 'Bearing Set', 'Sensor Module', 'Control Panel', 'Motor Unit', 'Cable Harness', 'Tool Kit', 'Frame Component', 'Seal Kit', 'Connector Set', 'Mounting Bracket', 'Wiring Loom'];
+        
+        const systems = [
+            { id: 'crm', name: 'CRM', icon: 'contacts', initialStatus: 'green', minAct: 150, maxAct: 220 },
+            { id: 'erp', name: 'ERP', icon: 'account_tree', initialStatus: 'green', minAct: 80, maxAct: 120 },
+            { id: 'oms', name: 'OMS', icon: 'shopping_cart', initialStatus: 'green', minAct: 45, maxAct: 65 },
+            { id: 'qms', name: 'QMS', icon: 'verified', initialStatus: 'yellow', minAct: 30, maxAct: 45 },
+            { id: 'mes', name: 'MES', icon: 'precision_manufacturing', initialStatus: 'green', minAct: 200, maxAct: 280 },
+            { id: 'wms', name: 'WMS', icon: 'warehouse', initialStatus: 'green', minAct: 120, maxAct: 160 },
+            { id: 'automation', name: 'Automation', icon: 'smart_toy', initialStatus: 'green', minAct: 25, maxAct: 40 },
+            { id: 'analytics', name: 'Analytics', icon: 'analytics', initialStatus: 'green', minAct: 350, maxAct: 420 }
+        ];
+
+        const activityTypes = [
+            { type: 'order', templates: [
+                'Order #{num} from {customer} moved to {status}',
+                '{customer} confirmed Order #{num}',
+                'Order #{num} shipped to {customer}',
+                'New quote generated for {customer}'
+            ] },
+            { type: 'quality', templates: [
+                'Quality check completed for LOT-{num}',
+                'Non-conformance recorded in {product}',
+                'CAPA initiated for NC-{num}',
+                'QC passed for {product} assembly'
+            ] },
+            { type: 'payment', templates: [
+                'Payment received: ${num}k from {customer}',
+                'Invoice {num} marked as paid',
+                'Payment processed for Order #{num}'
+            ] },
+            { type: 'inventory', templates: [
+                'Stock low alert: {product}',
+                'Received {num} units of {product}',
+                'Dispatch completed: {num} units',
+                'Bin location updated for {product}'
+            ] },
+            { type: 'feature', templates: [
+                'Feature request approved: {product}',
+                'New feature shipped: {product}',
+                'Feature request created for {product}'
+            ] },
+            { type: 'production', templates: [
+                'Work order {num} started',
+                'Batch {num} completed',
+                'Job {num} moved to {status}',
+                'Operator {num} clocked in'
+            ] }
+        ];
+
+        // State
+        let currentValues = {
+            revenue: 45230,
+            orders: 23,
+            quality: 8,
+            inventory: 5
+        };
+
+        const targetValues = {
+            revenue: 52840,
+            orders: [23, 28],
+            quality: [3, 8],
+            inventory: [4, 7]
+        };
+
+        let systemStates = {};
+        let activityItems = [];
+        let maxFeedItems = 15;
+
+        // Initialize systems
+        function initSystems() {
+            const container = document.getElementById('systems-container');
+            systems.forEach(sys => {
+                const status = sys.initialStatus;
+                const activity = Math.floor(Math.random() * (sys.maxAct - sys.minAct + 1)) + sys.minAct;
+                const state = { status, activity, lastUpdate: new Date() };
+                systemStates[sys.id] = state;
+                
+                const card = document.createElement('div');
+                card.className = 'system-card';
+                card.id = `system-${sys.id}`;
+                card.innerHTML = `
+                    <div class="system-header">
+                        <span class="material-symbols-outlined">${sys.icon}</span>
+                        <span style="font-weight:600; font-size:14px;">${sys.name}</span>
+                        <span class="status-dot ${status}" style="margin-left:auto;"></span>
+                    </div>
+                    <div class="activity-count" id="act-${sys.id}">${activity}</div>
+                    <div class="activity-label">activities</div>
+                    <div class="last-action" id="last-${sys.id}">Just now</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Update KPI with animation
+        function updateKPI(elementId, currentVal, targetVal, isCurrency = false) {
+            const element = document.getElementById(elementId);
+            const duration = 2000;
+            const steps = 30;
+            const increment = (targetVal - currentVal) / steps;
+            let step = 0;
+            
+            const interval = setInterval(() => {
+                step++;
+                currentVal += increment;
+                if (step >= steps) {
+                    currentVal = targetVal;
+                    clearInterval(interval);
+                }
+                const displayVal = isCurrency 
+                    ? '$' + Math.floor(currentVal).toLocaleString()
+                    : Math.floor(currentVal);
+                element.textContent = displayVal;
+            }, duration / steps);
+        }
+
+        // Generate random activity
+        function generateActivity() {
+            const typeObj = activityTypes[Math.floor(Math.random() * activityTypes.length)];
+            const template = typeObj.templates[Math.floor(Math.random() * typeObj.templates.length)];
+            
+            let message = template
+                .replace('{customer}', customers[Math.floor(Math.random() * customers.length)])
+                .replace('{product}', products[Math.floor(Math.random() * products.length)])
+                .replace('{num}', Math.floor(Math.random() * 9000) + 1000)
+                .replace('{status}', ['Confirmed', 'In Progress', 'Shipped', 'Delivered'][Math.floor(Math.random() * 4)]);
+            
+            return { type: typeObj.type, message };
+        }
+
+        // Add activity to feed
+        function addActivityItem() {
+            const feed = document.getElementById('activity-feed');
+            const activity = generateActivity();
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
+            const item = document.createElement('div');
+            item.className = 'feed-item';
+            item.innerHTML = `
+                <div style="font-size:13px; color:#374151;">${activity.message}</div>
+                <div class="feed-time">${timeStr}</div>
+            `;
+            
+            feed.insertBefore(item, feed.firstChild);
+            activityItems.unshift(item);
+            
+            // Remove old items
+            while (activityItems.length > maxFeedItems) {
+                const oldItem = activityItems.pop();
+                oldItem.classList.add('removing');
+                setTimeout(() => oldItem.remove(), 500);
+            }
+        }
+
+        // Update system status
+        function updateSystemStatus(systemId) {
+            const system = systems.find(s => s.id === systemId);
+            if (!system) return;
+            
+            const state = systemStates[systemId];
+            const wasActive = state.activity;
+            
+            // Small random activity increment
+            const change = Math.floor(Math.random() * 5) - 2;
+            state.activity = Math.max(system.minAct, Math.min(system.maxAct, state.activity + change));
+            state.lastUpdate = new Date();
+            
+            // Update UI
+            document.getElementById(`act-${systemId}`).textContent = state.activity;
+            document.getElementById(`last-${systemId}`).textContent = 'Just now';
+            
+            // Glow effect on change
+            const card = document.getElementById(`system-${systemId}`);
+            card.classList.add('active');
+            setTimeout(() => card.classList.remove('active'), 2000);
+        }
+
+        // Update progress bar
+        function updateProgressBar(barId, percentId, currentPercent, targetPercent) {
+            const bar = document.getElementById(barId);
+            const percent = document.getElementById(percentId);
+            
+            bar.style.width = targetPercent + '%';
+            percent.textContent = targetPercent + '%';
+        }
+
+        // Random progress value
+        function getRandomProgress(current, variance = 2) {
+            const change = (Math.random() - 0.5) * variance * 2;
+            return Math.max(0, Math.min(100, current + change));
+        }
+
+        // Simulation loops
+        function startSimulation() {
+            // KPI Updates (slower)
+            setTimeout(() => updateKPI('kpi-revenue', currentValues.revenue, targetValues.revenue, true), 1000);
+            
+            setInterval(() => {
+                // Orders fluctuate
+                const newOrders = Math.floor(Math.random() * (targetValues.orders[1] - targetValues.orders[0] + 1)) + targetValues.orders[0];
+                currentValues.orders = newOrders;
+                updateKPI('kpi-orders', currentValues.orders, newOrders);
+            }, 4000);
+            
+            setInterval(() => {
+                // Quality issues decreasing
+                const newQuality = Math.floor(Math.random() * (targetValues.quality[1] - targetValues.quality[0] + 1)) + targetValues.quality[0];
+                currentValues.quality = newQuality;
+                updateKPI('kpi-quality', currentValues.quality, newQuality);
+            }, 3500);
+            
+            setInterval(() => {
+                // Inventory alerts fluctuate
+                const newInventory = Math.floor(Math.random() * (targetValues.inventory[1] - targetValues.inventory[0] + 1)) + targetValues.inventory[0];
+                currentValues.inventory = newInventory;
+                updateKPI('kpi-inventory', currentValues.inventory, newInventory);
+            }, 5000);
+            
+            // System updates (medium frequency)
+            setInterval(() => {
+                const randomSystem = systems[Math.floor(Math.random() * systems.length)];
+                updateSystemStatus(randomSystem.id);
+            }, 2500);
+            
+            // Activity feed (fast)
+            setInterval(addActivityItem, 2000);
+            addActivityItem(); // Initial activity
+            
+            // Progress bar updates (slow)
+            let progressValues = {
+                revenue: 68,
+                capacity: 82,
+                quality: 94,
+                delivery: 89
+            };
+            
+            setInterval(() => {
+                progressValues.revenue = getRandomProgress(progressValues.revenue, 0.5);
+                updateProgressBar('progress-revenue', 'progress-revenue-percent', progressValues.revenue, Math.min(73, progressValues.revenue));
+            }, 8000);
+            
+            setInterval(() => {
+                progressValues.capacity = getRandomProgress(progressValues.capacity, 1);
+                updateProgressBar('progress-capacity', 'progress-capacity-percent', progressValues.capacity, progressValues.capacity);
+            }, 6000);
+            
+            setInterval(() => {
+                progressValues.quality = getRandomProgress(progressValues.quality, 0.5);
+                updateProgressBar('progress-quality', 'progress-quality-percent', progressValues.quality, progressValues.quality);
+            }, 7000);
+            
+            setInterval(() => {
+                progressValues.delivery = getRandomProgress(progressValues.delivery, 0.5);
+                updateProgressBar('progress-delivery', 'progress-delivery-percent', progressValues.delivery, Math.min(91, progressValues.delivery));
+            }, 9000);
+        }
+
+        // Initialize on load
+        initSystems();
+        startSimulation();
+    </script>
+</body>
+</html>
+

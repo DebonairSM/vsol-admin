@@ -1,140 +1,188 @@
-# VSol Admin - Golden Sheet Management
+# VSol Admin
 
-A local-first payroll management system that replaces Excel spreadsheets with a modern web application. Automates calculations, provides audit logging, and maintains data integrity for monthly consultant payroll cycles.
+Local‑first, SQLite‑backed payroll management replacing the Excel "golden sheet" with real‑time calculations and audit logging.
 
-## Features
+## Start (PowerShell)
 
-- **Monthly Payroll Cycles**: Create cycles that auto-generate line items for active consultants
-- **Golden Sheet Interface**: Excel-like grid with inline editing for all payroll data
-- **Automated Calculations**: Real-time subtotals and USD totals matching Excel formulas
-- **Audit Logging**: Complete change history with user attribution
-- **Consultant Management**: CRUD operations with rate snapshotting
-- **Invoice & Payment Tracking**: Integrated with payroll cycles
-- **Anomaly Detection**: Identify missing data and incomplete entries
+```powershell
+cd C:\git
+cd .\vsol-admin
+pnpm install
+pnpm db:migrate
+pnpm db:seed
+pnpm dev
+```
+
+- API: http://localhost:4000
+- Web: http://localhost:5173
+
+## Environment
+
+- `apps/api/.env`
+  - `PORT=4000`
+  - `JWT_SECRET=change-me`
+  - `DATABASE_URL=file:./dev.db`
+- `apps/web/.env`
+  - `VITE_API_URL=http://localhost:4000/api`
 
 ## Tech Stack
 
-- **Monorepo**: Turborepo + pnpm workspaces
-- **Backend**: Node.js + Express, Drizzle ORM (SQLite), Zod validation
-- **Frontend**: React + Vite, React Router, TanStack Query, Shadcn/ui
-- **Database**: SQLite (`file:./dev.db`)
-- **Auth**: JWT with bcrypt hashing
+- Monorepo: Turborepo, pnpm workspaces
+- Backend: Node.js, Express, Drizzle ORM (SQLite via libsql), Zod, helmet, cors, multer, date-fns, jsonwebtoken, bcryptjs
+- Frontend: React 18, Vite 5, React Router v6, TanStack Query v5, TanStack Table v8, Shadcn/ui (Radix primitives), Tailwind CSS (+ tailwindcss-animate), react-day-picker, lucide-react, sonner
+- Shared: TypeScript types + Zod schemas (`@vsol-admin/shared`)
+- Tooling: TypeScript 5, tsx, Vitest (+ UI), Drizzle Kit, PostCSS, Autoprefixer
 
-## Quick Start
+## Workflow (simplified)
 
-### Prerequisites
+1. Login with username/password → receive JWT
+2. Create payroll cycle (month, global hours, bonuses)
+   - Active consultants are fetched (no termination date)
+   - Line items are auto‑created with a snapshot of `ratePerHour`
+3. Edit line items inline on Golden Sheet
+   - `workHours` default to cycle `globalWorkHours` if null
+   - Subtotal per line: `(workHours × ratePerHour) + adjustmentValue − bonusAdvance`
+4. Footer totals recompute in real time
+   - `totalHourlyValue = SUM(ratePerHour across lines)`
+   - `usdTotal = (totalHourlyValue × globalWorkHours) − (pagamentoPIX + pagamentoInter) + omnigoBonus + equipmentsUSD`
+5. Invoices and payments tracked per cycle
+6. All mutations are audit‑logged with user, entity, and change diff
 
-- Node.js 18+
-- pnpm 8+
+```mermaid
+flowchart TD
 
-### Installation
+  %% Authentication
+  subgraph Auth
+    A[Login] -->|POST /auth/login| T[JWT Issued]
+    T --> B[Dashboard]
+  end
 
-1. **Clone and install**:
-   ```bash
-   pnpm install
-   ```
+  %% Payroll Cycle Management
+  subgraph Cycle Management
+    B --> C[Create Cycle]
+    C -->|Auto-snapshot rates| D[Auto Line Items]
+    D --> E[Golden Sheet Inline Edit]
+    E --> F[Recompute Subtotals]
+    F --> G[Recompute Footer Totals]
+    G --> S1[Compute USD Total]
+  end
 
-2. **Create environment files**:
+  %% 9-Step Workflow Dates tracked on cycle header
+  subgraph Workflow Dates (9)
+    direction LR
+    W1[Send Invoice] --> W2[Invoice Accepted]
+    W2 --> W3[Client Payment Scheduled]
+    W3 --> W4[Calculate Payment]
+    W4 --> W5[Payment Arrival]
+    W5 --> W6[Send Receipt]
+    W6 --> W7[Invoice Approval]
+    W7 --> W8[Consultants Paid]
+    W8 --> W9[Hours Limit Changed]
+  end
 
-   `apps/api/.env`:
-   ```env
-   PORT=4000
-   JWT_SECRET=your-super-secret-jwt-key-change-in-production
-   DATABASE_URL=file:./dev.db
-   ```
+  %% Bonus Workflow (Omnigo bonus)
+  subgraph Bonus Workflow
+    C --> BW0[Create Bonus Workflow]
+    BW0 --> BW1[Select Recipient\n(auto-detect from line items)]
+    BW1 --> BW2[Set Announcement Date]
+    BW2 --> BW3[Generate Email\nnetBonus = omnigoBonus - bonusAdvance]
+    BW3 --> BW4[Mark Paid With Payroll]
+    BW4 --> BW5[Set Bonus Payment Date]
+  end
 
-   `apps/web/.env`:
-   ```env
-   VITE_API_URL=http://localhost:4000/api
-   ```
+  %% Invoices & Payments
+  subgraph Invoices & Payments
+    I1[Create/Edit Invoices] --> I2[Record Payments\nPIX / Inter]
+    I2 --> W5
+  end
 
-3. **Initialize database**:
-   ```bash
-   pnpm db:migrate
-   pnpm db:seed
-   ```
+  %% Work Hours Management
+  subgraph Work Hours
+    WH1[Import Work Hours JSON] --> WH2[Track Monthly Hours]
+    WH2 --> WH3[Suggest Hours for New Cycle]
+    WH3 --> C
+  end
 
-4. **Start development**:
-   ```bash
-   pnpm dev
-   ```
+  %% Time Doctor Integration
+  subgraph Time Doctor
+    TD1[Sync All / One Consultant] --> TD2[Toggle Sync per Consultant]
+    TD1 --> D
+    TD2 --> D
+    TD3[Fetch Payroll Settings]
+  end
 
-   - API: http://localhost:4000
-   - Web: http://localhost:5173
+  %% Equipment Management
+  subgraph Equipment
+    EQ1[Assign Equipment] --> EQ2[Pending Returns]
+    EQ2 --> EQ3[Mark Returned]
+    EQ3 --> G
+  end
 
-### Login
+  %% Consultants
+  subgraph Consultants
+    CO1[CRUD Consultants] --> CO2[Terminate Consultant]
+    CO1 --> C
+  end
 
-- **Users**: rommel, isabel, celiane
-- **Password**: admin123
+  %% Settings
+  subgraph Settings
+    ST1[Update Default Omnigo Bonus] --> C
+  end
 
-## Project Structure
+  %% Audit Logging (parallel to all mutations)
+  classDef audit fill:#ffeaea,stroke:#ff6b6b,stroke-width:1px,color:#993333;
+  A -->|Audit| AL1[(Audit Log)]:::audit
+  C -->|Audit| AL1:::audit
+  D -->|Audit| AL1:::audit
+  E -->|Audit| AL1:::audit
+  F -->|Audit| AL1:::audit
+  G -->|Audit| AL1:::audit
+  BW0 -->|Audit| AL1:::audit
+  BW1 -->|Audit| AL1:::audit
+  BW2 -->|Audit| AL1:::audit
+  BW3 -->|Audit| AL1:::audit
+  BW4 -->|Audit| AL1:::audit
+  I1 -->|Audit| AL1:::audit
+  I2 -->|Audit| AL1:::audit
+  WH1 -->|Audit| AL1:::audit
+  TD1 -->|Audit| AL1:::audit
+  TD2 -->|Audit| AL1:::audit
+  EQ1 -->|Audit| AL1:::audit
+  EQ3 -->|Audit| AL1:::audit
+  ST1 -->|Audit| AL1:::audit
+  CO1 -->|Audit| AL1:::audit
+  CO2 -->|Audit| AL1:::audit
+```
+
+## Formulas
+
+- Line subtotal: `(workHours × ratePerHour) + adjustmentValue − bonusAdvance`
+- Cycle USD total: `=B22*B26-(B23+B24)+B25+B27`
+  - `B22 = totalHourlyValue`, `B26 = globalWorkHours`, `B23 = pagamentoPIX`, `B24 = pagamentoInter`, `B25 = omnigoBonus`, `B27 = equipmentsUSD`
+
+## Login (dev)
+
+- Users: `rommel`, `isabel`, `celiane`
+- Password: `admin123`
+
+## Scripts
+
+```bash
+pnpm dev         # Run API (4000) and Web (5173)
+pnpm build       # Build all packages
+pnpm db:migrate  # Apply migrations
+pnpm db:seed     # Seed dev data
+pnpm db:studio   # Drizzle Studio
+pnpm kill-all-ports  # Free 4000/5173 if needed (Windows PowerShell)
+```
+
+## Structure
 
 ```
 vsol-admin/
 ├── apps/
-│   ├── api/          # Express backend with SQLite
-│   └── web/          # React frontend
-├── packages/
-│   └── shared/       # Shared TypeScript types & Zod schemas
-└── scripts/          # Database utilities
+│   ├── api/      # Express + Drizzle (SQLite)
+│   └── web/      # React + Vite (SPA)
+└── packages/
+    └── shared/   # Types + Zod schemas
 ```
-
-## Key Concepts
-
-### Rate Snapshotting
-Line items store a snapshot of the consultant's rate at cycle creation, preserving historical accuracy.
-
-### Formula Logic
-```
-USD Total = (Total Hourly × Global Hours) - (PIX + Inter) + Omnigo Bonus + Equipment USD
-```
-
-### Audit Trail
-Every mutation is logged with user, action type, entity, changes diff, and timestamp.
-
-## Development
-
-### Adding Fields
-
-1. Update schema in `apps/api/src/db/schema.ts`
-2. Generate migration: `pnpm db:migrate`
-3. Update types in `packages/shared/src/types.ts`
-4. Update schemas in `packages/shared/src/schemas.ts`
-
-### Scripts
-
-```bash
-pnpm dev          # Start development servers
-pnpm build        # Build for production
-pnpm db:migrate   # Run migrations
-pnpm db:seed      # Seed test data
-pnpm db:studio    # Open Drizzle Studio
-```
-
-## Production Deployment
-
-1. Set production environment variables
-2. Run `pnpm db:migrate`
-3. Start with `pnpm start`
-4. Schedule regular backups with `pnpm backup:db`
-
-## Troubleshooting
-
-### Database not found
-```bash
-pnpm db:migrate  # Create tables
-```
-
-### Port conflicts
-```bash
-pnpm kill-all-ports  # Kill processes on 4000/5173
-```
-
-### Environment variables not loading
-- Verify both `.env` files exist
-- Restart `pnpm dev` after creating/editing `.env` files
-
-## Documentation
-
-- **Architectural Summary**: See `ARCHITECTURAL-REFACTORING-SUMMARY.md`
-- **TypeScript Fixes**: See `PRE-EXISTING-ERRORS-FIXED.md`
