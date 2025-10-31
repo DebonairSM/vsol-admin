@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your MVP Journey — 5-Day Workflow Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            color: #1d1d1f;
+            background: linear-gradient(135deg, #f5f5f7 0%, #ffffff 100%);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 16px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.95;
+        }
+
+        .journey-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e40af;
+            text-align: center;
+            margin-bottom: 32px;
+            padding: 16px;
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #2563eb;
+        }
+
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .day-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            min-height: 200px;
+        }
+
+        .day-card.completed {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+        }
+
+        .day-card.active {
+            border-color: #2563eb;
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .day-number {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2563eb;
+            margin-bottom: 12px;
+        }
+
+        .day-card.completed .day-number {
+            color: #10b981;
+        }
+
+        .day-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+
+        .day-tasks {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+            margin-top: 12px;
+        }
+
+        .day-tasks li {
+            font-size: 13px;
+            color: #4b5563;
+            margin-bottom: অ8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .checkbox-custom:hover {
+            border-color: #2563eb;
+        }
+
+        .checkbox-custom.checked {
+            background: #10b981;
+            border-color: #10b981;
+        }
+
+        .checkbox-custom.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .checkmark {
+            color: #10b981;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .day-content {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        .launch-day {
+            background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
+            border-color: #10b981;
+        }
+
+        .launch-day .day-number {
+            color: #10b981;
+            font-size: 24px;
+        }
+
+        .arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color-RGB: #2563eb;
+            font-weight: bold;
+            margin: 0 -8px;
+            z-index: 1;
+        }
+
+        .day-section {
+            margin-bottom: 48px;
+        }
+
+        .day-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding: 20px;
+            background: white;
+            borderוצ-radius: 12px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .day-section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .progress-indicator {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .progress-bar {
+            width: 200px;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4b5563;
+            min-width: 60px;
+        }
+
+        .content-panel {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+           當前-bottom: 16px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .panel-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .transcript-input {
+            width: 100%;
+            min-height: 300px;
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .transcript-input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .button {
+            padding: 12px 24px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .button:hover {
+            background: #1e40af;
+        }
+
+        .button-success {
+            background: #10b981;
+        }
+
+        .button-success:hover {
+            background: #059669;
+        }
+
+        .button-secondary {
+            background: white;
+            color: #2563eb;
+            border: 2px solid #2563eb;
+        }
+
+        .button-secondary:hover {
+            background: #eff6ff;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .requirements-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .requirement-item {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .requirement-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .requirement-description {
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .collapsible-content {
+            margin-top: 24px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-complete {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        @media (max-width: 1200px) {
+            .workflow-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .workflow-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .arrow {
+                transform: rotate(90deg);
+                margin: -8px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Your Amazing Journey: From Contact to MVP in 5 Days</h1>
+            <p>Track your progress and complete each step to launch your MVP</p>
+        </div>
+
+        <div class="journey-title">Your Amazing Journey: From Contact to MVP in 5 Days</div>
+
+        <div class="workflow-grid">
+            <!-- Day 1 -->
+            <div class="day-card" id="day-1-card">
+                <div class="day-number">Day 1</div>
+                <div class="day-title">Interview & Requirements</div>
+                <ul class="day-tasks">
+                    <li>
+                        <span class="checkbox-custom" data-task="day1-1"></span>
+                        <span>Interview your team</span>
+                    </li>
+                    <li>
+                        <span class="checkbox-custom" data-task="day1-2"></span>
+                        <span>AI organizes transcripts</span>
+                    </li>
+                    <li>
+                        <span class="checkbox-custom" data-task="day1-3"></span>
+                        <span>Into requirements</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="arrow">→</div>
+
+            <!-- Day 2 -->
+            <div class="day-card" id="day-2-card">
+                <div class="day-number">Day 2</div>
+                <div class="day-title">Review & Revise</div>
+                <ul class="day-tasks">
+                    <li>
+                        <span class="checkbox-custom" data-task="day2-1"></span>
+                        <span>You Revise</span>
+                    </li>
+                    <li>
+                        <span class="checkbox-custom" data-task="day2-2"></span>
+                        <span>Workflow & features</span>
+                    </li>
+                    <li>
+                        <span class="checkbox-custom" data-task="day2-3"></span>
+                        <span>Your picks</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="arrow">→</div>
+
+            <!-- Day 3-4 -->
+            <div class="day-card" id="day-3-4-card">
+                <div class="day-number">Day 3-4</div>
+                <div class="day-title">Development</div>
+                <ul class="day-tasks">
+                    <li>
+                        <span class="checkbox-custom" data-task="day3-1"></span>
+                        <span>We Create</span>
+                    </li>
+                    <li>
+                        <span class="checkbox-custom" data-task="day3-2"></span>
+                        <span>Your MVP app</span>
+                    </li>
+                    <li>
+                        <span class="checkbox-custom" data-task="day3-3"></span>
+                        <span>Built to spec</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="arrow">→</div>
+
+            <!-- Day 5 -->
+            <div class="day-card" id="day-5-card">
+                <div class="day-number">Day 5</div>
+                <div class="day-title">Demo & Approval</div>
+                <ul class="day-tasks">
+                    <li>
+                        <span class="checkbox-custom" data-task="day5-1"></span>
+                        <span>Demo & Approval</span>
+                    </li>
+                    <li>
+                        <span class="checkbox-custom" data-task="day5-2"></span>
+                        <span>Live walkthrough</span>
+                    </li>
+                    <li>
+                        <span class="checkbox-custom" data-task="day5-3"></span>
+                        <span>Your feedback</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="arrow">→</div>
+
+            <!-- Launch -->
+            <div class="day-card launch-day" id="launch-card">
+                <div class="day-number">→ Launch</div>
+                <div class="day-title">Go Live</div>
+                <ul class="day-tasks">
+                    <li>
+                        <span class="checkbox-custom" data-task="launch-1"></span>
+                        <span>Schedule the launch</span>
+                    </li>
+                    <li>
+                        <span class="checkbox-custom" data-task="launch-2"></span>
+                        <span>Your system goes live</span>
+                    </li>
+                    <li>
+                        <span class="checkbox-custom" data-task="launch-3"></span>
+                        <span>Zero risk</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Day 1 Section -->
+        <div class="day-section" id="day-1-section">
+            <div class="day-section-header">
+                <div>
+                    <div class="day-section-title">Day 1: Interview Your Team & Extract Requirements</div>
+                </div>
+                <div class="progress-indicator">
+                    <div class="progress-text" id="day1-progress-text">0%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="day1-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Interview Transcript</div>
+                    <span class="status-badge status-pending" id="day1-status">Pending</span>
+                </div>
+
+                <textarea 
+                    class="transcript-input" 
+                    id="transcript-input" 
+                    placeholder="Paste interview transcript here or upload a file...
+
+Example:
+Interviewer: What are the main pain points in your current workflow?
+Team Member: We spend too much time manually entering data from Excel sheets into the system. There's no validation, so errors slip through..."
+                ></textarea>
+
+                <div class="actions">
+                    <button class="button" onclick="processTranscript()">
+                        <span>🤖</span>
+                        Process with AI
+                    </button>
+                    <button class="button button-secondary" onclick="clearTranscript()">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="content-panel hidden" id="requirements-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Extracted Requirements</div>
+                    <span class="status-badge status-complete">Complete</span>
+                </div>
+                <div id="requirements-container">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-text">Requirements will appear here after processing</div>
+                    </div>
+                </div>
+                <div class="actions" style="margin-top: 24px;">
+                    <button class="button button-success" onclick="completeDay1()">
+                        <span>✓</span>
+                        Mark Day 1 Complete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day 2 Section -->
+        <div class="day-section hidden" id="day-2-section">
+            <div class="day-section-header">
+                <div>
+                    <div class="day-section-title">Day 2: Review & Revise Requirements</div>
+                </div>
+                <div class="progress-indicator">
+                    <div class="progress-text" id="day2-progress-text">0%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="day2-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Review Requirements</div>
+                    <span class="status-badge status-pending">Pending</span>
+                </div>
+                <p style="color: #4b5563; margin-bottom: 20px;">
+                    Review the extracted requirements and provide feedback. You can revise workflows, 
+                    prioritize features, and select which items to include in your MVP.
+                </p>
+                <div class="actions">
+                    <button class="button button-success" onclick="completeDay2()">
+                        <span>✓</span>
+                        Mark Day 2 Complete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day 3-4 Section -->
+        <div class="day-section hidden" id="day-3-4-section">
+            <div class="day-section-header">
+                <div>
+                    <div class="day-section-title">Day 3-4: We Create Your MVP</div>
+                </div>
+                <div class="progress-indicator">
+                    <div class="progress-text" id="day3-progress-text">0%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="day3-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Development in Progress</div>
+                    <span class="status-badge status-pending">In Progress</span>
+                </div>
+                <p style="color: #4b5563; margin-bottom: 20px;">
+                    Our team is building your MVP according to the specifications we've agreed upon. 
+                    You'll receive updates as development progresses.
+                </p>
+                <div class="actions">
+                    <button class="button button-success" onclick="completeDay3()">
+                        <span>✓</span>
+                        Mark Development Complete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day 5 Section -->
+        <div class="day-section hidden" id="day-5-section">
+            <div class="day-section-header">
+                <div>
+                    <div class="day-section-title">Day 5: Demo & Approval</div>
+                </div>
+                <div class="progress-indicator">
+                    <div class="progress-text" id="day5-progress-text">0%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="day5-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Live Walkthrough</div>
+                    <span class="status-badge status-pending">Scheduled</span>
+                </div>
+                <p style="color: #4b5563; margin-bottom: 20px;">
+                    Join us for a live walkthrough of your MVP. We'll demonstrate all features 
+                    and gather your feedback for any final adjustments.
+                </p>
+                <div class="actions">
+                    <button class="button button-success" onclick="completeDay5()">
+                        <span>✓</span>
+                        Mark Day 5 Complete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Launch Section -->
+        <div class="day-section hidden" id="launch-section">
+            <div class="day-section-header">
+                <div>
+                    <div class="day-section-title">→ Launch: Your System Goes Live</div>
+                </div>
+                <div class="progress-indicator">
+                    <div class="progress-text" id="launch-progress-text">0%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="launch-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Schedule Your Launch</div>
+                    <span class="status-badge status-pending">Ready to Launch</span>
+                </div>
+                <p style="color: #4b5563; margin-bottom: 20px;">
+                    Congratulations! Your MVP is ready. Schedule the launch date and your system 
+                    will go live with zero risk.
+                </p>
+                <div class="actions">
+                    <button class="button button-success" onclick="completeLaunch()">
+                        <span>✓</span>
+                        Mark Launch Complete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sampleRequirements = [
+            {
+                title: "Automated Excel Import with Validation",
+                description: "System should support importing data from Excel files with automatic validation rules that flag discrepancies before processing.",
+                priority: "high",
+                category: "Data Management",
+                source: "Team Member - Interview 1"
+            },
+            {
+                title: "Real-time Error Flagging",
+                description: "Validation errors should be displayed immediately during import process, allowing users to correct issues before final submission.",
+                priority: "high",
+                category: "Data Quality",
+                source: "Team Member - Interview 1"
+            },
+            {
+                title: "Historical Data Preservation",
+                description: "When importing new data, system must preserve historical records and maintain audit trail of all changes.",
+                priority: "medium",
+                category: "Compliance",
+                source: "Team Member - Interview 2"
+            },
+            {
+                title: "Custom Validation Rules",
+                description: "Allow administrators to configure custom validation rules specific to their business processes.",
+                priority: "medium",
+                category: "Configuration",
+                source: "Manager - Interview 1"
+            }
+        ];
+
+        // Initialize checkboxes from localStorage
+        function initCheckboxes() {
+            const checkboxes = document.querySelectorAll('.checkbox-custom');
+            checkboxes.forEach(checkbox => {
+                const taskId = checkbox.getAttribute('data-task');
+                const isChecked = localStorage.getItem(`task-${taskId}`) === 'true';
+                if (isChecked) {
+                    checkbox.classList.add('checked');
+                }
+                checkbox.addEventListener('click', () => toggleTask(taskId, checkbox));
+            });
+            updateAllProgress();
+        }
+
+        function toggleTask(taskId, checkbox) {
+            const isChecked = checkbox.classList.contains('checked');
+            if (isChecked) {
+                checkbox.classList.remove('checked');
+                localStorage.setItem(`task-${taskId}`, 'false');
+            } else {
+                checkbox.classList.add('checked');
+                localStorage.setItem(`task-${taskId}`, 'true');
+            }
+            updateDayProgress(taskId);
+            updateAllProgress();
+        }
+
+        function updateDayProgress(taskId) {
+            const dayMatch = taskId.match(/^(day\d+|launch)-/);
+            if (!dayMatch) return;
+            
+            const dayPrefix = dayMatch[1];
+            const dayTasks = document.querySelectorAll(`[data-task^="${dayPrefix}-"]`);
+            const completedTasks = Array.from(dayTasks).filter(cb => cb.classList.contains('checked'));
+            const progress = Math.round((completedTasks.length / dayTasks.length) * 100);
+            
+            // Update progress bar
+            const progressBar = document.getElementById(`${dayPrefix}-progress`);
+            const progressText = document.getElementById(`${dayPrefix}-progress-text`);
+            if (progressBar) progressBar.style.width = `${progress}%`;
+            if (progressText) progressText.textContent = `${progress}%`;
+            
+            // Update card appearance
+            const dayCard = document.getElementById(`${dayPrefix}-card`);
+            if (dayCard && progress === 100) {
+                dayCard.classList.add('completed');
+            } else if (dayCard) {
+                dayCard.classList.remove('completed');
+            }
+        }
+
+        function updateAllProgress() {
+            const days = ['day1', 'day2', 'day3', 'launch'];
+            days.forEach(day => {
+                const tasks = document.querySelectorAll(`[data-task^="${day}-"]`);
+                if (tasks.length > 0) {
+                    updateDayProgress(`${day}-1`);
+                }
+            });
+        }
+
+        function processTranscript() {
+            const input = document.getElementById('transcript-input');
+            const container = document.getElementById('requirements-container');
+            const panel = document.getElementById('requirements-panel');
+            const status = document.getElementById('day1-status');
+
+            if (!input.value.trim()) {
+                alert('Please enter or upload a transcript first.');
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #6b7280;">
+                    <div style="display: inline-block; width: 24px; height: 24px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px;"></div>
+                    <div>AI is analyzing the transcript and extracting requirements...</div>
+                </div>
+            `;
+            panel.classList.remove('hidden');
+
+            setTimeout(() => {
+                renderRequirements(sampleRequirements);
+                status.textContent = 'Complete';
+                status.className = 'status-badge status-complete';
+                
+                // Auto-check Day 1 tasks
+                checkTask('day1-1');
+                checkTask('day1-2');
+                checkTask('day1-3');
+            }, 2000);
+        }
+
+        function renderRequirements(requirements) {
+            const container = document.getElementById('requirements-container');
+            
+            if (requirements.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-text">No requirements extracted. Try a different transcript.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <ul class="requirements-list">
+                    ${requirements.map((req, index) => `
+                        <li class="requirement-item">
+                            <div class="requirement-title">${index + 1}. ${req.title}</div>
+                            <div class="requirement-description">${req.description}</div>
+                            <div style="display: flex; gap: 8px; margin-top: 12px;">
+                                <span style="padding: 4px 10px; background: #fee2e2; color: #991b1b; border-radius: 6px; font-size: 12px;">Priority: ${req.priority}</span>
+                                <span style="padding: 4px 10px; background: #dbeafe; color: #1e40af; border-radius: 6px; font-size: 12px;">${req.category}</span>
+                                <span style="padding: 4px 10px; background: #e5e7eb; color: #4b5563; border-radius: 6px; font-size: 12px;">${req.source}</span>
+                            </div>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+        }
+
+        function clearTranscript() {
+            document.getElementById('transcript-input').value = '';
+            document.getElementById('requirements-panel').classList.add('hidden');
+            document.getElementById('day1-status').textContent = 'Pending';
+            document.getElementById('day1-status').className = 'status-badge status-pending';
+        }
+
+        function checkTask(taskId) {
+            const checkbox = document.querySelector(`[data-task="${taskId}"]`);
+            if (checkbox && !checkbox.classList.contains('checked')) {
+                checkbox.classList.add('checked');
+                localStorage.setItem(`task-${taskId}`, 'true');
+                updateDayProgress(taskId);
+            }
+        }
+
+        function completeDay1() {
+            checkTask('day1-1');
+            checkTask('day1-2');
+            checkTask('day1-3');
+            document.getElementById('day-2-section').classList.remove('hidden');
+            alert('Day 1 complete! Day 2 is now available.');
+        }
+
+        function completeDay2() {
+            checkTask('day2-1');
+            checkTask('day2-2');
+            checkTask('day2-3');
+            document.getElementById('day-3-4-section').classList.remove('hidden');
+            alert('Day 2 complete! Development begins.');
+        }
+
+        function completeDay3() {
+            checkTask('day3-1');
+            checkTask('day3-2');
+            checkTask('day3-3');
+            document.getElementById('day-5-section').classList.remove('hidden');
+            alert('Development complete! Ready for demo.');
+        }
+
+        function completeDay5() {
+            checkTask('day5-1');
+            checkTask('day5 notebook');
+            checkTask('day5-3');
+            document.getElementById('launch-section').classList.remove('hidden');
+            alert('Demo complete! Ready to launch.');
+        }
+
+        function completeLaunch() {
+            checkTask('launch-1');
+            checkTask('launch-2');
+            checkTask('launch-3');
+            alert('🎉 Congratulations! Your MVP has launched successfully!');
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            initCheckboxes();
+        });
+    </script>
+</body>
+</html>
