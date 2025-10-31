@@ -22,8 +22,9 @@ pnpm dev
   - `PORT=4000`
   - `JWT_SECRET=change-me`
   - `DATABASE_URL=file:./dev.db`
+  - `CORS_ORIGIN` (optional) - Comma-separated list of allowed origins for CORS. Supports exact URLs and wildcard patterns (e.g., `https://abc123.ngrok.io` or `*.ngrok.io`). If not set, defaults to `http://localhost:5173` in development mode.
 - `apps/web/.env`
-  - `VITE_API_URL=http://localhost:4000/api`
+  - `VITE_API_URL=http://localhost:4000/api` - Backend API base URL. For ngrok setup, set this to your API ngrok URL (e.g., `https://def456.ngrok.io/api`)
 
 ## Tech Stack
 
@@ -163,6 +164,37 @@ flowchart TD
 
 - Users: `rommel`, `isabel`, `celiane`
 - Password: `admin123`
+
+## ngrok Setup (Public Access)
+
+**Current ngrok URLs**: See `NGROK_URLS.md` for active tunnel URLs and configuration.
+
+To expose the application via ngrok public URLs:
+
+1. Start ngrok tunnels:
+   ```bash
+   # Terminal 1: API tunnel
+   ngrok http 4000
+   # Copy the HTTPS URL (e.g., https://def456.ngrok.io)
+   
+   # Terminal 2: Web tunnel
+   ngrok http 5173
+   # Copy the HTTPS URL (e.g., https://abc123.ngrok.io)
+   ```
+
+2. Configure environment variables:
+   - `apps/api/.env`: Add `CORS_ORIGIN=https://abc123.ngrok.io` (use your web ngrok URL)
+   - `apps/web/.env`: Add `VITE_API_URL=https://def456.ngrok.io/api` (use your API ngrok URL)
+
+3. Restart servers:
+   - Restart API server to pick up `CORS_ORIGIN`
+   - Restart web dev server to pick up `VITE_API_URL`
+
+4. Access:
+   - Frontend: Open your web ngrok URL in browser
+   - API health check: `https://your-api-ngrok-url.ngrok.io/health`
+
+**Note**: You can also use wildcard patterns like `*.ngrok.io` in `CORS_ORIGIN` for dynamic ngrok domains, or comma-separate multiple origins.
 
 ## Scripts
 

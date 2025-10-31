@@ -26,8 +26,45 @@ let server: Server;
 
 // Security middleware
 app.use(helmet());
+
+// CORS configuration with support for ngrok and multiple origins
+function getCorsOrigin(): string | string[] | ((origin: string | undefined) => boolean) {
+  // If CORS_ORIGIN is explicitly set, use it
+  if (process.env.CORS_ORIGIN) {
+    const origins = process.env.CORS_ORIGIN.split(',').map(origin => origin.trim());
+    // Support wildcard patterns for ngrok domains (e.g., *.ngrok.io, *.ngrok-free.app)
+    return (origin: string | undefined) => {
+      if (!origin) return false;
+      
+      // Check exact matches first
+      if (origins.includes(origin)) {
+        return true;
+      }
+      
+      // Check wildcard patterns
+      for (const pattern of origins) {
+        if (pattern.includes('*')) {
+          const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+          if (regex.test(origin)) {
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    };
+  }
+  
+  // Default behavior: allow localhost in development, deny all in production
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:5173';
+  }
+  
+  return false;
+}
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : false,
+  origin: getCorsOrigin(),
   credentials: true
 }));
 
