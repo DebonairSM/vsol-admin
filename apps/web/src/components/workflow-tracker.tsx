@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, cn } from '@/lib/utils';
 import { workflowSteps, calculateWorkflowProgress, isStepCompleted } from '@/lib/workflow-config';
-import { Check, Calendar, Clock, Calculator, DollarSign } from 'lucide-react';
+import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle } from 'lucide-react';
 import { useCalculatePayment } from '@/hooks/use-cycles';
+import { calculateDeadlineAlert } from '@/lib/business-days';
 import type { PayrollCycle } from '@vsol-admin/shared';
 
 interface WorkflowTrackerProps {
@@ -131,6 +132,16 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
             const isCompleted = isStepCompleted(cycle, step);
             const currentDate = cycle[step.fieldName];
             const IconComponent = step.icon;
+            
+            // Calculate deadline alert for "Client Payment Scheduled Date" step
+            const deadlineAlert = step.id === 'client-payment-scheduled-date' 
+              ? calculateDeadlineAlert(cycle.monthLabel, currentDate)
+              : null;
+            
+            // Determine if we should show deadline alert
+            const showDeadlineAlert = deadlineAlert && !isCompleted;
+            const isWarning = showDeadlineAlert && deadlineAlert.status === 'warning';
+            const isCritical = showDeadlineAlert && deadlineAlert.status === 'critical';
 
             return (
               <div key={step.id} className="relative">
@@ -142,7 +153,9 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                 <div
                   className={cn(
                     "border rounded-lg p-4 transition-all duration-200 cursor-pointer hover:shadow-md",
-                    isCompleted ? step.color.complete : step.color.pending
+                    isCompleted ? step.color.complete : step.color.pending,
+                    isWarning && "deadline-warning",
+                    isCritical && "deadline-critical"
                   )}
                   onClick={() => !editingStep && handleStepClick(step.id, step.fieldName, currentDate)}
                 >
@@ -163,13 +176,25 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                         <h4 className="font-medium text-sm">
                           {step.order}. {step.title}
                         </h4>
-                        <p className="text-xs text-gray-600 mt-1">
+                        <p className={cn(
+                          "text-xs mt-1",
+                          isCritical ? "text-red-100" : "text-gray-600"
+                        )}>
                           {step.description}
                         </p>
                         {isCompleted && currentDate && (
                           <p className="text-xs font-mono mt-2 text-gray-800">
                             {formatDate(currentDate)}
                           </p>
+                        )}
+                        {showDeadlineAlert && deadlineAlert && (
+                          <div className={cn(
+                            "flex items-center gap-1 mt-2 text-xs font-medium",
+                            isCritical ? "text-white" : "text-red-600"
+                          )}>
+                            <AlertTriangle className="w-3 h-3" />
+                            <span>{deadlineAlert.message}</span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -191,6 +216,23 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                           <div>
                             <h4 className="font-medium">{step.title}</h4>
                             <p className="text-sm text-gray-600">{step.description}</p>
+                            {showDeadlineAlert && deadlineAlert && (
+                              <div className={cn(
+                                "mt-3 p-2 rounded-lg border",
+                                isCritical 
+                                  ? "bg-red-50 border-red-300 text-red-700" 
+                                  : "bg-amber-50 border-amber-300 text-amber-700"
+                              )}>
+                                <div className="flex items-center gap-2 text-sm font-medium">
+                                  <AlertTriangle className="w-4 h-4" />
+                                  {deadlineAlert.message}
+                                </div>
+                                <div className="mt-2 text-xs space-y-1">
+                                  <p>Consultant Payment: {formatDate(deadlineAlert.consultantPaymentDate)}</p>
+                                  <p>Omnigo Deadline: {formatDate(deadlineAlert.omnigoDeadline)}</p>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           {step.id === 'calculate-payment' ? (

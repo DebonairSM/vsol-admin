@@ -2,14 +2,12 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDate, formatMonthAbbr } from '@/lib/utils';
-import { CalendarIcon, Mail, Info, Copy } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Mail, Info, Copy } from 'lucide-react';
 import { useBonusWorkflow, useCreateBonusWorkflow, useUpdateBonusWorkflow, useGenerateBonusEmail } from '@/hooks/use-bonus-workflow';
 import { useCycleLines } from '@/hooks/use-cycles';
 import { toast } from 'sonner';
@@ -28,11 +26,15 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   const [selectedConsultantId, setSelectedConsultantId] = useState<number | null>(
     workflow?.bonusRecipientConsultantId || null
   );
-  const [announcementDate, setAnnouncementDate] = useState<Date | undefined>(
-    workflow?.bonusAnnouncementDate ? new Date(workflow.bonusAnnouncementDate) : undefined
+  const [announcementDate, setAnnouncementDate] = useState<string>(
+    workflow?.bonusAnnouncementDate 
+      ? new Date(workflow.bonusAnnouncementDate).toISOString().split('T')[0]
+      : ''
   );
-  const [paymentDate, setPaymentDate] = useState<Date | undefined>(
-    workflow?.bonusPaymentDate ? new Date(workflow.bonusPaymentDate) : undefined
+  const [paymentDate, setPaymentDate] = useState<string>(
+    workflow?.bonusPaymentDate 
+      ? new Date(workflow.bonusPaymentDate).toISOString().split('T')[0]
+      : ''
   );
   const [emailSubject, setEmailSubject] = useState('');
   const [emailContent, setEmailContent] = useState(workflow?.emailContent || '');
@@ -40,10 +42,24 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   const [emailGenerated, setEmailGenerated] = useState(workflow?.emailGenerated || false);
   const [paidWithPayroll, setPaidWithPayroll] = useState(workflow?.paidWithPayroll || false);
 
-  // Update selected consultant when workflow changes
+  // Update state when workflow changes
   useEffect(() => {
-    if (workflow?.bonusRecipientConsultantId) {
-      setSelectedConsultantId(workflow.bonusRecipientConsultantId);
+    if (workflow) {
+      setSelectedConsultantId(workflow.bonusRecipientConsultantId || null);
+      setAnnouncementDate(
+        workflow.bonusAnnouncementDate 
+          ? new Date(workflow.bonusAnnouncementDate).toISOString().split('T')[0]
+          : ''
+      );
+      setPaymentDate(
+        workflow.bonusPaymentDate 
+          ? new Date(workflow.bonusPaymentDate).toISOString().split('T')[0]
+          : ''
+      );
+      setEmailContent(workflow.emailContent || '');
+      setNotes(workflow.notes || '');
+      setEmailGenerated(workflow.emailGenerated || false);
+      setPaidWithPayroll(workflow.paidWithPayroll || false);
     }
   }, [workflow]);
 
@@ -105,8 +121,8 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
     try {
       await updateWorkflow.mutateAsync({
         bonusRecipientConsultantId: selectedConsultantId,
-        bonusAnnouncementDate: announcementDate?.toISOString() || null,
-        bonusPaymentDate: paymentDate?.toISOString() || null,
+        bonusAnnouncementDate: announcementDate ? new Date(announcementDate).toISOString() : null,
+        bonusPaymentDate: paymentDate ? new Date(paymentDate).toISOString() : null,
         emailContent,
         notes,
         emailGenerated,
@@ -210,29 +226,14 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
 
         {/* Bonus Announcement Date */}
         <div className="space-y-2">
-          <Label>Bonus Announcement Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !announcementDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {announcementDate ? formatDate(announcementDate.toISOString()) : "Select date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={announcementDate}
-                onSelect={setAnnouncementDate}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <Label htmlFor="announcementDate">Bonus Announcement Date</Label>
+          <Input
+            id="announcementDate"
+            type="date"
+            value={announcementDate}
+            onChange={(e) => setAnnouncementDate(e.target.value)}
+            className="w-full"
+          />
         </div>
 
         {/* Generate Email */}
@@ -349,29 +350,14 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
         {/* Bonus Payment Date (shown only if not paid with payroll) */}
         {!paidWithPayroll && (
           <div className="space-y-2">
-            <Label>Bonus Payment Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !paymentDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {paymentDate ? formatDate(paymentDate.toISOString()) : "Select date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={paymentDate}
-                  onSelect={setPaymentDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Label htmlFor="paymentDate">Bonus Payment Date</Label>
+            <Input
+              id="paymentDate"
+              type="date"
+              value={paymentDate}
+              onChange={(e) => setPaymentDate(e.target.value)}
+              className="w-full"
+            />
           </div>
         )}
 

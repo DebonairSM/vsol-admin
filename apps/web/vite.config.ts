@@ -12,8 +12,12 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: '0.0.0.0', // Allow access from network
     allowedHosts: [
-      'vsol.home'
+      'vsol-aurora',
+      'vsol-aurora.home',
+      'vsol.home',
+      'localhost'
     ],
     proxy: {
       '/api': {

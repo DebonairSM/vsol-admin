@@ -10,7 +10,6 @@ interface BonusInfoCellProps {
   lineItem: {
     id: number;
     consultantId: number;
-    bonusDate?: Date | string | null;
     informedDate?: Date | string | null;
     bonusPaydate?: Date | string | null;
   };
@@ -23,14 +22,12 @@ interface BonusInfoCellProps {
 export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRecipientConsultantId, onUpdate }: BonusInfoCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
-    bonusDate: lineItem.bonusDate ? new Date(lineItem.bonusDate).toISOString().split('T')[0] : '',
     informedDate: lineItem.informedDate ? new Date(lineItem.informedDate).toISOString().split('T')[0] : '',
     bonusPaydate: lineItem.bonusPaydate ? new Date(lineItem.bonusPaydate).toISOString().split('T')[0] : '',
   });
 
   // Check if this consultant is the bonus recipient
   const isBonusRecipient = bonusRecipientConsultantId !== null && bonusRecipientConsultantId === lineItem.consultantId;
-  const isBonusDateHighlighted = isSameDate(lineItem.bonusDate, cycleSendReceiptDate);
 
   const handleSave = async () => {
     try {
