@@ -196,7 +196,8 @@ export class BonusWorkflowService {
   }
 
   /**
-   * Find active consultant whose bonusMonth matches the cycle month
+   * Find active consultant whose bonusMonth matches the NEXT month after cycle month
+   * (cycle represents preparation month, bonusMonth represents payment month)
    */
   private static async findConsultantByBonusMonth(cycleId: number): Promise<number | null> {
     const cycle = await db.query.payrollCycles.findFirst({
@@ -212,10 +213,14 @@ export class BonusWorkflowService {
       return null;
     }
     
+    // Calculate next month (cycle payment month is when consultant receives bonus)
+    // October cycle → November payment → match bonusMonth = 11
+    const nextMonth = (cycleMonth % 12) + 1;
+    
     // Find active consultant with matching bonusMonth
     const consultant = await db.query.consultants.findFirst({
       where: and(
-        eq(consultants.bonusMonth, cycleMonth),
+        eq(consultants.bonusMonth, nextMonth),
         isNull(consultants.terminationDate) // Only active consultants
       )
     });
