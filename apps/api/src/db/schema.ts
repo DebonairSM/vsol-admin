@@ -93,7 +93,6 @@ export const cycleLineItems = sqliteTable('cycle_line_items', {
   consultantId: integer('consultant_id').notNull().references(() => consultants.id),
   invoiceSent: integer('invoice_sent', { mode: 'boolean' }),
   adjustmentValue: real('adjustment_value'),
-  bonusDate: integer('bonus_date', { mode: 'timestamp' }),
   informedDate: integer('informed_date', { mode: 'timestamp' }),
   bonusPaydate: integer('bonus_paydate', { mode: 'timestamp' }),
   ratePerHour: real('rate_per_hour').notNull(), // Snapshot of consultant rate

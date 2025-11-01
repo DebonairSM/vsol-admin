@@ -132,7 +132,6 @@ async function seed() {
         cycleId: cycle.id,
         consultantId: createdConsultants[0].id, // Gustavo
         ratePerHour: 30.00,
-        bonusDate: new Date('2024-07-01'),
         informedDate: new Date('2024-02-21'),
         bonusPaydate: new Date('2025-07-01')
       },
@@ -141,7 +140,6 @@ async function seed() {
         consultantId: createdConsultants[1].id, // Enzo
         ratePerHour: 26.05,
         adjustmentValue: 3111.00,
-        bonusDate: new Date('2024-06-02'),
         informedDate: new Date('2025-05-15'),
         bonusPaydate: new Date('2025-06-02')
       },
@@ -149,7 +147,6 @@ async function seed() {
         cycleId: cycle.id,
         consultantId: createdConsultants[2].id, // Fabiano
         ratePerHour: 18.60,
-        bonusDate: new Date('2024-03-04'),
         informedDate: new Date('2025-02-24'),
         bonusPaydate: new Date('2025-03-04')
       },
@@ -157,7 +154,6 @@ async function seed() {
         cycleId: cycle.id,
         consultantId: createdConsultants[3].id, // Rafael
         ratePerHour: 35.00,
-        bonusDate: new Date('2024-04-04'),
         informedDate: new Date('2025-04-04'),
         bonusPaydate: new Date('2025-04-04')
       },
@@ -165,7 +161,6 @@ async function seed() {
         cycleId: cycle.id,
         consultantId: createdConsultants[4].id, // Kristof
         ratePerHour: 17.93,
-        bonusDate: new Date('2024-11-02'),
         bonusPaydate: new Date('2024-11-02')
         // informedDate is null for Kristof
       },
@@ -173,7 +168,6 @@ async function seed() {
         cycleId: cycle.id,
         consultantId: createdConsultants[5].id, // Lucas
         ratePerHour: 22.00,
-        bonusDate: new Date('2024-12-02'),
         informedDate: new Date('2024-12-02'),
         bonusPaydate: new Date('2024-12-02')
       },
@@ -181,7 +175,6 @@ async function seed() {
         cycleId: cycle.id,
         consultantId: createdConsultants[6].id, // Arthur
         ratePerHour: 26.00,
-        bonusDate: new Date('2025-09-01'),
         informedDate: new Date('2025-09-01'),
         bonusPaydate: new Date('2025-09-01')
       },
@@ -189,7 +182,6 @@ async function seed() {
         cycleId: cycle.id,
         consultantId: createdConsultants[7].id, // Tiago
         ratePerHour: 23.12,
-        bonusDate: new Date('2025-05-02'),
         informedDate: new Date('2025-05-02'),
         bonusPaydate: new Date('2025-05-02')
       },
@@ -197,7 +189,6 @@ async function seed() {
         cycleId: cycle.id,
         consultantId: createdConsultants[8].id, // Fernando
         ratePerHour: 13.00,
-        bonusDate: new Date('2025-10-01'),
         informedDate: new Date('2025-09-12'),
         bonusPaydate: new Date('2025-10-01'),
         bonusAdvance: 500.00,
@@ -207,7 +198,6 @@ async function seed() {
         cycleId: cycle.id,
         consultantId: createdConsultants[9].id, // Guilherme
         ratePerHour: 12.50,
-        bonusDate: new Date('2025-08-02'),
         informedDate: new Date('2025-07-10'),
         bonusPaydate: new Date('2025-08-02')
       }

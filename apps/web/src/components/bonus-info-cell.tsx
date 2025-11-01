@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { formatCurrency, formatDate, isSameDate, cn } from '@/lib/utils';
-import { Edit, DollarSign, Calendar, Info } from 'lucide-react';
+import { formatCurrency, formatDate, cn } from '@/lib/utils';
+import { Edit, DollarSign, Info } from 'lucide-react';
 
 interface BonusInfoCellProps {
   lineItem: {
@@ -34,9 +34,6 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
       const updatePayload: Record<string, any> = {};
       
       // Convert dates back to ISO strings or null
-      if (editData.bonusDate !== (lineItem.bonusDate ? new Date(lineItem.bonusDate).toISOString().split('T')[0] : '')) {
-        updatePayload.bonusDate = editData.bonusDate ? new Date(editData.bonusDate).toISOString() : null;
-      }
       if (editData.informedDate !== (lineItem.informedDate ? new Date(lineItem.informedDate).toISOString().split('T')[0] : '')) {
         updatePayload.informedDate = editData.informedDate ? new Date(editData.informedDate).toISOString() : null;
       }
@@ -57,14 +54,13 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
 
   const handleCancel = () => {
     setEditData({
-      bonusDate: lineItem.bonusDate ? new Date(lineItem.bonusDate).toISOString().split('T')[0] : '',
       informedDate: lineItem.informedDate ? new Date(lineItem.informedDate).toISOString().split('T')[0] : '',
       bonusPaydate: lineItem.bonusPaydate ? new Date(lineItem.bonusPaydate).toISOString().split('T')[0] : '',
     });
     setIsEditing(false);
   };
 
-  const hasAnyBonusData = lineItem.bonusDate || lineItem.informedDate || lineItem.bonusPaydate;
+  const hasAnyBonusData = lineItem.informedDate || lineItem.bonusPaydate;
 
   const canEdit = isBonusRecipient || bonusRecipientConsultantId === null;
 
@@ -78,15 +74,6 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
           )}>
             {hasAnyBonusData ? (
               <div className="space-y-1 text-xs">
-                {lineItem.bonusDate && (
-                  <div className={cn(
-                    "flex items-center gap-1 px-2 py-1 rounded",
-                    isBonusDateHighlighted ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-700"
-                  )}>
-                    <Calendar className="w-3 h-3" />
-                    <span>Bonus: {formatDate(lineItem.bonusDate)}</span>
-                  </div>
-                )}
                 {lineItem.informedDate && (
                   <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded">
                     <Info className="w-3 h-3" />
@@ -131,17 +118,6 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
             </div>
 
             <div className="grid gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="bonusDate" className="text-xs">Bonus Date</Label>
-                <Input
-                  id="bonusDate"
-                  type="date"
-                  value={editData.bonusDate}
-                  onChange={(e) => setEditData(prev => ({ ...prev, bonusDate: e.target.value }))}
-                  className="text-xs"
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="informedDate" className="text-xs">Bonus Announcement Date</Label>
                 <Input

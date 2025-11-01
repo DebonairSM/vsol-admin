@@ -85,7 +85,6 @@ export interface CycleLineItem {
   consultantId: number;
   invoiceSent?: boolean | null;
   adjustmentValue?: number | null;
-  bonusDate?: Date | null;
   informedDate?: Date | null;
   bonusPaydate?: Date | null;
   ratePerHour: number; // Snapshot of consultant rate

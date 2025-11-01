@@ -157,7 +157,7 @@ export class BonusWorkflowService {
     });
     
     const consultantWithBonus = lineItems.find(item => 
-      item.bonusDate || item.informedDate || item.bonusPaydate
+      item.informedDate || item.bonusPaydate
     );
     
     return consultantWithBonus?.consultantId || null;
@@ -260,7 +260,6 @@ export class BonusWorkflowService {
       if (lineItem.consultantId !== allowedConsultantId) {
         await db.update(cycleLineItems)
           .set({
-            bonusDate: null,
             informedDate: null,
             bonusPaydate: null,
             updatedAt: new Date()

@@ -34,8 +34,7 @@ export class LineItemService {
     const existing = await this.getById(id);
 
     // Check if trying to set bonus fields for a consultant who is not the bonus recipient
-    const isSettingBonusFields = data.bonusDate !== undefined || 
-                                  data.informedDate !== undefined || 
+    const isSettingBonusFields = data.informedDate !== undefined || 
                                   data.bonusPaydate !== undefined;
     
     if (isSettingBonusFields) {
@@ -68,9 +67,6 @@ export class LineItemService {
     };
     if (data.invoiceSent !== undefined) updateData.invoiceSent = data.invoiceSent;
     if (data.adjustmentValue !== undefined) updateData.adjustmentValue = validateNumber(data.adjustmentValue, 'adjustmentValue');
-    if (data.bonusDate !== undefined) {
-      updateData.bonusDate = data.bonusDate ? new Date(data.bonusDate) : null;
-    }
     if (data.informedDate !== undefined) {
       updateData.informedDate = data.informedDate ? new Date(data.informedDate) : null;
       

@@ -163,7 +163,6 @@ export const updateCycleSchema = z.object({
 export const updateLineItemSchema = z.object({
   invoiceSent: z.boolean().nullable().optional(),
   adjustmentValue: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
-  bonusDate: z.string().datetime().nullable().optional(),
   informedDate: z.string().datetime().nullable().optional(),
   bonusPaydate: z.string().datetime().nullable().optional(),
   bonusAdvance: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),

@@ -1,0 +1,1 @@
+ALTER TABLE `cycle_line_items` DROP COLUMN `bonus_date`;

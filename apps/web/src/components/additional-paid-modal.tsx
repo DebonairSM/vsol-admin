@@ -155,6 +155,7 @@ export default function AdditionalPaidModal({
                 <SelectValue placeholder="Select payment method" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">None</SelectItem>
                 <SelectItem value="PIX">PIX</SelectItem>
                 <SelectItem value="INTER">Inter</SelectItem>
                 <SelectItem value="OTHER">Other</SelectItem>
