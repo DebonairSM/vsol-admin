@@ -270,14 +270,19 @@ export class BonusWorkflowService {
     }
   }
 
-  static async generateEmailContent(cycleId: number) {
+  static async generateEmailContent(cycleId: number, overrideConsultantId?: number | null) {
     let workflow = await this.getByCycleId(cycleId);
     if (!workflow) {
       throw new NotFoundError('Bonus workflow not found for this cycle');
     }
 
+    // Use override consultant ID if provided, otherwise use workflow's stored value
+    let recipientConsultantId = overrideConsultantId !== undefined 
+      ? overrideConsultantId 
+      : workflow.bonusRecipientConsultantId;
+
     // If still no recipient after auto-detection, try one more time before erroring
-    if (!workflow.bonusRecipientConsultantId) {
+    if (!recipientConsultantId) {
       // Try bonusMonth match first
       let recipientId = await this.findConsultantByBonusMonth(cycleId);
       
@@ -286,21 +291,11 @@ export class BonusWorkflowService {
         recipientId = await this.findConsultantWithBonusFields(cycleId);
       }
       
-      // If found, update and reload workflow
-      if (recipientId) {
-        await db.update(bonusWorkflows)
-          .set({
-            bonusRecipientConsultantId: recipientId,
-            updatedAt: new Date()
-          })
-          .where(eq(bonusWorkflows.cycleId, cycleId));
-        
-        workflow = await this.getByCycleId(cycleId);
-      }
+      recipientConsultantId = recipientId;
     }
 
     // Check if recipient consultant is selected
-    if (!workflow.bonusRecipientConsultantId) {
+    if (!recipientConsultantId) {
       throw new ValidationError('Please select which consultant will receive the bonus before generating the email.');
     }
 
@@ -314,7 +309,7 @@ export class BonusWorkflowService {
 
     // Get the recipient consultant
     const recipientConsultant = await db.query.consultants.findFirst({
-      where: eq(consultants.id, workflow.bonusRecipientConsultantId!)
+      where: eq(consultants.id, recipientConsultantId)
     });
 
     if (!recipientConsultant) {
@@ -334,7 +329,7 @@ export class BonusWorkflowService {
     });
 
     // Find the consultant's line item to check for advances
-    const consultantLineItem = lineItems.find(item => item.consultantId === workflow.bonusRecipientConsultantId);
+    const consultantLineItem = lineItems.find(item => item.consultantId === recipientConsultantId);
     const advanceAmount = consultantLineItem?.bonusAdvance || 0;
     const netBonus = globalBonus - advanceAmount;
 
@@ -346,22 +341,31 @@ export class BonusWorkflowService {
     });
 
     // Generate email template for the selected consultant
-    let emailContent = `Dear ${recipientConsultant.name},\n\n`;
-    emailContent += `We are pleased to announce your bonus for ${cycle.monthLabel}.\n\n`;
+    let emailContent = `Dear ${recipientConsultant.name},\n\n\n\n`;
+    emailContent += `We are pleased to announce your bonus for this year.\n\n`;
     
     if (advanceAmount > 0) {
-      emailContent += `Your bonus amount is $${globalBonus.toFixed(2)} from the Omnigo client.\n\n`;
+      emailContent += `Your bonus amount is $${globalBonus.toFixed(2)} related to the Omnigo client.\n\n`;
       emailContent += `However, you have already received an advance of $${advanceAmount.toFixed(2)}, `;
       emailContent += `so the net bonus payment will be $${netBonus.toFixed(2)}.\n\n`;
     } else {
-      emailContent += `You will receive a bonus of $${globalBonus.toFixed(2)} from the Omnigo client.\n\n`;
+      emailContent += `You will receive a bonus of $${globalBonus.toFixed(2)} related to the Omnigo client.\n\n`;
     }
 
     emailContent += `This bonus will be processed on ${formattedDate}.\n\n`;
     emailContent += `Thank you for your continued dedication and hard work.\n\n`;
-    emailContent += `Best regards,\nVSol Admin`;
+    emailContent += `Best regards,\n\n \n\n`;
+    emailContent += `VSol Admin\n\n`;
+    emailContent += `(407) 409-0874\n\n`;
+    emailContent += `admin@vsol.software\n\n`;
+    emailContent += `www.vsol.software`;
+
+    // Extract year from cycle monthLabel or use current year
+    const year = cycle.monthLabel.match(/\d{4}/) ? cycle.monthLabel.match(/\d{4}/)![0] : new Date().getFullYear();
+    const emailSubject = `Your Annual Bonus Announcement - ${year}`;
 
     return {
+      emailSubject,
       emailContent,
       consultantsCount: 1,
       totalBonus: netBonus > 0 ? netBonus : 0

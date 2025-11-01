@@ -387,9 +387,10 @@ class ApiClient {
     });
   }
 
-  async generateBonusEmail(cycleId: number) {
+  async generateBonusEmail(cycleId: number, consultantId?: number | null) {
     return this.request<any>(`/cycles/${cycleId}/bonus/generate-email`, {
       method: 'POST',
+      body: JSON.stringify({ consultantId }),
     });
   }
 

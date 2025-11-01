@@ -26,6 +26,22 @@ export default function ConsultantEditPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Helper function to safely convert date to YYYY-MM-DD format
+  const formatDateForInput = (dateValue: any): string | undefined => {
+    if (!dateValue) return undefined;
+    try {
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return undefined;
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch {
+      return undefined;
+    }
+  };
+
   // Initialize form state when consultant data loads
   useEffect(() => {
     if (consultant) {
@@ -42,7 +58,7 @@ export default function ConsultantEditPage() {
         state: consultant.state,
         cep: consultant.cep,
         phone: consultant.phone,
-        birthDate: consultant.birthDate ? new Date(consultant.birthDate).toISOString().split('T')[0] : undefined,
+        birthDate: formatDateForInput(consultant.birthDate),
         shirtSize: consultant.shirtSize,
         // Company Data
         companyLegalName: consultant.companyLegalName,
@@ -56,7 +72,6 @@ export default function ConsultantEditPage() {
         // Documents
         cpf: consultant.cpf,
         // Bonus
-        yearlyBonus: consultant.yearlyBonus,
         bonusMonth: consultant.bonusMonth,
       });
     }
@@ -239,7 +254,7 @@ export default function ConsultantEditPage() {
                 <Input
                   id="terminationDate"
                   type="date"
-                  value={formState.terminationDate ? new Date(formState.terminationDate).toISOString().split('T')[0] : ''}
+                  value={formatDateForInput(formState.terminationDate) || ''}
                   onChange={(e) => handleInputChange('terminationDate', e.target.value ? new Date(e.target.value).toISOString() : null)}
                 />
               </div>
@@ -474,13 +489,10 @@ export default function ConsultantEditPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="yearlyBonus">Yearly Bonus (USD)</Label>
-                <Input
-                  id="yearlyBonus"
-                  type="number"
-                  step="0.01"
-                  value={formState.yearlyBonus || ''}
-                  onChange={(e) => handleInputChange('yearlyBonus', e.target.value ? parseFloat(e.target.value) : null)}
-                />
+                <div className="h-10 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-700">
+                  $3,111.00
+                </div>
+                <p className="text-sm text-gray-500 mt-1">Global bonus amount (same for all consultants)</p>
               </div>
               <div>
                 <Label htmlFor="bonusMonth">Bonus Month</Label>

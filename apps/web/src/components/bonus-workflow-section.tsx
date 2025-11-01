@@ -8,7 +8,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDate, formatMonthAbbr } from '@/lib/utils';
-import { CalendarIcon, Mail, Info } from 'lucide-react';
+import { CalendarIcon, Mail, Info, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBonusWorkflow, useCreateBonusWorkflow, useUpdateBonusWorkflow, useGenerateBonusEmail } from '@/hooks/use-bonus-workflow';
 import { useCycleLines } from '@/hooks/use-cycles';
@@ -34,6 +34,7 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   const [paymentDate, setPaymentDate] = useState<Date | undefined>(
     workflow?.bonusPaymentDate ? new Date(workflow.bonusPaymentDate) : undefined
   );
+  const [emailSubject, setEmailSubject] = useState('');
   const [emailContent, setEmailContent] = useState(workflow?.emailContent || '');
   const [notes, setNotes] = useState(workflow?.notes || '');
   const [emailGenerated, setEmailGenerated] = useState(workflow?.emailGenerated || false);
@@ -57,13 +58,46 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
 
   const handleGenerateEmail = async () => {
     try {
-      const result = await generateEmail.mutateAsync();
+      const result = await generateEmail.mutateAsync(selectedConsultantId);
+      setEmailSubject(result.emailSubject || '');
       setEmailContent(result.emailContent);
       setEmailGenerated(true);
       toast.success('Email content generated successfully');
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to generate email content. Make sure consultants have bonus amounts.';
       toast.error(errorMessage);
+    }
+  };
+
+  const handleCopySubject = async () => {
+    try {
+      await navigator.clipboard.writeText(emailSubject);
+      toast.success('Subject copied to clipboard');
+    } catch (error) {
+      toast.error('Failed to copy subject');
+    }
+  };
+
+  const handleCopyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(emailContent);
+      toast.success('Email content copied to clipboard');
+    } catch (error) {
+      toast.error('Failed to copy email content');
+    }
+  };
+
+  const handleCopyEmailAddress = async () => {
+    try {
+      const recipientEmail = selectedConsultant?.email || '';
+      if (!recipientEmail) {
+        toast.error('No email address available for this consultant');
+        return;
+      }
+      await navigator.clipboard.writeText(recipientEmail);
+      toast.success('Recipient email address copied to clipboard');
+    } catch (error) {
+      toast.error('Failed to copy email address');
     }
   };
 
@@ -203,7 +237,20 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
 
         {/* Generate Email */}
         <div className="space-y-2">
-          <Label>Email Content</Label>
+          <div className="flex items-center justify-between">
+            <Label>Email Subject</Label>
+            {emailSubject && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopySubject}
+                className="flex items-center gap-1 h-7"
+              >
+                <Copy className="h-3 w-3" />
+                Copy
+              </Button>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -216,14 +263,64 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
               Generate Email
             </Button>
           </div>
+          {emailSubject && (
+            <div className="p-3 bg-gray-50 rounded border border-gray-200 text-sm font-medium">
+              {emailSubject}
+            </div>
+          )}
+        </div>
+
+        {/* Email Content */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>Email Content</Label>
+            {emailContent && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyEmail}
+                className="flex items-center gap-1 h-7"
+              >
+                <Copy className="h-3 w-3" />
+                Copy
+              </Button>
+            )}
+          </div>
           <Textarea
             value={emailContent}
             onChange={(e) => setEmailContent(e.target.value)}
             placeholder="Email content will appear here after generation..."
-            rows={8}
+            rows={12}
             className="font-mono text-sm"
           />
         </div>
+
+        {/* Recipient Email Address */}
+        {selectedConsultant && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Recipient Email Address</Label>
+              {selectedConsultant.email && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyEmailAddress}
+                  className="flex items-center gap-1 h-7"
+                >
+                  <Copy className="h-3 w-3" />
+                  Copy
+                </Button>
+              )}
+            </div>
+            <div className={`p-3 rounded border text-sm ${
+              selectedConsultant.email 
+                ? 'bg-gray-50 border-gray-200 font-mono' 
+                : 'bg-amber-50 border-amber-200 text-amber-800'
+            }`}>
+              {selectedConsultant.email || 'No email address on file for this consultant'}
+            </div>
+          </div>
+        )}
 
         {/* Email Generated Checkbox */}
         <div className="flex items-center space-x-2">

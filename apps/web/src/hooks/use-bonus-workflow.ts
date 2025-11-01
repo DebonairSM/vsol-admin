@@ -36,7 +36,7 @@ export function useUpdateBonusWorkflow(cycleId: number) {
 
 export function useGenerateBonusEmail(cycleId: number) {
   return useMutation({
-    mutationFn: () => apiClient.generateBonusEmail(cycleId)
+    mutationFn: (consultantId?: number | null) => apiClient.generateBonusEmail(cycleId, consultantId)
   });
 }
 

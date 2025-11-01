@@ -53,7 +53,8 @@ router.patch('/cycles/:cycleId/bonus',
 router.post('/cycles/:cycleId/bonus/generate-email', authenticateToken, async (req, res, next) => {
   try {
     const cycleId = parseInt(req.params.cycleId);
-    const result = await BonusWorkflowService.generateEmailContent(cycleId);
+    const consultantId = req.body.consultantId;
+    const result = await BonusWorkflowService.generateEmailContent(cycleId, consultantId);
     res.json(result);
   } catch (error) {
     next(error);
