@@ -1,5 +1,5 @@
 import { db, users, consultants, payrollCycles, cycleLineItems, systemSettings } from './index';
-import { hashPassword } from '../lib/bcrypt';
+import { hashPassword } from '../lib/password';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 

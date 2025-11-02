@@ -158,6 +158,10 @@ function gracefulShutdown(signal: string) {
 // Start server with port conflict handling
 async function startServer() {
   try {
+    // Initialize database (sets encryption key if enabled)
+    const { initializeDatabase } = await import('./db');
+    await initializeDatabase();
+    
     const availablePort = await findAvailablePort(Number(PORT));
     
     server = app.listen(availablePort, () => {

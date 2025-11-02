@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq } from 'drizzle-orm';
 import { db, users } from '../db';
-import { comparePassword } from '../lib/bcrypt';
+import { comparePassword, hashPassword, needsRehash } from '../lib/password';
 import { signToken } from '../lib/jwt';
 import { validateBody } from '../middleware/validate';
 import { authenticateToken } from '../middleware/auth';
@@ -28,6 +28,16 @@ router.post('/login', validateBody(loginSchema), async (req, res, next) => {
     const isValidPassword = await comparePassword(password, user.passwordHash);
     if (!isValidPassword) {
       throw new UnauthorizedError('Invalid credentials');
+    }
+
+    // Check if password hash needs rehashing (bcrypt → Argon2id migration)
+    if (needsRehash(user.passwordHash)) {
+      console.log(`🔄 Rehashing password for user ${username} (upgrading to Argon2id)`);
+      const newHash = await hashPassword(password);
+      
+      await db.update(users)
+        .set({ passwordHash: newHash })
+        .where(eq(users.id, user.id));
     }
 
     // Generate JWT token
