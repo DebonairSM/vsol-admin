@@ -2,10 +2,10 @@
   "name": "vsol-admin",
   "private": true,
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "pnpm --parallel -r dev",
     "dev:clean": "pnpm kill-all-ports && pnpm dev",
-    "build": "turbo run build",
-    "start": "turbo run start",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @vsol-admin/api start & pnpm --filter @vsol-admin/web preview",
     "db:migrate": "pnpm --filter @vsol-admin/api db:migrate",
     "db:studio": "pnpm --filter @vsol-admin/api db:studio",
     "db:seed": "pnpm --filter @vsol-admin/api db:seed",
@@ -13,9 +13,7 @@
     "kill-port": "pnpm --filter @vsol-admin/api kill-port",
     "kill-all-ports": "pnpm --filter @vsol-admin/api kill-all-ports"
   },
-  "devDependencies": {
-    "turbo": "^1.13.4"
-  },
+  "devDependencies": {},
   "packageManager": "pnpm@8.15.6",
   "engines": {
     "node": ">=18"
