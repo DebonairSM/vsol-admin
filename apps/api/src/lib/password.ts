@@ -1,4 +1,5 @@
 import argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 
 /**
  * Argon2id configuration for password hashing
@@ -63,8 +64,7 @@ export async function comparePassword(password: string, hash: string): Promise<b
     if (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$')) {
       console.warn('⚠️  bcrypt hash detected. Consider rehashing with Argon2id on next login.');
       
-      // Import bcrypt for backward compatibility
-      const bcrypt = await import('bcryptjs');
+      // Use bcrypt for backward compatibility
       return await bcrypt.compare(password, hash);
     }
     
