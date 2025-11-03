@@ -87,6 +87,17 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     }
   };
 
+  const handleResetDate = async (step: typeof workflowSteps[0]) => {
+    try {
+      await onUpdateWorkflowDate(step.fieldName, null);
+      setEditingStep(null);
+      setEditDate('');
+      setCalculationResult(null);
+    } catch (error) {
+      console.error('Failed to reset workflow date:', error);
+    }
+  };
+
   const handleCalculatePayment = async () => {
     try {
       const result = await calculatePaymentMutation.mutateAsync(cycle.id);
@@ -321,33 +332,47 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                             </div>
                           )}
 
-                          <div className="flex justify-end gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={handleDateCancel}
-                              className="text-xs"
-                            >
-                              Cancel
-                            </Button>
-                            {step.id !== 'calculate-payment' && (
+                          <div className="flex justify-between gap-2">
+                            <div>
+                              {isCompleted && (
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive" 
+                                  onClick={() => handleResetDate(step)}
+                                  className="text-xs"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
                               <Button 
                                 size="sm" 
-                                onClick={() => handleMarkComplete(step)}
+                                variant="outline" 
+                                onClick={handleDateCancel}
                                 className="text-xs"
                               >
-                                Mark Complete
+                                Cancel
                               </Button>
-                            )}
-                            {step.id === 'calculate-payment' && (calculationResult || isCompleted) && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => handleMarkComplete(step)}
-                                className="text-xs"
-                              >
-                                Mark Complete
-                              </Button>
-                            )}
+                              {step.id !== 'calculate-payment' && (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleMarkComplete(step)}
+                                  className="text-xs"
+                                >
+                                  Mark Complete
+                                </Button>
+                              )}
+                              {step.id === 'calculate-payment' && (calculationResult || isCompleted) && (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleMarkComplete(step)}
+                                  className="text-xs"
+                                >
+                                  Mark Complete
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </PopoverContent>

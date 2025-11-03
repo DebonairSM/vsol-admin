@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import BonusInfoCell from '@/components/bonus-info-cell';
 import WorkflowTracker from '@/components/workflow-tracker';
@@ -362,6 +362,17 @@ export default function GoldenSheetPage() {
                             }}
                             autoFocus
                           />
+                          {editValue && (
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              onClick={() => setEditValue('')}
+                              className="flex-shrink-0 h-9 w-9"
+                              title="Clear date"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          )}
                           <Button size="sm" onClick={handleCellSave}>Save</Button>
                         </div>
                       ) : (

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDate } from '@/lib/utils';
-import { AlertTriangle, CheckCircle, Download, FileText, Calendar, DollarSign } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Download, FileText, Calendar, DollarSign, X } from 'lucide-react';
 import {
   useTerminationStatus,
   useInitiateTermination,
@@ -162,13 +162,27 @@ export default function TerminationWorkflow({ consultantId }: TerminationWorkflo
                 
                 <div>
                   <Label htmlFor="terminationDate">Termination Date *</Label>
-                  <Input
-                    id="terminationDate"
-                    type="date"
-                    value={formData.terminationDate}
-                    onChange={(e) => setFormData({ ...formData, terminationDate: e.target.value })}
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="terminationDate"
+                      type="date"
+                      value={formData.terminationDate}
+                      onChange={(e) => setFormData({ ...formData, terminationDate: e.target.value })}
+                      required
+                      className="flex-1"
+                    />
+                    {formData.terminationDate && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setFormData({ ...formData, terminationDate: '' })}
+                        className="flex-shrink-0"
+                        title="Clear date"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
@@ -186,12 +200,26 @@ export default function TerminationWorkflow({ consultantId }: TerminationWorkflo
                 
                 <div>
                   <Label htmlFor="equipmentReturnDeadline">Equipment Return Deadline</Label>
-                  <Input
-                    id="equipmentReturnDeadline"
-                    type="date"
-                    value={formData.equipmentReturnDeadline}
-                    onChange={(e) => setFormData({ ...formData, equipmentReturnDeadline: e.target.value })}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="equipmentReturnDeadline"
+                      type="date"
+                      value={formData.equipmentReturnDeadline}
+                      onChange={(e) => setFormData({ ...formData, equipmentReturnDeadline: e.target.value })}
+                      className="flex-1"
+                    />
+                    {formData.equipmentReturnDeadline && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setFormData({ ...formData, equipmentReturnDeadline: '' })}
+                        className="flex-shrink-0"
+                        title="Clear date"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">
                     Leave empty to use default (5 days from termination date)
                   </p>

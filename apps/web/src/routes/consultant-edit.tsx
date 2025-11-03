@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UpdateConsultantRequest } from '@vsol-admin/shared';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import EquipmentManagement from '@/components/equipment-management';
 import TerminationWorkflow from '@/components/termination-workflow';
@@ -251,12 +251,26 @@ export default function ConsultantEditPage() {
               </div>
               <div>
                 <Label htmlFor="terminationDate">Termination Date</Label>
-                <Input
-                  id="terminationDate"
-                  type="date"
-                  value={formatDateForInput(formState.terminationDate) || ''}
-                  onChange={(e) => handleInputChange('terminationDate', e.target.value ? new Date(e.target.value).toISOString() : null)}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="terminationDate"
+                    type="date"
+                    value={formatDateForInput(formState.terminationDate) || ''}
+                    onChange={(e) => handleInputChange('terminationDate', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                    className="flex-1"
+                  />
+                  {formState.terminationDate && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleInputChange('terminationDate', null)}
+                      className="flex-shrink-0"
+                      title="Clear date"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>

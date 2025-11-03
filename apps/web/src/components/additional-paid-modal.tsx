@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { X } from 'lucide-react';
 
 interface AdditionalPaidModalProps {
   open: boolean;
@@ -141,12 +142,26 @@ export default function AdditionalPaidModal({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="additional-paid-date">Additional Paid Date</Label>
-            <Input
-              id="additional-paid-date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="additional-paid-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="flex-1"
+              />
+              {date && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setDate('')}
+                  className="flex-shrink-0"
+                  title="Clear date"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="additional-paid-method">Payment Method</Label>

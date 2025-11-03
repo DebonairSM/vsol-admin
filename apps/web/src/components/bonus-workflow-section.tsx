@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDate, formatMonthAbbr } from '@/lib/utils';
-import { Mail, Info, Copy } from 'lucide-react';
+import { Mail, Info, Copy, X } from 'lucide-react';
 import { useBonusWorkflow, useCreateBonusWorkflow, useUpdateBonusWorkflow, useGenerateBonusEmail } from '@/hooks/use-bonus-workflow';
 import { useCycleLines } from '@/hooks/use-cycles';
 import { toast } from 'sonner';
@@ -227,13 +227,26 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
         {/* Bonus Announcement Date */}
         <div className="space-y-2">
           <Label htmlFor="announcementDate">Bonus Announcement Date</Label>
-          <Input
-            id="announcementDate"
-            type="date"
-            value={announcementDate}
-            onChange={(e) => setAnnouncementDate(e.target.value)}
-            className="w-full"
-          />
+          <div className="flex gap-2">
+            <Input
+              id="announcementDate"
+              type="date"
+              value={announcementDate}
+              onChange={(e) => setAnnouncementDate(e.target.value)}
+              className="flex-1"
+            />
+            {announcementDate && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setAnnouncementDate('')}
+                className="flex-shrink-0"
+                title="Clear date"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Generate Email */}
@@ -351,13 +364,26 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
         {!paidWithPayroll && (
           <div className="space-y-2">
             <Label htmlFor="paymentDate">Bonus Payment Date</Label>
-            <Input
-              id="paymentDate"
-              type="date"
-              value={paymentDate}
-              onChange={(e) => setPaymentDate(e.target.value)}
-              className="w-full"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="paymentDate"
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                className="flex-1"
+              />
+              {paymentDate && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setPaymentDate('')}
+                  className="flex-shrink-0"
+                  title="Clear date"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         )}
 

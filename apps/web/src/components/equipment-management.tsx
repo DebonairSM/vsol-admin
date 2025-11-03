@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatDate } from '@/lib/utils';
-import { Plus, Edit, Trash2, Package, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, CheckCircle, X } from 'lucide-react';
 import {
   useConsultantEquipment,
   useCreateEquipment,
@@ -185,12 +185,26 @@ export default function EquipmentManagement({ consultantId, isTerminated = false
                 </div>
                 <div>
                   <Label htmlFor="purchaseDate">Purchase Date</Label>
-                  <Input
-                    id="purchaseDate"
-                    type="date"
-                    value={formData.purchaseDate}
-                    onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="purchaseDate"
+                      type="date"
+                      value={formData.purchaseDate}
+                      onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+                      className="flex-1"
+                    />
+                    {formData.purchaseDate && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setFormData({ ...formData, purchaseDate: '' })}
+                        className="flex-shrink-0"
+                        title="Clear date"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="serialNumber">Serial Number</Label>

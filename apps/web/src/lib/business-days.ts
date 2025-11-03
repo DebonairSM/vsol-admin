@@ -74,19 +74,34 @@ export function countBusinessDays(startDate: Date, endDate: Date): number {
 
 /**
  * Calculate the consultant payment date for a given month/year
- * Payment is on the 1st of the month, or the following Monday if 1st falls on weekend
+ * The cycle follows a 3-month timeline:
+ * - Month 1 (e.g., October): Invoice sent to Omnigo (cycle starts)
+ * - Month 2 (e.g., November): Omnigo deposits payment into bank account
+ * - Month 3 (e.g., December): Consultants are paid on the 1st (or next Monday if weekend)
+ * 
+ * Example: "October 2025" cycle → consultants paid December 1, 2025
  */
 export function getConsultantPaymentDate(year: number, month: number): Date {
   // month is 1-indexed (1 = January, 12 = December)
-  const firstOfMonth = new Date(year, month - 1, 1);
+  // Payment happens on the 1st TWO MONTHS after the cycle month
+  let paymentMonth = month + 2;
+  let paymentYear = year;
   
-  if (isWeekend(firstOfMonth)) {
-    // Find the next Monday
-    const daysUntilMonday = firstOfMonth.getDay() === 0 ? 1 : 2; // Sunday = 1 day, Saturday = 2 days
-    return new Date(year, month - 1, 1 + daysUntilMonday);
+  // Handle year rollover
+  if (paymentMonth > 12) {
+    paymentMonth = paymentMonth - 12;
+    paymentYear = year + 1;
   }
   
-  return firstOfMonth;
+  const firstOfPaymentMonth = new Date(paymentYear, paymentMonth - 1, 1);
+  
+  if (isWeekend(firstOfPaymentMonth)) {
+    // Find the next Monday
+    const daysUntilMonday = firstOfPaymentMonth.getDay() === 0 ? 1 : 2; // Sunday = 1 day, Saturday = 2 days
+    return new Date(paymentYear, paymentMonth - 1, 1 + daysUntilMonday);
+  }
+  
+  return firstOfPaymentMonth;
 }
 
 /**

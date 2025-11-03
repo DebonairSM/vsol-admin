@@ -74,9 +74,9 @@ export class CycleService {
     }
 
     // Create cycle and line items in transaction
-    const result = await db.transaction(async (tx) => {
+    const result = db.transaction((tx) => {
       // Create the cycle
-      const [cycle] = await tx.insert(payrollCycles).values({
+      const [cycle] = tx.insert(payrollCycles).values({
         monthLabel: data.monthLabel,
         globalWorkHours: data.globalWorkHours || null,
         omnigoBonus: data.omnigoBonus || null
@@ -90,10 +90,10 @@ export class CycleService {
         bonusAdvance: consultant.yearlyBonus || null // Pre-fill yearly bonus if set
       }));
 
-      await tx.insert(cycleLineItems).values(lineItemsData);
+      tx.insert(cycleLineItems).values(lineItemsData);
 
       return cycle;
-    });
+    })();
 
     // Return cycle with populated lines
     return this.getById(result.id);

@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
-import { Edit, DollarSign, Info } from 'lucide-react';
+import { Edit, DollarSign, Info, X } from 'lucide-react';
 
 interface BonusInfoCellProps {
   lineItem: {
@@ -120,24 +120,50 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
             <div className="grid gap-3">
               <div className="space-y-2">
                 <Label htmlFor="informedDate" className="text-xs">Bonus Announcement Date</Label>
-                <Input
-                  id="informedDate"
-                  type="date"
-                  value={editData.informedDate}
-                  onChange={(e) => setEditData(prev => ({ ...prev, informedDate: e.target.value }))}
-                  className="text-xs"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="informedDate"
+                    type="date"
+                    value={editData.informedDate}
+                    onChange={(e) => setEditData(prev => ({ ...prev, informedDate: e.target.value }))}
+                    className="text-xs flex-1"
+                  />
+                  {editData.informedDate && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setEditData(prev => ({ ...prev, informedDate: '' }))}
+                      className="flex-shrink-0 h-9 w-9"
+                      title="Clear date"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="bonusPaydate" className="text-xs">Bonus Pay Date</Label>
-                <Input
-                  id="bonusPaydate"
-                  type="date"
-                  value={editData.bonusPaydate}
-                  onChange={(e) => setEditData(prev => ({ ...prev, bonusPaydate: e.target.value }))}
-                  className="text-xs"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="bonusPaydate"
+                    type="date"
+                    value={editData.bonusPaydate}
+                    onChange={(e) => setEditData(prev => ({ ...prev, bonusPaydate: e.target.value }))}
+                    className="text-xs flex-1"
+                  />
+                  {editData.bonusPaydate && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setEditData(prev => ({ ...prev, bonusPaydate: '' }))}
+                      className="flex-shrink-0 h-9 w-9"
+                      title="Clear date"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from './ui/textarea';
 import { CreateConsultantRequest } from '@vsol-admin/shared';
 import { getMonthsList } from '@/lib/utils';
+import { X } from 'lucide-react';
 
 interface ConsultantRegistrationFormProps {
   onSubmit: (data: FormData) => Promise<void>;
@@ -142,12 +143,26 @@ export default function ConsultantRegistrationForm({ onSubmit, loading = false }
           </div>
           <div>
             <Label htmlFor="startDate">Data de Início</Label>
-            <Input
-              id="startDate"
-              type="date"
-              value={formState.startDate}
-              onChange={(e) => handleInputChange('startDate', e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="startDate"
+                type="date"
+                value={formState.startDate}
+                onChange={(e) => handleInputChange('startDate', e.target.value)}
+                className="flex-1"
+              />
+              {formState.startDate && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleInputChange('startDate', '')}
+                  className="flex-shrink-0"
+                  title="Clear date"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
           <div>
             <Label htmlFor="email">Email</Label>
@@ -183,12 +198,26 @@ export default function ConsultantRegistrationForm({ onSubmit, loading = false }
           </div>
           <div>
             <Label htmlFor="birthDate">Data de Nascimento</Label>
-            <Input
-              id="birthDate"
-              type="date"
-              value={formState.birthDate}
-              onChange={(e) => handleInputChange('birthDate', e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="birthDate"
+                type="date"
+                value={formState.birthDate}
+                onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                className="flex-1"
+              />
+              {formState.birthDate && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleInputChange('birthDate', '')}
+                  className="flex-shrink-0"
+                  title="Clear date"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
           <div>
             <Label htmlFor="phone">Telefone</Label>
