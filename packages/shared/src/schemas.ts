@@ -6,6 +6,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required')
 });
 
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, 'Refresh token is required')
+});
+
 export const userSchema = z.object({
   id: z.number(),
   username: z.string(),
@@ -206,6 +210,7 @@ export const createPaymentSchema = z.object({
 
 // Export types from schemas
 export type LoginRequest = z.infer<typeof loginSchema>;
+export type RefreshTokenRequest = z.infer<typeof refreshTokenSchema>;
 export type CreateConsultantRequest = z.infer<typeof createConsultantSchema>;
 export type UpdateConsultantRequest = z.infer<typeof updateConsultantSchema>;
 export type CreateCycleRequest = z.infer<typeof createCycleSchema>;

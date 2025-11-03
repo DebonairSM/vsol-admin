@@ -5,8 +5,9 @@ import { comparePassword, hashPassword, needsRehash } from '../lib/password';
 import { signToken } from '../lib/jwt';
 import { validateBody } from '../middleware/validate';
 import { authenticateToken } from '../middleware/auth';
-import { loginSchema } from '@vsol-admin/shared';
+import { loginSchema, refreshTokenSchema } from '@vsol-admin/shared';
 import { UnauthorizedError } from '../middleware/errors';
+import { createRefreshToken, rotateRefreshToken, revokeRefreshToken, revokeAllUserTokens } from '../services/token-service';
 
 const router: Router = Router();
 
@@ -40,21 +41,96 @@ router.post('/login', validateBody(loginSchema), async (req, res, next) => {
         .where(eq(users.id, user.id));
     }
 
-    // Generate JWT token
-    const token = signToken({
-      userId: user.id,
-      username: user.username,
-      role: user.role
-    });
+    // Get client metadata for security tracking
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    // Generate access and refresh tokens
+    const tokens = await createRefreshToken(
+      user.id,
+      {
+        userId: user.id,
+        username: user.username,
+        role: user.role
+      },
+      ipAddress,
+      userAgent
+    );
 
     res.json({
-      token,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      // For backward compatibility, also return 'token'
+      token: tokens.accessToken,
       user: {
         id: user.id,
         username: user.username,
         role: user.role
       }
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/auth/refresh
+// Rotate refresh token and get new access token
+router.post('/refresh', validateBody(refreshTokenSchema), async (req, res, next) => {
+  try {
+    const refreshToken = req.body.refreshToken;
+    
+    if (!refreshToken) {
+      throw new UnauthorizedError('Refresh token is required');
+    }
+
+    // Get client metadata for security tracking
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    // Rotate the refresh token
+    const tokens = await rotateRefreshToken(refreshToken, ipAddress, userAgent);
+
+    res.json({
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      // For backward compatibility
+      token: tokens.accessToken
+    });
+  } catch (error) {
+    // Log security events
+    if (error instanceof Error && error.message.includes('reuse detected')) {
+      console.error('🚨 SECURITY: Token reuse detected', {
+        ip: req.socket.remoteAddress,
+        userAgent: req.headers['user-agent']
+      });
+    }
+    next(new UnauthorizedError(error instanceof Error ? error.message : 'Invalid refresh token'));
+  }
+});
+
+// POST /api/auth/logout
+// Revoke the current refresh token
+router.post('/logout', async (req, res, next) => {
+  try {
+    const refreshToken = req.body.refreshToken;
+    
+    if (refreshToken) {
+      await revokeRefreshToken(refreshToken);
+    }
+
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/auth/logout-all
+// Revoke all refresh tokens for the authenticated user (logout from all devices)
+router.post('/logout-all', authenticateToken, async (req, res, next) => {
+  try {
+    await revokeAllUserTokens(req.user!.userId);
+
+    res.json({ message: 'Logged out from all devices successfully' });
   } catch (error) {
     next(error);
   }

@@ -195,9 +195,25 @@ export const systemSettings = sqliteTable('system_settings', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
 
+// Refresh tokens table for JWT rotation
+export const refreshTokens = sqliteTable('refresh_tokens', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id),
+  token: text('token').notNull().unique(), // Hashed token
+  tokenFamily: text('token_family').notNull(), // UUID identifying related tokens
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  revokedAt: integer('revoked_at', { mode: 'timestamp' }),
+  replacedBy: text('replaced_by'), // Token ID that replaced this one
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  // Security metadata
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent')
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
-  auditLogs: many(auditLogs)
+  auditLogs: many(auditLogs),
+  refreshTokens: many(refreshTokens)
 }));
 
 export const consultantsRelations = relations(consultants, ({ many }) => ({
@@ -276,5 +292,12 @@ export const bonusWorkflowsRelations = relations(bonusWorkflows, ({ one }) => ({
   consultant: one(consultants, {
     fields: [bonusWorkflows.bonusRecipientConsultantId],
     references: [consultants.id]
+  })
+}));
+
+export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [refreshTokens.userId],
+    references: [users.id]
   })
 }));
