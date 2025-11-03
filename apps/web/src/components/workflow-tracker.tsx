@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +10,9 @@ import { formatDate, cn } from '@/lib/utils';
 import { workflowSteps, calculateWorkflowProgress, isStepCompleted } from '@/lib/workflow-config';
 import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle } from 'lucide-react';
 import { useCalculatePayment } from '@/hooks/use-cycles';
-import { calculateDeadlineAlert } from '@/lib/business-days';
+import { calculateDeadlineAlert, parseMonthLabel } from '@/lib/business-days';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
 import type { PayrollCycle } from '@vsol-admin/shared';
 
 interface WorkflowTrackerProps {
@@ -23,6 +26,39 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const [calculationResult, setCalculationResult] = useState<any>(null);
   
   const calculatePaymentMutation = useCalculatePayment();
+
+  // Fetch monthly work hours data
+  const { data: monthlyWorkHours } = useQuery({
+    queryKey: ['monthly-work-hours'],
+    queryFn: () => apiClient.getWorkHours(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Helper function to get next month's work hours data
+  const getNextMonthInfo = () => {
+    const parsed = parseMonthLabel(cycle.monthLabel);
+    if (!parsed || !monthlyWorkHours) return null;
+    
+    let nextMonth = parsed.month + 1;
+    let nextYear = parsed.year;
+    if (nextMonth > 12) {
+      nextMonth = 1;
+      nextYear++;
+    }
+    
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    const nextMonthData = monthlyWorkHours?.find(
+      (m: any) => m.year === nextYear && m.monthNumber === nextMonth
+    );
+    
+    return {
+      month: monthNames[nextMonth - 1],
+      year: nextYear,
+      data: nextMonthData
+    };
+  };
 
   const progress = calculateWorkflowProgress(cycle);
 
@@ -191,8 +227,34 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                           "text-xs mt-1",
                           isCritical ? "text-red-100" : "text-gray-600"
                         )}>
-                          {step.description}
+                          {step.id === 'hours-limit-changed' ? (
+                            (() => {
+                              const nextMonthInfo = getNextMonthInfo();
+                              if (!nextMonthInfo) {
+                                return step.description; // Fallback if can't parse
+                              }
+                              if (nextMonthInfo.data) {
+                                return `Time Doctor limits updated for ${nextMonthInfo.month}: ${nextMonthInfo.data.workHours} hours`;
+                              }
+                              return null; // Will show warning badge below instead
+                            })()
+                          ) : (
+                            step.description
+                          )}
                         </p>
+                        {step.id === 'hours-limit-changed' && (() => {
+                          const nextMonthInfo = getNextMonthInfo();
+                          return nextMonthInfo && !nextMonthInfo.data && (
+                            <div className="mt-2">
+                              <Link to="/work-hours">
+                                <Badge variant="destructive" className="flex items-center gap-1 cursor-pointer hover:bg-red-700">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  Missing work hours for {nextMonthInfo.month} {nextMonthInfo.year} - Update Work Hours
+                                </Badge>
+                              </Link>
+                            </div>
+                          );
+                        })()}
                         {isCompleted && currentDate && (
                           <p className="text-xs font-mono mt-2 text-gray-800">
                             {formatDate(currentDate)}
