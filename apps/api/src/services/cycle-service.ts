@@ -153,6 +153,9 @@ export class CycleService {
     if (data.consultantsPaidDate !== undefined) {
       updateData.consultantsPaidDate = data.consultantsPaidDate ? new Date(data.consultantsPaidDate) : null;
     }
+    if (data.timeDoctorMarkedPaidDate !== undefined) {
+      updateData.timeDoctorMarkedPaidDate = data.timeDoctorMarkedPaidDate ? new Date(data.timeDoctorMarkedPaidDate) : null;
+    }
     if (data.hoursLimitChangedOn !== undefined) {
       updateData.hoursLimitChangedOn = data.hoursLimitChangedOn ? new Date(data.hoursLimitChangedOn) : null;
     }

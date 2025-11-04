@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,36 +7,84 @@ import { useGetSetting, useUpdateSetting, useTestPayoneerConnection } from '@/ho
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { apiClient } from '@/lib/api-client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [defaultOmnigoBonus, setDefaultOmnigoBonus] = useState<number>(0);
   const [payoneerConfig, setPayoneerConfig] = useState({
     apiKey: '',
     programId: '',
     apiUrl: 'https://api.payoneer.com/v4'
   });
 
-  // Load existing settings
+  // Load system settings
+  const { data: systemSettings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => apiClient.getSettings()
+  });
+
+  // Load Payoneer settings
   const { data: apiKeyData } = useGetSetting('payoneer_api_key');
   const { data: programIdData } = useGetSetting('payoneer_program_id');
   const { data: apiUrlData } = useGetSetting('payoneer_api_url');
 
   // Mutations
+  const updateSystemSettings = useMutation({
+    mutationFn: (data: { defaultOmnigoBonus: number }) => apiClient.updateSettings(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    }
+  });
   const updateSetting = useUpdateSetting();
   const testConnection = useTestPayoneerConnection();
 
-  // Initialize form with loaded data
-  useState(() => {
-    if (apiKeyData?.value && !payoneerConfig.apiKey) {
+  // Initialize system settings
+  useEffect(() => {
+    if (systemSettings?.defaultOmnigoBonus !== undefined) {
+      setDefaultOmnigoBonus(systemSettings.defaultOmnigoBonus);
+    }
+  }, [systemSettings]);
+
+  // Initialize Payoneer config
+  useEffect(() => {
+    if (apiKeyData && apiKeyData.value) {
       setPayoneerConfig(prev => ({ ...prev, apiKey: apiKeyData.value }));
     }
-    if (programIdData?.value && !payoneerConfig.programId) {
+  }, [apiKeyData]);
+
+  useEffect(() => {
+    if (programIdData && programIdData.value) {
       setPayoneerConfig(prev => ({ ...prev, programId: programIdData.value }));
     }
-    if (apiUrlData?.value && !payoneerConfig.apiUrl) {
+  }, [programIdData]);
+
+  useEffect(() => {
+    if (apiUrlData && apiUrlData.value) {
       setPayoneerConfig(prev => ({ ...prev, apiUrl: apiUrlData.value }));
     }
-  });
+  }, [apiUrlData]);
+
+  const handleSaveSystemSettings = async () => {
+    try {
+      await updateSystemSettings.mutateAsync({ defaultOmnigoBonus });
+      
+      toast({
+        title: 'Settings Saved',
+        description: 'System settings have been saved successfully',
+        variant: 'default'
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Save Failed',
+        description: error.message || 'Failed to save system settings',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const handleTestConnection = async () => {
     try {
@@ -64,7 +112,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSavePayoneerConfig = async () => {
     try {
       // Save all three settings
       await Promise.all([
@@ -87,7 +135,8 @@ export default function SettingsPage() {
     }
   };
 
-  const isSaving = updateSetting.isPending;
+  const isSavingSystem = updateSystemSettings.isPending;
+  const isSavingPayoneer = updateSetting.isPending;
   const isTesting = testConnection.isPending;
 
   return (
@@ -96,6 +145,42 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-600">Configure application settings and integrations</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>System Settings</CardTitle>
+          <CardDescription>
+            Configure default values for the payroll system
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="defaultOmnigoBonus">Default Omnigo Bonus (USD)</Label>
+            <Input
+              id="defaultOmnigoBonus"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={defaultOmnigoBonus}
+              onChange={(e) => setDefaultOmnigoBonus(parseFloat(e.target.value) || 0)}
+              disabled={isSavingSystem}
+            />
+            <p className="text-sm text-gray-500">
+              Default value for the Omnigo bonus field when creating new payroll cycles
+            </p>
+          </div>
+
+          <div className="pt-4">
+            <Button
+              onClick={handleSaveSystemSettings}
+              disabled={isSavingSystem}
+            >
+              {isSavingSystem && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save System Settings
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -114,7 +199,7 @@ export default function SettingsPage() {
               placeholder="Enter your Payoneer API key"
               value={payoneerConfig.apiKey}
               onChange={(e) => setPayoneerConfig(prev => ({ ...prev, apiKey: e.target.value }))}
-              disabled={isSaving}
+              disabled={isSavingPayoneer}
             />
             <p className="text-sm text-gray-500">
               Your API key will be encrypted and stored securely
@@ -129,7 +214,7 @@ export default function SettingsPage() {
               placeholder="Enter your Payoneer program ID"
               value={payoneerConfig.programId}
               onChange={(e) => setPayoneerConfig(prev => ({ ...prev, programId: e.target.value }))}
-              disabled={isSaving}
+              disabled={isSavingPayoneer}
             />
           </div>
 
@@ -141,7 +226,7 @@ export default function SettingsPage() {
               placeholder="https://api.payoneer.com/v4"
               value={payoneerConfig.apiUrl}
               onChange={(e) => setPayoneerConfig(prev => ({ ...prev, apiUrl: e.target.value }))}
-              disabled={isSaving}
+              disabled={isSavingPayoneer}
             />
             <p className="text-sm text-gray-500">
               Default: https://api.payoneer.com/v4
@@ -150,10 +235,10 @@ export default function SettingsPage() {
 
           <div className="flex gap-3 pt-4">
             <Button
-              onClick={handleSave}
-              disabled={isSaving || !payoneerConfig.apiKey || !payoneerConfig.programId}
+              onClick={handleSavePayoneerConfig}
+              disabled={isSavingPayoneer || !payoneerConfig.apiKey || !payoneerConfig.programId}
             >
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSavingPayoneer && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Configuration
             </Button>
 

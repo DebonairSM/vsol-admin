@@ -1,0 +1,1 @@
+ALTER TABLE payroll_cycles ADD `time_doctor_marked_paid_date` integer;
