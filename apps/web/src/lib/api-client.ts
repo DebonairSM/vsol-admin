@@ -52,13 +52,6 @@ class ApiClient {
   }
 
   // Auth methods
-  async login(username: string, password: string) {
-    return this.request<{ token: string; user: any }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    });
-  }
-
   async getMe() {
     return this.request<any>('/auth/me');
   }
@@ -433,6 +426,82 @@ class ApiClient {
       method: 'DELETE',
     });
     return { data: result };
+  }
+
+  // Store refresh token
+  setRefreshToken(refreshToken: string | null) {
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    } else {
+      localStorage.removeItem('refresh_token');
+    }
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refresh_token');
+  }
+
+  // Refresh access token using refresh token
+  async refreshAccessToken(): Promise<{ accessToken: string; refreshToken: string }> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await fetch(`${this.baseURL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+      throw new Error(errorData.message || errorData.error || 'Token refresh failed');
+    }
+
+    const data = await response.json();
+    return {
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+    };
+  }
+
+  // Update login method to store refresh token
+  async login(username: string, password: string) {
+    const response = await this.request<{ 
+      token: string; 
+      accessToken: string;
+      refreshToken: string;
+      user: any 
+    }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+
+    // Store refresh token
+    if (response.refreshToken) {
+      this.setRefreshToken(response.refreshToken);
+    }
+
+    return response;
+  }
+
+  // Update logout to revoke refresh token
+  async logout() {
+    const refreshToken = this.getRefreshToken();
+    if (refreshToken) {
+      try {
+        await this.request('/auth/logout', {
+          method: 'POST',
+          body: JSON.stringify({ refreshToken }),
+        });
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    }
+    this.setRefreshToken(null);
   }
 }
 

@@ -7,8 +7,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, cn } from '@/lib/utils';
-import { workflowSteps, calculateWorkflowProgress, isStepCompleted } from '@/lib/workflow-config';
-import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle } from 'lucide-react';
+import { workflowSteps, calculateWorkflowProgress, isStepCompleted, canCompleteStep } from '@/lib/workflow-config';
+import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle, Lock } from 'lucide-react';
 import { useCalculatePayment } from '@/hooks/use-cycles';
 import { calculateDeadlineAlert, parseMonthLabel } from '@/lib/business-days';
 import { useQuery } from '@tanstack/react-query';
@@ -177,6 +177,8 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {workflowSteps.map((step, index) => {
             const isCompleted = isStepCompleted(cycle, step);
+            const canComplete = canCompleteStep(cycle, step);
+            const isBlocked = !canComplete && !isCompleted;
             const currentDate = cycle[step.fieldName];
             const IconComponent = step.icon;
             
@@ -199,12 +201,13 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
 
                 <div
                   className={cn(
-                    "border rounded-lg p-4 transition-all duration-200 cursor-pointer hover:shadow-md",
+                    "border rounded-lg p-4 transition-all duration-200",
                     isCompleted ? step.color.complete : step.color.pending,
+                    isBlocked ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-md",
                     isWarning && "deadline-warning",
                     isCritical && "deadline-critical"
                   )}
-                  onClick={() => !editingStep && handleStepClick(step.id, step.fieldName, currentDate)}
+                  onClick={() => !editingStep && !isBlocked && handleStepClick(step.id, step.fieldName, currentDate)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -242,6 +245,14 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                             step.description
                           )}
                         </p>
+                        {isBlocked && step.dependsOn && (
+                          <div className="mt-2">
+                            <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                              <Lock className="w-3 h-3" />
+                              Blocked: Complete "{workflowSteps.find(s => s.id === step.dependsOn)?.title}" first
+                            </Badge>
+                          </div>
+                        )}
                         {step.id === 'hours-limit-changed' && (() => {
                           const nextMonthInfo = getNextMonthInfo();
                           return nextMonthInfo && !nextMonthInfo.data && (
@@ -279,7 +290,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                         setCalculationResult(null);
                       }
                     }}>
-                      <PopoverTrigger asChild>
+                      <PopoverTrigger asChild disabled={isBlocked}>
                         <div className="opacity-0 hover:opacity-100 transition-opacity">
                           <Calendar className="w-4 h-4 text-gray-400 cursor-pointer" />
                         </div>

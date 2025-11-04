@@ -1,5 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/auth-context';
+import { Toaster } from './components/ui/toaster';
 import LoginPage from './routes/login';
 import DashboardPage from './routes/dashboard';
 import NewCyclePage from './routes/new-cycle';
@@ -14,6 +15,7 @@ import PaymentsPage from './routes/payments';
 import AuditPage from './routes/audit';
 import WorkHoursPage from './routes/work-hours';
 import SettingsPage from './routes/settings';
+import PayoneerPayeesPage from './routes/payoneer-payees';
 import Layout from './components/layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -38,7 +40,7 @@ function App() {
   const { user } = useAuth();
 
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <>
       <Routes>
         <Route 
           path="/login" 
@@ -64,13 +66,15 @@ function App() {
                   <Route path="/work-hours" element={<WorkHoursPage />} />
                   <Route path="/audit" element={<AuditPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/payoneer/payees" element={<PayoneerPayeesPage />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>
           }
         />
       </Routes>
-    </Router>
+      <Toaster />
+    </>
   );
 }
 

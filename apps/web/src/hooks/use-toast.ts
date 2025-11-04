@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 
 import type {
@@ -191,6 +189,4 @@ function useToast() {
 }
 
 export { useToast, toast }
-
-
 

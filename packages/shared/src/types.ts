@@ -69,6 +69,7 @@ export interface PayrollCycle {
   hoursLimitChangedOn?: Date | null;
   additionalPaidOn?: Date | null; // Deprecated but kept for backward compatibility
   consultantsPaidDate?: Date | null;
+  timeDoctorMarkedPaidDate?: Date | null;
   // Footer values
   globalWorkHours?: number | null;
   omnigoBonus?: number | null;
@@ -273,4 +274,27 @@ export interface SystemSettings {
   id: number;
   defaultOmnigoBonus: number;
   updatedAt: Date;
+}
+
+export interface Setting {
+  id: number;
+  key: string;
+  value: string; // Encrypted value
+  updatedAt: Date;
+  updatedBy?: number | null;
+}
+
+export interface PayoneerConfig {
+  apiKey: string;
+  programId: string;
+  apiUrl: string;
+}
+
+export interface PayoneerPayee {
+  payeeId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  status: string;
+  paymentMethod?: string;
 }

@@ -75,6 +75,7 @@ export const payrollCycles = sqliteTable('payroll_cycles', {
   hoursLimitChangedOn: integer('hours_limit_changed_on', { mode: 'timestamp' }),
   additionalPaidOn: integer('additional_paid_on', { mode: 'timestamp' }), // Deprecated but kept for backward compatibility
   consultantsPaidDate: integer('consultants_paid_date', { mode: 'timestamp' }),
+  timeDoctorMarkedPaidDate: integer('time_doctor_marked_paid_date', { mode: 'timestamp' }),
   // Footer values
   globalWorkHours: integer('global_work_hours'),
   omnigoBonus: real('omnigo_bonus'),
@@ -195,6 +196,15 @@ export const systemSettings = sqliteTable('system_settings', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
 
+// Settings table for encrypted key-value pairs (e.g., API credentials)
+export const settings = sqliteTable('settings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  key: text('key').notNull().unique(),
+  value: text('value').notNull(), // Encrypted value
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedBy: integer('updated_by').references(() => users.id)
+});
+
 // Refresh tokens table for JWT rotation
 export const refreshTokens = sqliteTable('refresh_tokens', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -213,7 +223,8 @@ export const refreshTokens = sqliteTable('refresh_tokens', {
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   auditLogs: many(auditLogs),
-  refreshTokens: many(refreshTokens)
+  refreshTokens: many(refreshTokens),
+  settingsUpdates: many(settings)
 }));
 
 export const consultantsRelations = relations(consultants, ({ many }) => ({
@@ -298,6 +309,13 @@ export const bonusWorkflowsRelations = relations(bonusWorkflows, ({ one }) => ({
 export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
   user: one(users, {
     fields: [refreshTokens.userId],
+    references: [users.id]
+  })
+}));
+
+export const settingsRelations = relations(settings, ({ one }) => ({
+  updatedByUser: one(users, {
+    fields: [settings.updatedBy],
     references: [users.id]
   })
 }));

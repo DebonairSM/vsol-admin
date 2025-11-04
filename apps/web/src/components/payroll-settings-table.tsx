@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 interface PayrollSettingsTableProps {
   className?: string;

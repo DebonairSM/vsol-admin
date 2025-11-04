@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 export default function LoginPage() {
+  const location = useLocation();
+  const sessionExpired = location.state?.sessionExpired;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [keepLoggedIn, setKeepLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -18,7 +23,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      await login(username, password);
+      await login(username, password, keepLoggedIn);
     } catch (error: any) {
       setError(error.message || 'Login failed');
     } finally {
@@ -40,6 +45,15 @@ export default function LoginPage() {
             Golden Sheet Management System
           </p>
         </div>
+
+        {/* Show session expired message */}
+        {sessionExpired && (
+          <div className="bg-orange-50 border border-orange-200 text-orange-800 px-4 py-3 rounded-md">
+            <p className="text-sm font-medium">
+              Your session expired due to inactivity. Please log in again.
+            </p>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -76,6 +90,21 @@ export default function LoginPage() {
                   required
                   placeholder="Enter your password"
                 />
+              </div>
+
+              {/* NEW: Keep me logged in checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="keep-logged-in" 
+                  checked={keepLoggedIn}
+                  onCheckedChange={(checked) => setKeepLoggedIn(checked === true)}
+                />
+                <label
+                  htmlFor="keep-logged-in"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Keep me logged in
+                </label>
               </div>
 
               {error && (

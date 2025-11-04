@@ -28,6 +28,7 @@
     "@types/jspdf": "^2.0.0",
     "@vsol-admin/shared": "workspace:*",
     "argon2": "^0.31.2",
+    "axios": "^1.13.1",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.4.1",
     "cors": "^2.8.5",

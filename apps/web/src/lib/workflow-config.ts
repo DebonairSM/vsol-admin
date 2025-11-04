@@ -5,7 +5,7 @@ export interface WorkflowStep {
   id: string;
   title: string;
   description: string;
-  fieldName: keyof Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'clientInvoicePaymentDate' | 'clientPaymentScheduledDate' | 'consultantsPaidDate' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
+  fieldName: keyof Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'clientInvoicePaymentDate' | 'clientPaymentScheduledDate' | 'consultantsPaidDate' | 'timeDoctorMarkedPaidDate' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
   icon: any;
   color: {
     complete: string;
@@ -13,9 +13,10 @@ export interface WorkflowStep {
     background: string;
   };
   order: number;
+  dependsOn?: string; // Optional: ID of step that must be completed first
 }
 
-export type PayrollCycleWorkflow = Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'clientInvoicePaymentDate' | 'clientPaymentScheduledDate' | 'consultantsPaidDate' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
+export type PayrollCycleWorkflow = Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'clientInvoicePaymentDate' | 'clientPaymentScheduledDate' | 'consultantsPaidDate' | 'timeDoctorMarkedPaidDate' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
 
 export const workflowSteps: WorkflowStep[] = [
   {
@@ -58,17 +59,31 @@ export const workflowSteps: WorkflowStep[] = [
     order: 3
   },
   {
+    id: 'time-doctor-marked-paid',
+    title: 'Mark Time Doctor As Paid',
+    description: 'Payment status synced to Time Doctor',
+    fieldName: 'timeDoctorMarkedPaidDate',
+    icon: Clock,
+    color: {
+      complete: 'text-emerald-600 border-emerald-200 bg-emerald-50',
+      pending: 'text-gray-400 border-gray-200 bg-gray-50',
+      background: 'bg-emerald-100'
+    },
+    order: 4
+  },
+  {
     id: 'hours-limit-changed',
     title: 'Hours Limit Changed',
     description: 'Time Doctor limits updated',
     fieldName: 'hoursLimitChangedOn',
     icon: Clock,
+    dependsOn: 'time-doctor-marked-paid',
     color: {
       complete: 'text-indigo-600 border-indigo-200 bg-indigo-50',
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-indigo-100'
     },
-    order: 4
+    order: 5
   },
   {
     id: 'client-payment-scheduled-date',
@@ -81,7 +96,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-cyan-100'
     },
-    order: 5
+    order: 6
   },
   {
     id: 'calculate-payment',
@@ -94,7 +109,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-green-100'
     },
-    order: 6
+    order: 7
   },
   {
     id: 'payment-arrival',
@@ -107,7 +122,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-blue-100'
     },
-    order: 7
+    order: 8
   },
   {
     id: 'send-receipt',
@@ -120,7 +135,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-green-200'
     },
-    order: 8
+    order: 9
   }
 ];
 
@@ -154,4 +169,13 @@ export function calculateWorkflowProgress(cycle: PayrollCycleWorkflow): {
 export function isStepCompleted(cycle: PayrollCycleWorkflow, step: WorkflowStep): boolean {
   const value = cycle[step.fieldName];
   return value !== null && value !== undefined;
+}
+
+export function canCompleteStep(cycle: PayrollCycleWorkflow, step: WorkflowStep): boolean {
+  if (!step.dependsOn) return true;
+  
+  const dependencyStep = workflowSteps.find(s => s.id === step.dependsOn);
+  if (!dependencyStep) return true;
+  
+  return isStepCompleted(cycle, dependencyStep);
 }

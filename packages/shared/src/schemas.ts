@@ -156,6 +156,7 @@ export const updateCycleSchema = z.object({
   hoursLimitChangedOn: z.string().datetime().nullable().optional(),
   additionalPaidOn: z.string().datetime().nullable().optional(), // Deprecated but kept for backward compatibility
   consultantsPaidDate: z.string().datetime().nullable().optional(),
+  timeDoctorMarkedPaidDate: z.string().datetime().nullable().optional(),
   globalWorkHours: z.number().int().positive().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   omnigoBonus: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   pagamentoPIX: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
@@ -367,3 +368,18 @@ export const updateSettingsSchema = z.object({
 });
 
 export type UpdateSettingsRequest = z.infer<typeof updateSettingsSchema>;
+
+// Key-value settings schemas
+export const settingSchema = z.object({
+  key: z.string().min(1, 'Setting key is required'),
+  value: z.string().min(1, 'Setting value is required')
+});
+
+export const payoneerConfigSchema = z.object({
+  apiKey: z.string().min(1, 'Payoneer API key is required'),
+  programId: z.string().min(1, 'Payoneer program ID is required'),
+  apiUrl: z.string().url('Must be a valid URL').default('https://api.payoneer.com/v4')
+});
+
+export type SettingRequest = z.infer<typeof settingSchema>;
+export type PayoneerConfigRequest = z.infer<typeof payoneerConfigSchema>;
