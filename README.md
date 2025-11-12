@@ -13,18 +13,18 @@ pnpm db:seed
 pnpm dev
 ```
 
-- API: http://localhost:4000
+- API: http://localhost:2020
 - Web: http://localhost:5173
 
 ## Environment
 
 - `apps/api/.env`
-  - `PORT=4000`
+  - `PORT=2020`
   - `JWT_SECRET=change-me`
   - `DATABASE_URL=file:./dev.db`
   - `CORS_ORIGIN` (optional) - Comma-separated list of allowed origins for CORS. Supports exact URLs and wildcard patterns (e.g., `https://abc123.ngrok.io` or `*.ngrok.io`). If not set, defaults to `http://localhost:5173` in development mode.
 - `apps/web/.env`
-  - `VITE_API_URL=http://localhost:4000/api` - Backend API base URL. For ngrok setup, set this to your API ngrok URL (e.g., `https://def456.ngrok.io/api`)
+  - `VITE_API_URL=http://localhost:2020/api` - Backend API base URL. For ngrok setup, set this to your API ngrok URL (e.g., `https://def456.ngrok.io/api`)
 
 ## Tech Stack
 
@@ -174,7 +174,7 @@ To expose the application via ngrok public URLs:
 1. Start ngrok tunnels:
    ```bash
    # Terminal 1: API tunnel
-   ngrok http 4000
+   ngrok http 2020
    # Copy the HTTPS URL (e.g., https://def456.ngrok.io)
    
    # Terminal 2: Web tunnel
@@ -199,12 +199,12 @@ To expose the application via ngrok public URLs:
 ## Scripts
 
 ```bash
-pnpm dev         # Run API (4000) and Web (5173)
+pnpm dev         # Run API (2020) and Web (5173)
 pnpm build       # Build all packages
 pnpm db:migrate  # Apply migrations
 pnpm db:seed     # Seed dev data
 pnpm db:studio   # Drizzle Studio
-pnpm kill-all-ports  # Free 4000/5173 if needed (Windows PowerShell)
+pnpm kill-all-ports  # Free 2020/5173 if needed (Windows PowerShell)
 ```
 
 ## Structure

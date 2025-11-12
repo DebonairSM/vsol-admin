@@ -70,7 +70,7 @@ Look for this in server logs after login:
 Send invalid data to any endpoint:
 
 ```bash
-curl -X POST http://localhost:4000/api/auth/login \
+curl -X POST http://localhost:2020/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": ""}'
 

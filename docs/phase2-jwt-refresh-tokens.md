@@ -383,12 +383,12 @@ localStorage.setItem('token', token);
 1. **Login and refresh:**
    ```bash
    # Login
-   curl -X POST http://localhost:4000/api/auth/login \
+   curl -X POST http://localhost:2020/api/auth/login \
      -H "Content-Type: application/json" \
      -d '{"username":"rommel","password":"password"}'
    
    # Refresh
-   curl -X POST http://localhost:4000/api/auth/refresh \
+   curl -X POST http://localhost:2020/api/auth/refresh \
      -H "Content-Type: application/json" \
      -d '{"refreshToken":"<refreshToken>"}'
    ```
@@ -401,7 +401,7 @@ localStorage.setItem('token', token);
 
 3. **Test logout:**
    ```bash
-   curl -X POST http://localhost:4000/api/auth/logout \
+   curl -X POST http://localhost:2020/api/auth/logout \
      -H "Content-Type: application/json" \
      -d '{"refreshToken":"<refreshToken>"}'
    ```
