@@ -39,8 +39,8 @@ if (USE_ENCRYPTION) {
   sqliteDb = new Database(getDatabasePath());
 }
 
-// Enable WAL mode for better concurrency
-sqliteDb.pragma('journal_mode = WAL');
+// Note: WAL mode disabled due to Windows file locking issues
+// Using default DELETE journal mode instead
 
 // Enable foreign keys
 sqliteDb.pragma('foreign_keys = ON');

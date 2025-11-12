@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 2020,
     host: '0.0.0.0', // Allow access from network
     allowedHosts: [
       'vsol-aurora',
@@ -21,7 +21,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:2021',
         changeOrigin: true
       }
     }

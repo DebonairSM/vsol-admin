@@ -20,7 +20,7 @@ import settingsRoutes from './routes/settings';
 import payoneerRoutes from './routes/payoneer';
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 2021;
 
 // Keep track of the server instance for graceful shutdown
 let server: Server;

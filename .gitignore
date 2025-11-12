@@ -110,6 +110,7 @@ Thumbs.db
 
 # Backups
 backups/
+*.backup
 
 # Turbo
 .turbo

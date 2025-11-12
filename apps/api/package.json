@@ -19,8 +19,8 @@
     "db:generate": "drizzle-kit generate:sqlite",
     "db:backup": "node scripts/backup-db.js",
     "db:backup:list": "node scripts/verify-backup.js",
-    "kill-port": "powershell -Command \"$port = $env:PORT; if (-not $port) { $port = 4000 }; $process = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -First 1; if ($process) { Write-Host \\\"Killing process $process on port $port...\\\"; taskkill /F /PID $process } else { Write-Host \\\"No process found on port $port\\\" }\"",
-    "kill-all-ports": "powershell -Command \"@(4000,4001,5173,5174) | ForEach-Object { $port = $_; $process = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -First 1; if ($process) { Write-Host \\\"Killing process $process on port $port...\\\"; taskkill /F /PID $process } else { Write-Host \\\"No process on port $port\\\" } }\""
+    "kill-port": "powershell -Command \"$port = $env:PORT; if (-not $port) { $port = 2021 }; $process = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -First 1; if ($process) { Write-Host \\\"Killing process $process on port $port...\\\"; taskkill /F /PID $process } else { Write-Host \\\"No process found on port $port\\\" }\"",
+    "kill-all-ports": "powershell -Command \"@(2020,2021) | ForEach-Object { $port = $_; $process = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -First 1; if ($process) { Write-Host \\\"Killing process $process on port $port...\\\"; taskkill /F /PID $process } else { Write-Host \\\"No process on port $port\\\" } }\""
   },
   "dependencies": {
     "@journeyapps/sqlcipher": "^5.3.1",
