@@ -16,6 +16,7 @@ import AuditPage from './routes/audit';
 import WorkHoursPage from './routes/work-hours';
 import SettingsPage from './routes/settings';
 import PayoneerPayeesPage from './routes/payoneer-payees';
+import TimeDoctorActivityPage from './routes/timedoctor-activity';
 import Layout from './components/layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -67,6 +68,7 @@ function App() {
                   <Route path="/audit" element={<AuditPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/payoneer/payees" element={<PayoneerPayeesPage />} />
+                  <Route path="/timedoctor/activity" element={<TimeDoctorActivityPage />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>

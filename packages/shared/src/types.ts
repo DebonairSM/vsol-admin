@@ -298,3 +298,27 @@ export interface PayoneerPayee {
   status: string;
   paymentMethod?: string;
 }
+
+// Time Doctor types
+export interface TimeDoctorUser {
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  status: string;
+}
+
+export interface TimeDoctorActivity {
+  userId: string;
+  userName: string;
+  date: string;
+  workHours: number;
+  tasks: string;
+  projects: string;
+}
+
+export interface TimeDoctorActivityParams {
+  from: string;
+  to: string;
+  userId?: string;
+}

@@ -56,9 +56,22 @@ function getCorsOrigin(): string | string[] | ((origin: string | undefined) => b
     };
   }
   
-  // Default behavior: allow localhost in development, deny all in production
+  // Default behavior: allow localhost and local network IPs in development, deny all in production
   if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:5173';
+    return (origin: string | undefined) => {
+      if (!origin) return true; // Allow requests with no origin (like Postman)
+      
+      // Allow localhost on any port
+      if (origin.startsWith('http://localhost:')) return true;
+      if (origin.startsWith('http://127.0.0.1:')) return true;
+      
+      // Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+      if (origin.match(/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d+$/)) return true;
+      if (origin.match(/^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$/)) return true;
+      if (origin.match(/^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}:\d+$/)) return true;
+      
+      return false;
+    };
   }
   
   return false;

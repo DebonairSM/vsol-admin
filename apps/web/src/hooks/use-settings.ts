@@ -91,6 +91,18 @@ export function useTestPayoneerConnection() {
 }
 
 /**
+ * Hook to test Time Doctor API connection
+ */
+export function useTestTimeDoctorConnection() {
+  return useMutation<TestConnectionResponse, Error>({
+    mutationFn: async () => {
+      const response = await apiClient.get('/time-doctor/test');
+      return response.data;
+    }
+  });
+}
+
+/**
  * Hook to get all settings as an object
  */
 export function useSettings() {

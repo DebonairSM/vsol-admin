@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useGetSetting, useUpdateSetting, useTestPayoneerConnection } from '@/hooks/use-settings';
+import { useGetSetting, useUpdateSetting, useTestPayoneerConnection, useTestTimeDoctorConnection } from '@/hooks/use-settings';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -21,6 +21,12 @@ export default function SettingsPage() {
     apiUrl: 'https://api.payoneer.com/v4'
   });
 
+  const [timeDoctorConfig, setTimeDoctorConfig] = useState({
+    apiToken: '',
+    companyId: '',
+    apiUrl: 'https://api2.timedoctor.com/api/1.0'
+  });
+
   // Load system settings
   const { data: systemSettings } = useQuery({
     queryKey: ['settings'],
@@ -32,6 +38,11 @@ export default function SettingsPage() {
   const { data: programIdData } = useGetSetting('payoneer_program_id');
   const { data: apiUrlData } = useGetSetting('payoneer_api_url');
 
+  // Load Time Doctor settings
+  const { data: tdTokenData } = useGetSetting('timedoctor_api_token');
+  const { data: tdCompanyIdData } = useGetSetting('timedoctor_company_id');
+  const { data: tdApiUrlData } = useGetSetting('timedoctor_api_url');
+
   // Mutations
   const updateSystemSettings = useMutation({
     mutationFn: (data: { defaultOmnigoBonus: number }) => apiClient.updateSettings(data),
@@ -41,6 +52,7 @@ export default function SettingsPage() {
   });
   const updateSetting = useUpdateSetting();
   const testConnection = useTestPayoneerConnection();
+  const testTDConnection = useTestTimeDoctorConnection();
 
   // Initialize system settings
   useEffect(() => {
@@ -67,6 +79,25 @@ export default function SettingsPage() {
       setPayoneerConfig(prev => ({ ...prev, apiUrl: apiUrlData.value }));
     }
   }, [apiUrlData]);
+
+  // Initialize Time Doctor config
+  useEffect(() => {
+    if (tdTokenData && tdTokenData.value) {
+      setTimeDoctorConfig(prev => ({ ...prev, apiToken: tdTokenData.value }));
+    }
+  }, [tdTokenData]);
+
+  useEffect(() => {
+    if (tdCompanyIdData && tdCompanyIdData.value) {
+      setTimeDoctorConfig(prev => ({ ...prev, companyId: tdCompanyIdData.value }));
+    }
+  }, [tdCompanyIdData]);
+
+  useEffect(() => {
+    if (tdApiUrlData && tdApiUrlData.value) {
+      setTimeDoctorConfig(prev => ({ ...prev, apiUrl: tdApiUrlData.value }));
+    }
+  }, [tdApiUrlData]);
 
   const handleSaveSystemSettings = async () => {
     try {
@@ -135,9 +166,59 @@ export default function SettingsPage() {
     }
   };
 
+  const handleTestTDConnection = async () => {
+    try {
+      const result = await testTDConnection.mutateAsync();
+      
+      if (result.success) {
+        toast({
+          title: 'Connection Successful',
+          description: result.message,
+          variant: 'default'
+        });
+      } else {
+        toast({
+          title: 'Connection Failed',
+          description: result.message,
+          variant: 'destructive'
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Connection Error',
+        description: error.message || 'Failed to test Time Doctor connection',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSaveTimeDoctorConfig = async () => {
+    try {
+      // Save all three settings
+      await Promise.all([
+        updateSetting.mutateAsync({ key: 'timedoctor_api_token', value: timeDoctorConfig.apiToken }),
+        updateSetting.mutateAsync({ key: 'timedoctor_company_id', value: timeDoctorConfig.companyId }),
+        updateSetting.mutateAsync({ key: 'timedoctor_api_url', value: timeDoctorConfig.apiUrl })
+      ]);
+
+      toast({
+        title: 'Settings Saved',
+        description: 'Time Doctor configuration has been saved successfully',
+        variant: 'default'
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Save Failed',
+        description: error.message || 'Failed to save Time Doctor settings',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const isSavingSystem = updateSystemSettings.isPending;
   const isSavingPayoneer = updateSetting.isPending;
   const isTesting = testConnection.isPending;
+  const isTestingTD = testTDConnection.isPending;
 
   return (
     <div className="space-y-6">
@@ -256,6 +337,86 @@ export default function SettingsPage() {
             <Link to="/payoneer/payees">
               <Button variant="secondary">
                 View Payoneer Payees
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Time Doctor Configuration</CardTitle>
+          <CardDescription>
+            Configure Time Doctor API credentials to fetch work hours and activity data.
+            Your API token will be encrypted before storage.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="tdApiToken">API Token</Label>
+            <Input
+              id="tdApiToken"
+              type="password"
+              placeholder="Enter your Time Doctor JWT token"
+              value={timeDoctorConfig.apiToken}
+              onChange={(e) => setTimeDoctorConfig(prev => ({ ...prev, apiToken: e.target.value }))}
+              disabled={isSavingPayoneer}
+            />
+            <p className="text-sm text-gray-500">
+              Your JWT token will be encrypted and stored securely. Tokens expire after approximately 6 months.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tdCompanyId">Company ID</Label>
+            <Input
+              id="tdCompanyId"
+              type="text"
+              placeholder="Enter your Time Doctor company/workspace ID"
+              value={timeDoctorConfig.companyId}
+              onChange={(e) => setTimeDoctorConfig(prev => ({ ...prev, companyId: e.target.value }))}
+              disabled={isSavingPayoneer}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tdApiUrl">API URL</Label>
+            <Input
+              id="tdApiUrl"
+              type="url"
+              placeholder="https://api2.timedoctor.com/api/1.0"
+              value={timeDoctorConfig.apiUrl}
+              onChange={(e) => setTimeDoctorConfig(prev => ({ ...prev, apiUrl: e.target.value }))}
+              disabled={isSavingPayoneer}
+            />
+            <p className="text-sm text-gray-500">
+              Default: https://api2.timedoctor.com/api/1.0
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              onClick={handleSaveTimeDoctorConfig}
+              disabled={isSavingPayoneer || !timeDoctorConfig.apiToken || !timeDoctorConfig.companyId}
+            >
+              {isSavingPayoneer && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Configuration
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleTestTDConnection}
+              disabled={isTestingTD || !timeDoctorConfig.apiToken || !timeDoctorConfig.companyId}
+            >
+              {isTestingTD && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Test Connection
+            </Button>
+          </div>
+
+          <div className="pt-4 border-t">
+            <Link to="/timedoctor/activity">
+              <Button variant="secondary">
+                View Time Doctor Activity
               </Button>
             </Link>
           </div>
