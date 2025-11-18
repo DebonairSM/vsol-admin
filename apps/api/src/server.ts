@@ -56,7 +56,7 @@ function getCorsOrigin(): string | string[] | ((origin: string | undefined) => b
     };
   }
   
-  // Default behavior: allow localhost and local network IPs in development, deny all in production
+  // Default behavior: allow localhost, local network IPs, and ngrok domains in development, deny all in production
   if (process.env.NODE_ENV === 'development') {
     return (origin: string | undefined) => {
       if (!origin) return true; // Allow requests with no origin (like Postman)
@@ -69,6 +69,10 @@ function getCorsOrigin(): string | string[] | ((origin: string | undefined) => b
       if (origin.match(/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d+$/)) return true;
       if (origin.match(/^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$/)) return true;
       if (origin.match(/^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}:\d+$/)) return true;
+      
+      // Allow ngrok domains (common patterns: *.ngrok.io, *.ngrok.app, *.ngrok-free.app, *.ngrok-free.io)
+      if (origin.match(/^https:\/\/[a-z0-9-]+\.ngrok\.(io|app)$/)) return true;
+      if (origin.match(/^https:\/\/[a-z0-9-]+\.ngrok-free\.(io|app)$/)) return true;
       
       return false;
     };
