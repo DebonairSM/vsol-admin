@@ -51,7 +51,8 @@ export async function refreshAccessToken(): Promise<string | null> {
   }
 
   try {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:2021/api';
+    // Use Vite proxy in development (relative URL), or explicit URL if set
+    const apiUrl = import.meta.env.VITE_API_URL || '/api';
     
     const response = await fetch(`${apiUrl}/auth/refresh`, {
       method: 'POST',

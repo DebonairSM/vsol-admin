@@ -121,13 +121,6 @@ export default function LoginPage() {
                 {isLoading ? 'Signing in...' : 'Sign in'}
               </Button>
             </form>
-
-            <div className="mt-6 text-xs text-gray-500 bg-gray-50 p-3 rounded-md">
-              <p className="font-medium mb-1">Demo Accounts:</p>
-              <p>rommel / admin123</p>
-              <p>isabel / admin123</p>
-              <p>celiane / admin123</p>
-            </div>
           </CardContent>
         </Card>
       </div>

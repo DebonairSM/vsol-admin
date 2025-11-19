@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:2021/api';
+// Use Vite proxy in development (relative URL), or explicit URL if set
+// When VITE_API_URL is not set, use relative URL which goes through Vite proxy
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 class ApiClient {
   private baseURL: string;

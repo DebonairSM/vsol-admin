@@ -165,6 +165,33 @@ flowchart TD
 - Users: `rommel`, `isabel`, `celiane`
 - Password: `admin123`
 
+## Changing User Passwords
+
+To change a user's password, use the password change script:
+
+```bash
+# From the root directory
+cd apps/api
+pnpm user:change-password <username> <new-password>
+
+# Example: Change rommel's password
+pnpm user:change-password rommel myNewPassword123
+```
+
+Or run directly with tsx:
+
+```bash
+cd apps/api
+pnpm tsx scripts/change-password.ts <username> <new-password>
+```
+
+The script will:
+- Hash the new password using Argon2id
+- Update the user's password in the database
+- Display confirmation with user details
+
+**Note**: Make sure the API server is not running when changing passwords, or ensure the database is not locked.
+
 ## ngrok Setup (Public Access)
 
 **Current ngrok URLs**: See `NGROK_URLS.md` for active tunnel URLs and configuration.
