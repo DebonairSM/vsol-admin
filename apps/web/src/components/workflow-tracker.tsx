@@ -11,8 +11,7 @@ import { workflowSteps, calculateWorkflowProgress, isStepCompleted, canCompleteS
 import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle, Lock } from 'lucide-react';
 import { useCalculatePayment } from '@/hooks/use-cycles';
 import { calculateDeadlineAlert, parseMonthLabel } from '@/lib/business-days';
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
+import { getWorkHoursForMonthByNumber, getMonthName } from '@/lib/work-hours';
 import type { PayrollCycle } from '@vsol-admin/shared';
 
 interface WorkflowTrackerProps {
@@ -27,17 +26,10 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   
   const calculatePaymentMutation = useCalculatePayment();
 
-  // Fetch monthly work hours data
-  const { data: monthlyWorkHours } = useQuery({
-    queryKey: ['monthly-work-hours'],
-    queryFn: () => apiClient.getWorkHours(),
-    staleTime: 5 * 60 * 1000,
-  });
-
   // Helper function to get next month's work hours data
   const getNextMonthInfo = () => {
     const parsed = parseMonthLabel(cycle.monthLabel);
-    if (!parsed || !monthlyWorkHours) return null;
+    if (!parsed) return null;
     
     let nextMonth = parsed.month + 1;
     let nextYear = parsed.year;
@@ -46,17 +38,20 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
       nextYear++;
     }
     
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthName = getMonthName(nextMonth);
+    const workHours = getWorkHoursForMonthByNumber(nextYear, nextMonth);
     
-    const nextMonthData = monthlyWorkHours?.find(
-      (m: any) => m.year === nextYear && m.monthNumber === nextMonth
-    );
+    if (!monthName || workHours === null) {
+      return null;
+    }
     
     return {
-      month: monthNames[nextMonth - 1],
+      month: monthName,
       year: nextYear,
-      data: nextMonthData
+      data: {
+        workHours,
+        weekdays: Math.floor(workHours / 8)
+      }
     };
   };
 

@@ -22,6 +22,7 @@ pnpm dev
   - `PORT=2020`
   - `JWT_SECRET=change-me`
   - `DATABASE_URL=file:./dev.db`
+  - `BACKUP_DIRECTORY` (optional) - Directory path for database backups. If not set, automatically detects OneDrive Documents folder (e.g., `C:\Users\<username>\OneDrive\Documents\backups`). Falls back to `backups/` in project directory if OneDrive is not found.
   - `CORS_ORIGIN` (optional) - Comma-separated list of allowed origins for CORS. Supports exact URLs and wildcard patterns (e.g., `https://abc123.ngrok.io` or `*.ngrok.io`). If not set, defaults to `http://localhost:5173` in development mode.
 - `apps/web/.env`
   - `VITE_API_URL=http://localhost:2020/api` - Backend API base URL. For ngrok setup, set this to your API ngrok URL (e.g., `https://def456.ngrok.io/api`)

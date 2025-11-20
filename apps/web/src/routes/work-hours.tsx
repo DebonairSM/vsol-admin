@@ -1,279 +1,186 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Upload, Trash2, Clock, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { getMonthlyWorkHoursForYear, type MonthlyWorkHoursData } from '@/lib/work-hours';
 
 export default function WorkHoursPage() {
-  const [jsonContent, setJsonContent] = useState('');
-  const [importResult, setImportResult] = useState<any>(null);
-  const queryClient = useQueryClient();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1; // 1-12
+  const [year, setYear] = useState(currentYear);
+  const [monthlyData, setMonthlyData] = useState<MonthlyWorkHoursData[]>([]);
 
-  // Fetch all work hours data
-  const { data: workHours, isLoading } = useQuery({
-    queryKey: ['work-hours'],
-    queryFn: () => apiClient.getWorkHours(),
-  });
+  useEffect(() => {
+    const data = getMonthlyWorkHoursForYear(year);
+    setMonthlyData(data);
+  }, [year]);
 
-  // Import JSON mutation
-  const importMutation = useMutation({
-    mutationFn: (jsonContent: string) => apiClient.importWorkHours(jsonContent),
-    onSuccess: (result) => {
-      setImportResult(result);
-      setJsonContent('');
-      queryClient.invalidateQueries({ queryKey: ['work-hours'] });
-    },
-  });
+  const totalWeekdays = monthlyData.reduce((sum, m) => sum + m.weekdays, 0);
+  const totalHours = monthlyData.reduce((sum, m) => sum + m.workHours, 0);
 
-  // Delete year mutation
-  const deleteYearMutation = useMutation({
-    mutationFn: (year: number) => apiClient.deleteWorkHoursYear(year),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['work-hours'] });
-    },
-  });
-
-  const handleImport = () => {
-    if (jsonContent.trim()) {
-      importMutation.mutate(jsonContent.trim());
+  const handleYearChange = (newYear: number) => {
+    if (newYear >= 1900 && newYear <= 2500) {
+      setYear(newYear);
     }
   };
 
-  const handleDeleteYear = (year: number) => {
-    if (confirm(`Are you sure you want to delete all work hours data for ${year}?`)) {
-      deleteYearMutation.mutate(year);
+  const handlePrevYear = () => {
+    handleYearChange(year - 1);
+  };
+
+  const handleNextYear = () => {
+    handleYearChange(year + 1);
+  };
+
+  const handleYearInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '') return;
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue)) {
+      handleYearChange(numValue);
     }
   };
 
-  // Group work hours by year
-  const groupedByYear = workHours?.reduce((acc: Record<number, any[]>, item: any) => {
-    if (!acc[item.year]) acc[item.year] = [];
-    acc[item.year].push(item);
-    return acc;
-  }, {}) || {};
-
-  const exampleJSON = `[
-  {
-    "year": 2024,
-    "months": [
-      {
-        "month": "January",
-        "monthNumber": 1,
-        "weekdays": 23,
-        "workHours": 184
-      },
-      {
-        "month": "February", 
-        "monthNumber": 2,
-        "weekdays": 21,
-        "workHours": 168
-      },
-      {
-        "month": "March",
-        "monthNumber": 3, 
-        "weekdays": 21,
-        "workHours": 168
+  const handleYearInputKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const value = (e.target as HTMLInputElement).value;
+      const numValue = parseInt(value, 10);
+      if (!isNaN(numValue)) {
+        handleYearChange(numValue);
       }
-      // ... more months
-    ]
-  },
-  {
-    "year": 2025,
-    "months": [
-      {
-        "month": "January",
-        "monthNumber": 1,
-        "weekdays": 23, 
-        "workHours": 184
-      }
-      // ... more months
-    ]
-  }
-]`;
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Monthly Work Hours Reference</h1>
-        <p className="text-gray-600">
-          Import and manage monthly work hours data used for payroll cycle creation and billing validation.
-        </p>
-      </div>
-
-      {/* Import Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
-            Import Work Hours Data
-          </CardTitle>
-          <CardDescription>
-            Paste your AI-generated JSON data to import monthly work hours for each year. This data will be used to suggest 
-            appropriate globalWorkHours when creating new payroll cycles.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Example format */}
-          <div>
-            <h4 className="font-medium text-sm text-gray-700 mb-2">Expected JSON Format:</h4>
-            <div className="bg-gray-50 p-3 rounded-md text-xs font-mono whitespace-pre text-gray-600 overflow-x-auto">
-              {exampleJSON}
-            </div>
-          </div>
-
-          {/* JSON Input */}
-          <div>
-            <Textarea
-              placeholder="Paste your AI-generated JSON data here..."
-              value={jsonContent}
-              onChange={(e) => setJsonContent(e.target.value)}
-              rows={12}
-              className="font-mono text-sm"
-            />
-          </div>
-
-          {/* Import Button */}
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleImport}
-              disabled={!jsonContent.trim() || importMutation.isPending}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              {importMutation.isPending ? 'Importing...' : 'Import Data'}
-            </Button>
-            {jsonContent && (
-              <Button 
-                variant="outline" 
-                onClick={() => setJsonContent('')}
-              >
-                Clear
-              </Button>
-            )}
-          </div>
-
-          {/* Import Result */}
-          {importResult && (
-            <Alert className={importResult.errors ? 'border-amber-200 bg-amber-50' : 'border-green-200 bg-green-50'}>
-              <div className="flex items-center gap-2">
-                {importResult.errors ? (
-                  <AlertCircle className="w-4 h-4 text-amber-600" />
-                ) : (
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                )}
-                <AlertDescription className={importResult.errors ? 'text-amber-800' : 'text-green-800'}>
-                  <div>
-                    <strong>Import completed:</strong> {importResult.imported} new records imported, 
-                    {' '}{importResult.updated} records updated across {importResult.yearsProcessed} years.
-                  </div>
-                  {importResult.errors && (
-                    <div className="mt-2">
-                      <strong>Errors:</strong>
-                      <ul className="list-disc list-inside mt-1">
-                        {importResult.errors.map((error: string, index: number) => (
-                          <li key={index} className="text-sm">{error}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </AlertDescription>
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      <div className="w-full max-w-4xl">
+        <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg">
+          <CardHeader className="pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">
+                  Weekdays & Work Hours
+                </CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400 text-sm">
+                  Automatic calendar for any year
+                </CardDescription>
+                <div className="mt-2">
+                  <span className="text-xs uppercase tracking-wider px-3 py-1 rounded-full border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 inline-block">
+                    Assumes 8 hours per weekday
+                  </span>
+                </div>
               </div>
-            </Alert>
-          )}
-
-          {importMutation.isError && (
-            <Alert className="border-red-200 bg-red-50">
-              <AlertCircle className="w-4 h-4 text-red-600" />
-              <AlertDescription className="text-red-800">
-                <strong>Import failed:</strong> {importMutation.error?.message || 'Unknown error occurred'}
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Current Data */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Current Work Hours Data
-          </CardTitle>
-          <CardDescription>
-            Manage your imported work hours data. This is used for cycle creation suggestions and anomaly detection.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-gray-500">Loading work hours data...</div>
-          ) : Object.keys(groupedByYear).length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Clock className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>No work hours data imported yet.</p>
-              <p className="text-sm mt-1">Import your AI-generated JSON data above to get started.</p>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-full px-2 py-1 border border-slate-200 dark:border-slate-700">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handlePrevYear}
+                    className="h-8 w-8 p-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+                    title="Previous year"
+                  >
+                    &#x25C0;
+                  </Button>
+                  <Input
+                    type="number"
+                    min="1900"
+                    max="2500"
+                    value={year}
+                    onChange={handleYearInputChange}
+                    onKeyUp={handleYearInputKeyUp}
+                    className="w-24 text-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-full h-8 px-3 text-sm"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleNextYear}
+                    className="h-8 w-8 p-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
+                    title="Next year"
+                  >
+                    &#x25B6;
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="px-3 py-1 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    Current year: {currentYear}
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    Weekends ignored for work hours
+                  </span>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(groupedByYear)
-                .sort(([a], [b]) => parseInt(b) - parseInt(a)) // Sort years descending
-                .map(([year, months]) => (
-                  <div key={year}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold">{year}</h3>
-                        <Badge variant="secondary">{months.length} months</Badge>
-                        <span className="text-sm text-gray-500">
-                          Total: {months.reduce((sum: number, m: any) => sum + m.workHours, 0)} hours
-                        </span>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteYear(parseInt(year))}
-                        disabled={deleteYearMutation.isPending}
-                        className="text-red-600 hover:text-red-700"
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-slate-200 dark:border-slate-800">
+                    <TableHead className="text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider font-medium">
+                      Month
+                    </TableHead>
+                    <TableHead className="text-right text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider font-medium">
+                      Weekdays
+                    </TableHead>
+                    <TableHead className="text-right text-slate-600 dark:text-slate-400 text-xs uppercase tracking-wider font-medium">
+                      Work Hours
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {monthlyData.map((month, index) => {
+                    const isCurrentMonth = year === currentYear && month.monthNumber === currentMonth;
+                    return (
+                      <TableRow
+                        key={month.monthNumber}
+                        className={`border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
+                          isCurrentMonth
+                            ? 'bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-500 dark:border-l-blue-400'
+                            : index % 2 === 0
+                            ? 'bg-white dark:bg-slate-900'
+                            : 'bg-slate-50/50 dark:bg-slate-800/30'
+                        }`}
                       >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Delete {year}
-                      </Button>
-                    </div>
-                    
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Month</TableHead>
-                          <TableHead className="text-right">Weekdays</TableHead>
-                          <TableHead className="text-right">Work Hours</TableHead>
-                          <TableHead className="text-right">Hours/Day</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {months
-                          .sort((a: any, b: any) => a.monthNumber - b.monthNumber)
-                          .map((month: any) => (
-                            <TableRow key={`${year}-${month.monthNumber}`}>
-                              <TableCell className="font-medium">{month.month}</TableCell>
-                              <TableCell className="text-right">{month.weekdays}</TableCell>
-                              <TableCell className="text-right font-mono">{month.workHours}</TableCell>
-                              <TableCell className="text-right text-gray-500">
-                                {(month.workHours / month.weekdays).toFixed(1)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ))}
+                        <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                          {month.month}
+                        </TableCell>
+                        <TableCell className="text-right text-slate-700 dark:text-slate-300">
+                          {month.weekdays}
+                        </TableCell>
+                        <TableCell className="text-right text-slate-700 dark:text-slate-300 font-mono">
+                          {month.workHours}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+                <TableFooter className="bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
+                  <TableRow>
+                    <TableCell className="font-bold text-slate-900 dark:text-slate-100 pt-3 pb-3">
+                      Total
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-slate-900 dark:text-slate-100 pt-3 pb-3">
+                      {totalWeekdays}
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-slate-900 dark:text-slate-100 pt-3 pb-3 font-mono">
+                      {totalHours}
+                    </TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="mt-4 flex flex-wrap justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+              <span>
+                Logic: counts Monday through Friday for each month and multiplies by 8 hours.
+              </span>
+              <span>
+                Generated for {year} at {new Date().toLocaleTimeString()}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

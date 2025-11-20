@@ -18,13 +18,15 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import BonusInfoCell from '@/components/bonus-info-cell';
 import WorkflowTracker from '@/components/workflow-tracker';
 import BonusWorkflowSection from '@/components/bonus-workflow-section';
 import AdditionalPaidModal from '@/components/additional-paid-modal';
+import { parseMonthLabel } from '@/lib/business-days';
+import { getWorkHoursForMonthByNumber } from '@/lib/work-hours';
 
 export default function GoldenSheetPage() {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +44,15 @@ export default function GoldenSheetPage() {
   const [editingCycleField, setEditingCycleField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [additionalPaidModalOpen, setAdditionalPaidModalOpen] = useState<number | null>(null);
+
+  // Calculate suggested work hours based on month label
+  // Must be called before early returns to follow Rules of Hooks
+  const suggestedWorkHours = useMemo(() => {
+    if (!cycle) return null;
+    const parsed = parseMonthLabel(cycle.monthLabel);
+    if (!parsed) return null;
+    return getWorkHoursForMonthByNumber(parsed.year, parsed.month);
+  }, [cycle?.monthLabel]);
 
   if (cycleLoading || summaryLoading) {
     return (
@@ -105,7 +116,15 @@ export default function GoldenSheetPage() {
     if (!editingCycleField) return;
 
     try {
-      const value = editValue ? parseFloat(editValue) : null;
+      let value: any = null;
+      if (editValue) {
+        // globalWorkHours should be an integer
+        if (editingCycleField === 'globalWorkHours') {
+          value = parseInt(editValue, 10);
+        } else {
+          value = parseFloat(editValue);
+        }
+      }
 
       await updateCycle.mutateAsync({
         id: cycleId,
@@ -434,9 +453,40 @@ export default function GoldenSheetPage() {
               <span>Total Hourly Value:</span>
               <span className="font-mono">{formatCurrency(summary.totalHourlyValue)}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span>Global Work Hours:</span>
-              <span className="font-mono">{cycle.globalWorkHours || 0}</span>
+              {editingCycleField === 'globalWorkHours' ? (
+                <div className="flex gap-2 items-center">
+                  <div className="flex flex-col items-end gap-1">
+                    <Input
+                      type="number"
+                      step="1"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      className="w-24 h-8 text-right font-mono"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCycleFieldSave();
+                        if (e.key === 'Escape') handleCycleFieldCancel();
+                      }}
+                      autoFocus
+                    />
+                    {suggestedWorkHours !== null && (
+                      <span className="text-xs text-gray-500">
+                        Suggested: {suggestedWorkHours} (based on {cycle.monthLabel})
+                      </span>
+                    )}
+                  </div>
+                  <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                </div>
+              ) : (
+                <span 
+                  className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
+                  onClick={() => handleCycleFieldEdit('globalWorkHours', cycle.globalWorkHours)}
+                >
+                  {cycle.globalWorkHours || 0}
+                </span>
+              )}
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-2">
               <span>USD Total:</span>

@@ -12,7 +12,8 @@ declare global {
 
 export function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+  // Extract token from "Bearer TOKEN" format, handling extra whitespace
+  const token = authHeader?.trim().split(/\s+/)[1]; // Bearer TOKEN
 
   if (!token) {
     return res.status(401).json({ error: 'Access token required' });

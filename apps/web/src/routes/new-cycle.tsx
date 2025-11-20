@@ -2,24 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateCycle, useCycles } from '@/hooks/use-cycles';
 import { useSettings } from '@/hooks/use-settings';
-import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
-import { useQuery as useReactQuery } from '@tanstack/react-query';
-
-interface MonthlyWorkHours {
-  id: number;
-  year: number;
-  month: string;
-  monthNumber: number;
-  weekdays: number;
-  workHours: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { getMonthlyWorkHoursForYear, type MonthlyWorkHoursData } from '@/lib/work-hours';
 
 export default function NewCyclePage() {
   const navigate = useNavigate();
@@ -35,11 +23,9 @@ export default function NewCyclePage() {
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
   
-  // Fetch monthly work hours for the current year
-  const { data: monthlyWorkHours, isLoading: isLoadingWorkHours } = useReactQuery({
-    queryKey: ['work-hours', currentYear],
-    queryFn: () => apiClient.getWorkHoursByYear(currentYear),
-  });
+  // Calculate monthly work hours for the current year and next year (for December -> January)
+  const monthlyWorkHours = getMonthlyWorkHoursForYear(currentYear);
+  const nextYearWorkHours = getMonthlyWorkHoursForYear(currentYear + 1);
 
   const [formData, setFormData] = useState({
     monthLabel: '',
@@ -62,26 +48,40 @@ export default function NewCyclePage() {
     }
   }, [settings]);
 
-  // Auto-populate work hours when month is selected or data loads
+  // Auto-populate work hours when month is selected
+  // The cycle starts in the selected month, but the work hours are for the NEXT month (the month being paid)
   useEffect(() => {
     if (monthlyWorkHours && selectedMonthNumber) {
-      const selected = monthlyWorkHours.find(
-        (m: MonthlyWorkHours) => m.monthNumber === parseInt(selectedMonthNumber)
-      );
-      if (selected) {
+      const selectedMonthNum = parseInt(selectedMonthNumber);
+      let nextMonthNum = selectedMonthNum + 1;
+      let nextYear = currentYear;
+      
+      // Handle December -> January of next year
+      if (nextMonthNum > 12) {
+        nextMonthNum = 1;
+        nextYear = currentYear + 1;
+      }
+      
+      // Get work hours for the next month
+      // If next year, use the pre-calculated next year data
+      const nextMonthWorkHours = nextYear === currentYear
+        ? monthlyWorkHours.find((m: MonthlyWorkHoursData) => m.monthNumber === nextMonthNum)
+        : nextYearWorkHours.find((m: MonthlyWorkHoursData) => m.monthNumber === nextMonthNum);
+      
+      if (nextMonthWorkHours) {
         setFormData(prev => ({ 
           ...prev, 
-          globalWorkHours: selected.workHours 
+          globalWorkHours: nextMonthWorkHours.workHours 
         }));
       }
     }
-  }, [selectedMonthNumber, monthlyWorkHours]);
+  }, [selectedMonthNumber, monthlyWorkHours, currentYear]);
 
   // Auto-set month label based on selected month
   useEffect(() => {
     if (monthlyWorkHours && selectedMonthNumber) {
       const selected = monthlyWorkHours.find(
-        (m: MonthlyWorkHours) => m.monthNumber === parseInt(selectedMonthNumber)
+        (m: MonthlyWorkHoursData) => m.monthNumber === parseInt(selectedMonthNumber)
       );
       if (selected) {
         // Always update the month label when month selection changes
@@ -168,36 +168,48 @@ export default function NewCyclePage() {
             {/* Month Selection */}
             <div className="space-y-2">
               <label htmlFor="monthSelector" className="text-sm font-medium">
-                Select Month *
+                Select Cycle Start Month *
               </label>
-              {isLoadingWorkHours ? (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <div className="animate-spin w-4 h-4 border border-gray-300 border-t-blue-600 rounded-full"></div>
-                  Loading month data...
-                </div>
-              ) : monthlyWorkHours && monthlyWorkHours.length > 0 ? (
+              {monthlyWorkHours && monthlyWorkHours.length > 0 ? (
                 <Select value={selectedMonthNumber} onValueChange={handleMonthChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a month">
-                      {monthlyWorkHours.find((m: MonthlyWorkHours) => m.monthNumber === parseInt(selectedMonthNumber))?.month || 'Select a month'}
+                      {monthlyWorkHours.find((m: MonthlyWorkHoursData) => m.monthNumber === parseInt(selectedMonthNumber))?.month || 'Select a month'}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {monthlyWorkHours.map((m: MonthlyWorkHours) => (
-                      <SelectItem key={m.monthNumber} value={m.monthNumber.toString()}>
-                        {m.month} ({m.workHours} hours)
-                      </SelectItem>
-                    ))}
+                    {monthlyWorkHours.map((m: MonthlyWorkHoursData) => {
+                      // Calculate next month for display
+                      let nextMonthNum = m.monthNumber + 1;
+                      let nextYear = currentYear;
+                      if (nextMonthNum > 12) {
+                        nextMonthNum = 1;
+                        nextYear = currentYear + 1;
+                      }
+                      const nextMonthData = nextYear === currentYear
+                        ? monthlyWorkHours.find((n: MonthlyWorkHoursData) => n.monthNumber === nextMonthNum)
+                        : nextYearWorkHours.find((n: MonthlyWorkHoursData) => n.monthNumber === nextMonthNum);
+                      const nextMonthName = nextMonthData?.month || 'Unknown';
+                      const nextMonthHours = nextMonthData?.workHours || 0;
+                      
+                      return (
+                        <SelectItem key={m.monthNumber} value={m.monthNumber.toString()}>
+                          {m.month} (pays for {nextMonthName}: {nextMonthHours} hours)
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               ) : (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
                   <p className="text-sm text-amber-800">
-                    No monthly work hours data available for {currentYear}. 
-                    Please import work hours data first at the Work Hours page.
+                    Unable to calculate work hours for {currentYear}.
                   </p>
                 </div>
               )}
+              <p className="text-xs text-gray-500">
+                The cycle starts in the selected month. Work hours are calculated for the next month (the month being paid).
+              </p>
             </div>
 
             {/* Month Label - Auto-populated but can be edited */}
@@ -236,7 +248,7 @@ export default function NewCyclePage() {
                 placeholder="168"
               />
               <p className="text-xs text-gray-500">
-                Default work hours for all consultants in this cycle. Individual consultants can override this value.
+                Work hours for the month being paid (automatically set to the next month after the cycle start month). Individual consultants can override this value.
               </p>
             </div>
 

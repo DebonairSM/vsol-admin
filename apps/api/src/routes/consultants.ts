@@ -6,7 +6,7 @@ import { DocumentService } from '../services/document-service';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
-import { uploadConsultantDocument } from '../middleware/upload';
+import { uploadConsultantDocument, validateFileContent } from '../middleware/upload';
 import { ValidationError, NotFoundError } from '../middleware/errors';
 import { 
   createConsultantSchema, 
@@ -107,6 +107,12 @@ router.post('/:id/documents/:type',
 
       if (!req.file) {
         throw new ValidationError('No file uploaded');
+      }
+
+      // SECURITY: Validate file content using magic bytes to prevent MIME type spoofing
+      const validation = await validateFileContent(req.file.buffer, ['image/jpeg', 'image/png']);
+      if (!validation.valid) {
+        throw new ValidationError(validation.error || 'Invalid file type');
       }
 
       const consultant = await ConsultantService.uploadDocument(consultantId, documentType, req.file);

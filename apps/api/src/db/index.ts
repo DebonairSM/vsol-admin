@@ -56,8 +56,10 @@ export async function initializeDatabase(): Promise<void> {
     const key = await getSQLCipherKey();
     
     // Set the encryption key
-    // Using PRAGMA key with proper quoting
-    sqliteDb.pragma(`key = '${key}'`);
+    // Escape single quotes by doubling them to prevent SQL injection
+    // SQLite uses '' to represent a single quote in a string literal
+    const escapedKey = key.replace(/'/g, "''");
+    sqliteDb.pragma(`key = '${escapedKey}'`);
     
     // Verify the key is correct by attempting to read from the database
     try {

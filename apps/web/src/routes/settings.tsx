@@ -3,12 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGetSetting, useUpdateSetting, useTestPayoneerConnection, useTestTimeDoctorConnection } from '@/hooks/use-settings';
+import { useBackups, useCreateBackup, useRestoreBackup } from '@/hooks/use-backups';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle, Database } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '@/lib/api-client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -26,6 +30,10 @@ export default function SettingsPage() {
     companyId: '',
     apiUrl: 'https://api2.timedoctor.com/api/1.0'
   });
+
+  // Backup restore dialog state
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
 
   // Load system settings
   const { data: systemSettings } = useQuery({
@@ -53,6 +61,20 @@ export default function SettingsPage() {
   const updateSetting = useUpdateSetting();
   const testConnection = useTestPayoneerConnection();
   const testTDConnection = useTestTimeDoctorConnection();
+
+  // Backup hooks
+  const { data: backupsData, isLoading: isLoadingBackups } = useBackups();
+  const backups = backupsData?.backups || [];
+  const backupDirectory = backupsData?.backupDirectory || '';
+  const createBackup = useCreateBackup();
+  const restoreBackup = useRestoreBackup();
+
+  // Set default backup to latest when backups load
+  useEffect(() => {
+    if (backups && backups.length > 0 && !selectedBackup) {
+      setSelectedBackup(backups[0].filename);
+    }
+  }, [backups, selectedBackup]);
 
   // Initialize system settings
   useEffect(() => {
@@ -213,6 +235,75 @@ export default function SettingsPage() {
         variant: 'destructive'
       });
     }
+  };
+
+  const handleRestoreClick = () => {
+    if (selectedBackup) {
+      setRestoreDialogOpen(true);
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    try {
+      const result = await createBackup.mutateAsync();
+      
+      toast({
+        title: 'Backup Created',
+        description: result.message || 'Database backup created successfully',
+        variant: 'default'
+      });
+
+      if (result.deletedOldBackups && result.deletedOldBackups.length > 0) {
+        toast({
+          title: 'Old Backups Cleaned',
+          description: `Removed ${result.deletedOldBackups.length} old backup(s) to maintain retention policy`,
+          variant: 'default'
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Backup Failed',
+        description: error.message || 'Failed to create database backup',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleRestoreConfirm = async () => {
+    if (!selectedBackup) return;
+
+    try {
+      const result = await restoreBackup.mutateAsync(selectedBackup);
+      
+      toast({
+        title: 'Database Restored',
+        description: result.message || 'Database has been restored successfully. Please restart the server.',
+        variant: 'default'
+      });
+
+      if (result.preRestoreBackup) {
+        toast({
+          title: 'Pre-restore Backup Created',
+          description: `A backup of your current database was created: ${result.preRestoreBackup}`,
+          variant: 'default'
+        });
+      }
+
+      setRestoreDialogOpen(false);
+      setSelectedBackup(null);
+    } catch (error: any) {
+      toast({
+        title: 'Restore Failed',
+        description: error.message || 'Failed to restore database',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
   const isSavingSystem = updateSystemSettings.isPending;
@@ -425,6 +516,152 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Database Backups</CardTitle>
+          <CardDescription>
+            Automatic backups are created on every login (if at least 60 minutes have passed since the last backup). You can also create manual backups or restore from a previous backup. A backup of the current database will be created before restoring.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {backupDirectory && (
+            <div className="p-3 bg-gray-50 rounded-lg border">
+              <div className="flex items-start gap-2">
+                <Database className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-700 mb-1">Backup Directory</p>
+                  <p className="text-xs text-gray-600 font-mono break-all">{backupDirectory}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end pb-4 border-b">
+            <Button
+              onClick={handleCreateBackup}
+              disabled={createBackup.isPending}
+            >
+              {createBackup.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Database className="mr-2 h-4 w-4" />
+                  Create Backup
+                </>
+              )}
+            </Button>
+          </div>
+
+          {isLoadingBackups ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
+              <p className="text-sm text-gray-500 mt-2">Loading backups...</p>
+            </div>
+          ) : !backups || backups.length === 0 ? (
+            <div className="text-center py-8">
+              <Database className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+              <p className="text-sm text-gray-500">No backups available</p>
+              <p className="text-xs text-gray-400 mt-2">Click "Create Backup" to create your first backup</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="backup-select">Select Backup to Restore</Label>
+                  <Select
+                    value={selectedBackup || ''}
+                    onValueChange={(value) => setSelectedBackup(value)}
+                  >
+                    <SelectTrigger id="backup-select">
+                      <SelectValue placeholder="Select a backup">
+                        {selectedBackup && backups?.find(b => b.filename === selectedBackup) && (
+                          <div className="flex items-center justify-between w-full">
+                            <span className="truncate">
+                              {backups.find(b => b.filename === selectedBackup)?.filename}
+                            </span>
+                            <span className="ml-2 text-xs text-gray-500">
+                              ({format(new Date(backups.find(b => b.filename === selectedBackup)!.created), 'PPp')})
+                            </span>
+                          </div>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {backups.map((backup) => (
+                        <SelectItem key={backup.filename} value={backup.filename}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{backup.filename}</span>
+                            <span className="text-xs text-gray-500">
+                              {format(new Date(backup.created), 'PPP pp')} • {formatFileSize(backup.size)}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    onClick={handleRestoreClick}
+                    disabled={restoreBackup.isPending || !selectedBackup}
+                    className="flex-1"
+                  >
+                    {restoreBackup.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Restoring...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="mr-2 h-4 w-4" />
+                        Restore Selected Backup
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {selectedBackup && backups?.find(b => b.filename === selectedBackup) && (
+                  <div className="p-3 bg-gray-50 rounded-lg border">
+                    <div className="text-sm space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Database className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium">Selected Backup Details</span>
+                      </div>
+                      <div className="text-xs text-gray-600 space-y-1 ml-6">
+                        <div>
+                          <span className="font-medium">Filename:</span> {selectedBackup}
+                        </div>
+                        <div>
+                          <span className="font-medium">Created:</span> {format(new Date(backups.find(b => b.filename === selectedBackup)!.created), 'PPP pp')}
+                        </div>
+                        <div>
+                          <span className="font-medium">Size:</span> {formatFileSize(backups.find(b => b.filename === selectedBackup)!.size)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 border-t">
+                <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">Important:</p>
+                    <p>After restoring, you must manually restart the server for the changes to take effect. The restored database will not be active until the server restarts.</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Setup Instructions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-gray-600">
@@ -439,6 +676,63 @@ export default function SettingsPage() {
           </ol>
         </CardContent>
       </Card>
+
+      <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Confirm Database Restore
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              This action will restore the database from the selected backup file. The current database will be backed up automatically before the restore.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+              <p className="text-sm font-medium text-red-900 mb-2">Warning: This is a destructive operation</p>
+              <ul className="text-sm text-red-800 space-y-1 list-disc list-inside">
+                <li>All current database data will be replaced</li>
+                <li>A backup of the current database will be created first</li>
+                <li>You must restart the server after restoring</li>
+                <li>Any unsaved changes will be lost</li>
+              </ul>
+            </div>
+            {selectedBackup && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-900 mb-1">Backup file:</p>
+                <p className="text-sm text-gray-600 font-mono">{selectedBackup}</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRestoreDialogOpen(false);
+                setSelectedBackup(null);
+              }}
+              disabled={restoreBackup.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRestoreConfirm}
+              disabled={restoreBackup.isPending || !selectedBackup}
+            >
+              {restoreBackup.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Restoring...
+                </>
+              ) : (
+                'Restore Database'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

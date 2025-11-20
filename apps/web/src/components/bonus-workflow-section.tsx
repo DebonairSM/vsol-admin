@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatDate, formatMonthAbbr } from '@/lib/utils';
 import { Mail, Info, Copy, X } from 'lucide-react';
 import { useBonusWorkflow, useCreateBonusWorkflow, useUpdateBonusWorkflow, useGenerateBonusEmail } from '@/hooks/use-bonus-workflow';
-import { useCycleLines } from '@/hooks/use-cycles';
+import { useCycleLines, useCycle } from '@/hooks/use-cycles';
 import { toast } from 'sonner';
+import { parseMonthLabel } from '@/lib/business-days';
+import { getMonthName } from '@/lib/work-hours';
 
 interface BonusWorkflowSectionProps {
   cycleId: number;
@@ -18,10 +20,51 @@ interface BonusWorkflowSectionProps {
 
 export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionProps) {
   const { data: workflow, isLoading } = useBonusWorkflow(cycleId);
+  const { data: cycle } = useCycle(cycleId);
   const { data: cycleLines } = useCycleLines(cycleId);
   const createWorkflow = useCreateBonusWorkflow(cycleId);
   const updateWorkflow = useUpdateBonusWorkflow(cycleId);
   const generateEmail = useGenerateBonusEmail(cycleId);
+
+  // Calculate the work payment month (next month after cycle start) and bonus payment month (two months after)
+  const workPaymentMonth = useMemo(() => {
+    if (!cycle?.monthLabel) return null;
+    const parsed = parseMonthLabel(cycle.monthLabel);
+    if (!parsed) return null;
+    
+    let nextMonth = parsed.month + 1;
+    let nextYear = parsed.year;
+    if (nextMonth > 12) {
+      nextMonth = 1;
+      nextYear++;
+    }
+    
+    return {
+      month: nextMonth,
+      year: nextYear,
+      monthName: getMonthName(nextMonth)
+    };
+  }, [cycle?.monthLabel]);
+
+  // Bonus is paid two months after cycle start
+  const bonusPaymentMonth = useMemo(() => {
+    if (!cycle?.monthLabel) return null;
+    const parsed = parseMonthLabel(cycle.monthLabel);
+    if (!parsed) return null;
+    
+    let bonusMonth = parsed.month + 2;
+    let bonusYear = parsed.year;
+    if (bonusMonth > 12) {
+      bonusMonth = bonusMonth - 12;
+      bonusYear++;
+    }
+    
+    return {
+      month: bonusMonth,
+      year: bonusYear,
+      monthName: getMonthName(bonusMonth)
+    };
+  }, [cycle?.monthLabel]);
 
   const [selectedConsultantId, setSelectedConsultantId] = useState<number | null>(
     workflow?.bonusRecipientConsultantId || null
@@ -158,7 +201,7 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
               <h3 className="font-semibold mb-1">Bonus Workflow</h3>
               <p className="text-sm text-gray-600 mb-2">No bonus workflow has been created for this cycle yet.</p>
               <p className="text-xs text-gray-500">
-                Recipient will be auto-selected when bonus month matches cycle month or when bonus fields are set on line items.
+                Recipient will be auto-selected when bonus month matches the bonus payment month (two months after cycle start) or when bonus fields are set on line items.
               </p>
             </div>
             <Button onClick={handleCreateWorkflow} disabled={createWorkflow.isPending}>
@@ -196,24 +239,55 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
                 const monthHint = line.consultant.bonusMonth 
                   ? ` (${formatMonthAbbr(line.consultant.bonusMonth)})` 
                   : '';
+                const matchesBonusMonth = bonusPaymentMonth && line.consultant.bonusMonth === bonusPaymentMonth.month;
                 return (
-                  <SelectItem key={line.consultant.id} value={line.consultant.id.toString()}>
+                  <SelectItem 
+                    key={line.consultant.id} 
+                    value={line.consultant.id.toString()}
+                    className={matchesBonusMonth ? 'font-semibold bg-green-50 dark:bg-green-950' : ''}
+                  >
                     {line.consultant.name}{monthHint}
+                    {matchesBonusMonth && ' ✓ (matches bonus payment month)'}
                   </SelectItem>
                 );
               })}
             </SelectContent>
           </Select>
-          {!selectedConsultantId && (
-            <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded flex items-start gap-2">
+          {bonusPaymentMonth && workPaymentMonth && (
+            <div className="text-sm text-blue-600 bg-blue-50 dark:bg-blue-950 p-2 rounded flex items-start gap-2">
               <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <span>Recipient will be auto-selected when bonus month matches cycle month or when bonus fields are set on line items.</span>
+              <span>
+                This cycle: Consultants work in <strong>{workPaymentMonth.monthName} {workPaymentMonth.year}</strong> and 
+                receive bonus in <strong>{bonusPaymentMonth.monthName} {bonusPaymentMonth.year}</strong>. 
+                Select a consultant whose bonus month matches <strong>{bonusPaymentMonth.monthName}</strong>.
+              </span>
+            </div>
+          )}
+          {!selectedConsultantId && (
+            <div className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950 p-2 rounded flex items-start gap-2">
+              <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>
+                Recipient will be auto-selected when bonus month matches the bonus payment month ({bonusPaymentMonth?.monthName}) 
+                or when bonus fields are set on line items.
+              </span>
             </div>
           )}
           {selectedConsultant && selectedConsultant.bonusMonth && (
-            <div className="text-sm text-green-600 bg-green-50 p-2 rounded flex items-start gap-2">
+            <div className={`text-sm p-2 rounded flex items-start gap-2 ${
+              bonusPaymentMonth && selectedConsultant.bonusMonth === bonusPaymentMonth.month
+                ? 'text-green-600 bg-green-50 dark:bg-green-950'
+                : 'text-amber-600 bg-amber-50 dark:bg-amber-950'
+            }`}>
               <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <span>This consultant has bonus month assignment: {formatMonthAbbr(selectedConsultant.bonusMonth)}</span>
+              <span>
+                This consultant has bonus month: {formatMonthAbbr(selectedConsultant.bonusMonth)}
+                {bonusPaymentMonth && selectedConsultant.bonusMonth === bonusPaymentMonth.month 
+                  ? ' ✓ (matches bonus payment month)'
+                  : bonusPaymentMonth 
+                    ? ` ⚠ (bonus payment month is ${bonusPaymentMonth.monthName})`
+                    : ''
+                }
+              </span>
             </div>
           )}
           {selectedConsultant && advanceAmount > 0 && (

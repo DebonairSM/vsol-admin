@@ -3,16 +3,43 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { formatCurrency, formatDate, formatMonthAbbr } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import { Link } from 'react-router-dom';
-import { Eye, Edit, FileCheck } from 'lucide-react';
-import { useState } from 'react';
+import { Eye, Edit, FileCheck, AlertTriangle } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import PayrollSettingsTable from '@/components/payroll-settings-table';
 
 export default function ConsultantsPage() {
   const { data: consultants, isLoading } = useConsultants();
   const [generatingContracts, setGeneratingContracts] = useState<Record<number, boolean>>({});
+
+  // Check if there are any consultants with bonuses that need to be dissolved
+  const hasConsultantsWithBonuses = useMemo(() => {
+    if (!consultants || consultants.length === 0) return false;
+    
+    // Debug: log consultant data to check structure
+    console.log('Consultants data:', consultants);
+    console.log('Checking for bonuses:', consultants.map((c: any) => ({
+      name: c.name,
+      yearlyBonus: c.yearlyBonus,
+      bonusMonth: c.bonusMonth
+    })));
+    
+    const hasBonuses = consultants.some((consultant: any) => {
+      // Check both camelCase and snake_case field names
+      const bonus = consultant.yearlyBonus ?? consultant.yearly_bonus;
+      return bonus != null && bonus > 0;
+    });
+    
+    console.log('Has consultants with bonuses:', hasBonuses);
+    
+    // TEMPORARY: Uncomment the line below to always show warning for testing
+    // return true;
+    
+    return hasBonuses;
+  }, [consultants]);
 
   const handleGenerateContract = async (consultant: any) => {
     const consultantId = consultant.id;
@@ -55,6 +82,17 @@ export default function ConsultantsPage() {
         </TabsList>
         
         <TabsContent value="consultants" className="space-y-4">
+          {hasConsultantsWithBonuses && (
+            <Alert variant="default" className="border-yellow-500 bg-yellow-50 text-yellow-900">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTitle className="text-yellow-900 font-semibold">Bonus Dissolution Required</AlertTitle>
+              <AlertDescription className="text-yellow-800">
+                Before adding a new consultant, you must dissolve all existing bonuses into hourly payments. 
+                This feature will distribute each consultant's bonus into their hourly rate and reset the bonus to $0. 
+                Please use the bonus dissolution feature before creating new consultants.
+              </AlertDescription>
+            </Alert>
+          )}
           <Card>
             <CardHeader>
               <CardTitle>All Consultants</CardTitle>

@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { Server } from 'http';
 import { errorHandler } from './middleware/errors';
+import { generalRateLimiter, authRateLimiter, writeRateLimiter } from './middleware/rate-limit';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -18,6 +19,7 @@ import timeDoctorRoutes from './routes/time-doctor';
 import bonusRoutes from './routes/bonus';
 import settingsRoutes from './routes/settings';
 import payoneerRoutes from './routes/payoneer';
+import backupRoutes from './routes/backups';
 
 const app = express();
 const PORT = process.env.PORT || 2021;
@@ -118,14 +120,10 @@ function getCorsOrigin(): string | string[] | ((origin: string | undefined) => b
       return true;
     }
     
-    // In development mode, allow all origins (for flexibility)
+    // SECURITY: Removed development mode bypass - require explicit CORS_ORIGIN configuration
+    // If CORS_ORIGIN is not set, only allow localhost, local network IPs, and ngrok domains
     if (process.env.NODE_ENV === 'development') {
-      console.log(`✅ CORS: Allowing origin in development mode: ${origin}`);
-      return true;
-    }
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`❌ CORS: Rejecting origin: ${origin}`);
+      console.log(`❌ CORS: Rejecting origin (development mode requires explicit CORS_ORIGIN): ${origin}`);
     }
     return false;
   };
@@ -172,8 +170,32 @@ app.options('*', (req, res) => {
 // Security middleware - configured to work with CORS
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  xFrameOptions: { action: 'deny' },
+  xContentTypeOptions: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
+
+// Apply general rate limiting to all routes
+app.use(generalRateLimiter);
 
 // Body parsing middleware
 app.use(express.json());
@@ -197,6 +219,7 @@ app.use('/api/time-doctor', timeDoctorRoutes);
 app.use('/api', bonusRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/payoneer', payoneerRoutes);
+app.use('/api/backups', backupRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

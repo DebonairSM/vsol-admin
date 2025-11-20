@@ -8,11 +8,14 @@ import { authenticateToken } from '../middleware/auth';
 import { loginSchema, refreshTokenSchema } from '@vsol-admin/shared';
 import { UnauthorizedError } from '../middleware/errors';
 import { createRefreshToken, rotateRefreshToken, revokeRefreshToken, revokeAllUserTokens } from '../services/token-service';
+import { authRateLimiter } from '../middleware/rate-limit';
+import { createBackup, shouldCreateBackup } from '../services/backup-service';
 
 const router: Router = Router();
 
 // POST /api/auth/login
-router.post('/login', validateBody(loginSchema), async (req, res, next) => {
+// Apply strict rate limiting to prevent brute force attacks
+router.post('/login', authRateLimiter, validateBody(loginSchema), async (req, res, next) => {
   try {
     const { username, password } = req.body;
 
@@ -21,13 +24,16 @@ router.post('/login', validateBody(loginSchema), async (req, res, next) => {
       where: eq(users.username, username)
     });
 
-    if (!user) {
-      throw new UnauthorizedError('Invalid credentials');
-    }
-
-    // Verify password
-    const isValidPassword = await comparePassword(password, user.passwordHash);
-    if (!isValidPassword) {
+    // SECURITY: Always perform password comparison to prevent timing attacks
+    // Use a dummy hash if user not found to maintain constant-time comparison
+    const dummyHash = '$argon2id$v=19$m=65536,t=3,p=4$dummy$dummy';
+    const hashToCompare = user?.passwordHash || dummyHash;
+    
+    // Verify password (will always take similar time whether user exists or not)
+    const isValidPassword = await comparePassword(password, hashToCompare);
+    
+    // Only throw error after password comparison to prevent user enumeration
+    if (!user || !isValidPassword) {
       throw new UnauthorizedError('Invalid credentials');
     }
 
@@ -57,6 +63,15 @@ router.post('/login', validateBody(loginSchema), async (req, res, next) => {
       userAgent
     );
 
+    // Create automatic backup on login (only if enough time has passed since last backup)
+    // This happens asynchronously so it doesn't slow down the login response
+    if (shouldCreateBackup(60)) {
+      createBackup('vsol-admin-login').catch((error) => {
+        // Log error but don't fail login if backup fails
+        console.error('Failed to create automatic backup on login:', error.message);
+      });
+    }
+
     res.json({
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
@@ -75,7 +90,7 @@ router.post('/login', validateBody(loginSchema), async (req, res, next) => {
 
 // POST /api/auth/refresh
 // Rotate refresh token and get new access token
-router.post('/refresh', validateBody(refreshTokenSchema), async (req, res, next) => {
+router.post('/refresh', authRateLimiter, validateBody(refreshTokenSchema), async (req, res, next) => {
   try {
     const refreshToken = req.body.refreshToken;
     

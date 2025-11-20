@@ -401,6 +401,29 @@ class ApiClient {
     });
   }
 
+  // Backup methods
+  async listBackups() {
+    return this.request<{ backups: Array<{ filename: string; size: number; created: string; modified: string }>; backupDirectory: string }>('/backups');
+  }
+
+  async createBackup() {
+    return this.request<{ 
+      success: boolean; 
+      message: string; 
+      backup: { filename: string; size: number; created: string };
+      deletedOldBackups: string[];
+    }>('/backups/create', {
+      method: 'POST',
+    });
+  }
+
+  async restoreFromBackup(filename: string) {
+    return this.request<{ success: boolean; message: string; preRestoreBackup: string | null }>('/backups/restore', {
+      method: 'POST',
+      body: JSON.stringify({ filename }),
+    });
+  }
+
   // Generic HTTP methods for extensibility
   async get<T = any>(endpoint: string): Promise<{ data: T }> {
     const result = await this.request<T>(endpoint);
