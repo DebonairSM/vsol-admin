@@ -46,7 +46,7 @@ pnpm dev
    - Subtotal per line: `(workHours × ratePerHour) + adjustmentValue − bonusAdvance`
 4. Footer totals recompute in real time
    - `totalHourlyValue = SUM(ratePerHour across lines)`
-   - `usdTotal = (totalHourlyValue × globalWorkHours) − (pagamentoPIX + pagamentoInter) + omnigoBonus + equipmentsUSD`
+   - `usdTotal = SUM((workHours || globalWorkHours) × ratePerHour for each consultant) − (pagamentoPIX + pagamentoInter) + omnigoBonus + equipmentsUSD`
 5. Invoices and payments tracked per cycle
 6. All mutations are audit‑logged with user, entity, and change diff
 
@@ -158,8 +158,9 @@ flowchart TD
 ## Formulas
 
 - Line subtotal: `(workHours × ratePerHour) + adjustmentValue − bonusAdvance`
-- Cycle USD total: `=B22*B26-(B23+B24)+B25+B27`
-  - `B22 = totalHourlyValue`, `B26 = globalWorkHours`, `B23 = pagamentoPIX`, `B24 = pagamentoInter`, `B25 = omnigoBonus`, `B27 = equipmentsUSD`
+- Cycle USD total: `=SUM((workHours × ratePerHour for each consultant)) - (pagamentoPIX + pagamentoInter) + omnigoBonus + equipmentsUSD`
+  - Uses individual consultant work hours (or globalWorkHours if not set per consultant)
+  - `pagamentoPIX` and `pagamentoInter` are subtracted, `omnigoBonus` and `equipmentsUSD` are added
 
 ## Login (dev)
 

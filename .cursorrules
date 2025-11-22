@@ -504,26 +504,21 @@ Where: `apps/api/src/services/cycle-service.ts` - computed in `getCycleSummary(c
 
 How it works:
 ```typescript
-const totalHourlyValue = SUM(all line items.ratePerHour);
-const baseAmount = totalHourlyValue * globalWorkHours;
+// Base amount = sum of each consultant's individual work hours * their rate
+const baseAmount = SUM(for each line item: (workHours || globalWorkHours) * ratePerHour);
 const paymentSubtractions = cycle.pagamentoPIX + cycle.pagamentoInter;
 const bonuses = cycle.omnigoBonus + cycle.equipmentsUSD;
 const usdTotal = baseAmount - paymentSubtractions + bonuses;
 ```
 
-Formula matches Excel B28: `=B22*B26-(B23+B24)+B25+B27`
-
-Where:
-- B22 = totalHourlyValue
-- B26 = globalWorkHours
-- B23 = pagamentoPIX
-- B24 = pagamentoInter
-- B25 = omnigoBonus
-- B27 = equipmentsUSD
+Formula uses individual consultant work hours (not a single global value):
+- For each consultant: uses their specific `workHours` if set, otherwise falls back to `globalWorkHours`
+- Base amount = sum of all (consultant work hours × consultant rate)
+- Then subtract payments (PIX + Inter) and add bonuses (Omnigo + Equipment)
 
 Edge cases:
-- If totalHourlyValue changes (line item added/removed) → USD total changes
-- If globalWorkHours is 0 → USD total is just bonuses minus payments
+- If a consultant has individual workHours set, it overrides globalWorkHours for that consultant
+- If globalWorkHours is 0 and no individual workHours set → that consultant contributes 0 to base amount
 - Negative payments → results in positive addition (should not happen but safe)
 
 Configuration: All input fields editable on Golden Sheet page

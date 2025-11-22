@@ -26,7 +26,7 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   const updateWorkflow = useUpdateBonusWorkflow(cycleId);
   const generateEmail = useGenerateBonusEmail(cycleId);
 
-  // Calculate the work payment month (next month after cycle start) and bonus payment month (two months after)
+  // Calculate the work payment month (next month after cycle start) and bonus payment month (one month after)
   const workPaymentMonth = useMemo(() => {
     if (!cycle?.monthLabel) return null;
     const parsed = parseMonthLabel(cycle.monthLabel);
@@ -46,13 +46,13 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
     };
   }, [cycle?.monthLabel]);
 
-  // Bonus is paid two months after cycle start
+  // Bonus is paid one month after cycle start
   const bonusPaymentMonth = useMemo(() => {
     if (!cycle?.monthLabel) return null;
     const parsed = parseMonthLabel(cycle.monthLabel);
     if (!parsed) return null;
     
-    let bonusMonth = parsed.month + 2;
+    let bonusMonth = parsed.month + 1;
     let bonusYear = parsed.year;
     if (bonusMonth > 12) {
       bonusMonth = bonusMonth - 12;
@@ -201,7 +201,7 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
               <h3 className="font-semibold mb-1">Bonus Workflow</h3>
               <p className="text-sm text-gray-600 mb-2">No bonus workflow has been created for this cycle yet.</p>
               <p className="text-xs text-gray-500">
-                Recipient will be auto-selected when bonus month matches the bonus payment month (two months after cycle start) or when bonus fields are set on line items.
+                Recipient will be auto-selected when bonus month matches the bonus payment month (one month after cycle start) or when bonus fields are set on line items.
               </p>
             </div>
             <Button onClick={handleCreateWorkflow} disabled={createWorkflow.isPending}>
