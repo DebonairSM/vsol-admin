@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCreateCycle, useCycles } from '@/hooks/use-cycles';
 import { useSettings } from '@/hooks/use-settings';
@@ -24,8 +24,15 @@ export default function NewCyclePage() {
   const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
   
   // Calculate monthly work hours for the current year and next year (for December -> January)
-  const monthlyWorkHours = getMonthlyWorkHoursForYear(currentYear);
-  const nextYearWorkHours = getMonthlyWorkHoursForYear(currentYear + 1);
+  // Memoize to prevent infinite re-renders - only recalculate when currentYear changes
+  const monthlyWorkHours = useMemo(
+    () => getMonthlyWorkHoursForYear(currentYear),
+    [currentYear]
+  );
+  const nextYearWorkHours = useMemo(
+    () => getMonthlyWorkHoursForYear(currentYear + 1),
+    [currentYear]
+  );
 
   const [formData, setFormData] = useState({
     monthLabel: '',
@@ -75,7 +82,7 @@ export default function NewCyclePage() {
         }));
       }
     }
-  }, [selectedMonthNumber, monthlyWorkHours, currentYear]);
+  }, [selectedMonthNumber, monthlyWorkHours, nextYearWorkHours, currentYear]);
 
   // Auto-set month label based on selected month
   useEffect(() => {
