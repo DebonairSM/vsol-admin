@@ -51,3 +51,4 @@ console.log('\n✅ Done! Refresh the page to see the updated USD Total.');
 
 
 
+
