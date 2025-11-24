@@ -6,9 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGetSetting, useUpdateSetting, useTestPayoneerConnection, useTestTimeDoctorConnection } from '@/hooks/use-settings';
-import { useBackups, useCreateBackup, useRestoreBackup } from '@/hooks/use-backups';
+import { useBackups, useCreateBackup, useRestoreBackup, useBackupStatus, useTriggerBackup } from '@/hooks/use-backups';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, Database } from 'lucide-react';
+import { Loader2, AlertTriangle, Database, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '@/lib/api-client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -68,6 +68,8 @@ export default function SettingsPage() {
   const backupDirectory = backupsData?.backupDirectory || '';
   const createBackup = useCreateBackup();
   const restoreBackup = useRestoreBackup();
+  const { data: backupStatus, isLoading: isLoadingStatus, refetch: refetchStatus } = useBackupStatus();
+  const triggerBackup = useTriggerBackup();
 
   // Set default backup to latest when backups load
   useEffect(() => {
@@ -245,7 +247,8 @@ export default function SettingsPage() {
 
   const handleCreateBackup = async () => {
     try {
-      const result = await createBackup.mutateAsync();
+      // Use the new triggerBackup hook which uses the system endpoint
+      const result = await triggerBackup.mutateAsync();
       
       toast({
         title: 'Backup Created',
@@ -261,9 +264,10 @@ export default function SettingsPage() {
         });
       }
     } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create database backup';
       toast({
         title: 'Backup Failed',
-        description: error.message || 'Failed to create database backup',
+        description: errorMessage,
         variant: 'destructive'
       });
     }
@@ -518,10 +522,69 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Database Backups</CardTitle>
           <CardDescription>
-            Automatic backups are created on every login (if at least 60 minutes have passed since the last backup). You can also create manual backups or restore from a previous backup. A backup of the current database will be created before restoring.
+            Automatic backups are created hourly while the server is running. You can also create manual backups or restore from a previous backup. A backup of the current database will be created before restoring.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Backup Status Section */}
+          {!isLoadingStatus && backupStatus && (
+            <div className="p-4 bg-gray-50 rounded-lg border space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-gray-900">Backup Status</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    refetchStatus();
+                    queryClient.invalidateQueries({ queryKey: ['backups'] });
+                  }}
+                  disabled={isLoadingStatus}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingStatus ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Total Backups</p>
+                  <p className="font-medium text-gray-900">{backupStatus.totalCount}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Environment</p>
+                  <p className="font-medium text-gray-900 uppercase">{backupStatus.environment}</p>
+                </div>
+                {backupStatus.lastBackup && (
+                  <div className="col-span-2">
+                    <p className="text-xs text-gray-500 mb-1">Last Backup</p>
+                    <p className="font-medium text-gray-900">
+                      {format(new Date(backupStatus.lastBackup.created), 'PPP pp')}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1 font-mono">
+                      {backupStatus.lastBackup.filename}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {backupStatus.recentBackups && backupStatus.recentBackups.length > 0 && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-gray-500 mb-2">Recent Backups</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {backupStatus.recentBackups.map((backup) => (
+                      <div key={backup.filename} className="flex items-center justify-between text-xs">
+                        <span className="font-mono text-gray-700 truncate flex-1">{backup.filename}</span>
+                        <span className="text-gray-500 ml-2">
+                          {format(new Date(backup.created), 'MMM d, HH:mm')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {backupDirectory && (
             <div className="p-3 bg-gray-50 rounded-lg border">
               <div className="flex items-start gap-2">
@@ -534,12 +597,12 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <div className="flex justify-end pb-4 border-b">
+          <div className="flex justify-end gap-2 pb-4 border-b">
             <Button
               onClick={handleCreateBackup}
-              disabled={createBackup.isPending}
+              disabled={triggerBackup.isPending}
             >
-              {createBackup.isPending ? (
+              {triggerBackup.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating...

@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { Server } from 'http';
+import cron from 'node-cron';
 import { errorHandler } from './middleware/errors';
 import { generalRateLimiter, authRateLimiter, writeRateLimiter } from './middleware/rate-limit';
 
@@ -20,12 +21,15 @@ import bonusRoutes from './routes/bonus';
 import settingsRoutes from './routes/settings';
 import payoneerRoutes from './routes/payoneer';
 import backupRoutes from './routes/backups';
+import systemRoutes from './routes/system';
 
 const app = express();
 const PORT = process.env.PORT || 2021;
 
 // Keep track of the server instance for graceful shutdown
 let server: Server;
+// Keep track of the backup cron task for graceful shutdown
+let backupCronTask: cron.ScheduledTask | null = null;
 
 // CORS configuration with support for ngrok and multiple origins
 // CORS must be configured BEFORE helmet to ensure headers are set correctly
@@ -220,6 +224,7 @@ app.use('/api', bonusRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/payoneer', payoneerRoutes);
 app.use('/api/backups', backupRoutes);
+app.use('/api/system', systemRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
@@ -245,6 +250,13 @@ async function findAvailablePort(startPort: number): Promise<number> {
 // Graceful shutdown function
 function gracefulShutdown(signal: string) {
   const isDev = process.env.NODE_ENV !== 'production';
+  
+  // Stop backup cron task
+  if (backupCronTask) {
+    backupCronTask.stop();
+    backupCronTask = null;
+    console.log('🛑 Backup scheduler stopped');
+  }
   
   if (isDev) {
     // In development, exit immediately to avoid Windows batch job prompt
@@ -292,6 +304,22 @@ async function startServer() {
     // Initialize database (sets encryption key if enabled)
     const { initializeDatabase } = await import('./db');
     await initializeDatabase();
+    
+    // Start automated backup scheduler (hourly at minute 0)
+    try {
+      const { backupDatabase } = await import('./backup/database-backup');
+      backupCronTask = cron.schedule('0 * * * *', async () => {
+        try {
+          await backupDatabase();
+          console.log('✅ Automated backup completed');
+        } catch (error: any) {
+          console.error('❌ Automated backup failed:', error.message);
+        }
+      });
+      console.log('⏰ Automated backups scheduled (hourly at minute 0)');
+    } catch (error: any) {
+      console.warn('⚠️  Failed to start backup scheduler:', error.message);
+    }
     
     const availablePort = await findAvailablePort(Number(PORT));
     

@@ -7,7 +7,7 @@ import { validateBody } from '../middleware/validate';
 import { z } from 'zod';
 import { sqliteDb } from '../db';
 import { createBackup } from '../services/backup-service';
-import { getBackupsDirectory, getDatabasePath } from '../services/backup-service';
+import { getBackupsDirectory, getDatabasePath, parseTimestampFromFilename } from '../services/backup-service';
 
 const router = Router();
 
@@ -35,20 +35,40 @@ router.get('/', async (req, res, next) => {
     }
     
     // Read all backup files (include all backup types)
+    // Support both old and new naming formats
     const files = fs.readdirSync(backupsDir)
-      .filter(file => (file.startsWith('vsol-admin-') || file.startsWith('vsol-admin-login-') || file.startsWith('vsol-admin-before-restore-')) && file.endsWith('.db'))
+      .filter(file => {
+        return (
+          (file.startsWith('vsol-admin-') && file.endsWith('.db')) ||
+          file.startsWith('vsol-admin-login-') ||
+          file.startsWith('vsol-admin-before-restore-')
+        );
+      })
       .map(file => {
         const filePath = path.join(backupsDir, file);
         const stats = fs.statSync(filePath);
+        const timestamp = parseTimestampFromFilename(file);
         
         return {
           filename: file,
           size: stats.size,
           created: stats.birthtime.toISOString(),
-          modified: stats.mtime.toISOString()
+          modified: stats.mtime.toISOString(),
+          // Use parsed timestamp if available for accurate sorting
+          timestamp: timestamp ? timestamp.toISOString() : stats.birthtime.toISOString(),
+          timestampDate: timestamp || stats.birthtime,
         };
       })
-      .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+      .sort((a, b) => {
+        // Sort by timestamp (most recent first)
+        return b.timestampDate.getTime() - a.timestampDate.getTime();
+      })
+      .map(file => ({
+        filename: file.filename,
+        size: file.size,
+        created: file.created,
+        modified: file.modified,
+      }));
     
     res.json({ backups: files, backupDirectory: backupsDir });
   } catch (error) {
@@ -124,7 +144,16 @@ router.post(
       // Create backup of current database before restoring
       let preRestoreBackupPath: string | null = null;
       if (fs.existsSync(dbPath)) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        // Use new timestamp format for pre-restore backup
+        const now = new Date();
+        const year = now.getUTCFullYear();
+        const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(now.getUTCDate()).padStart(2, '0');
+        const hours = String(now.getUTCHours()).padStart(2, '0');
+        const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+        const milliseconds = String(now.getUTCMilliseconds()).padStart(3, '0');
+        const timestamp = `${year}-${month}-${day}_${hours}-${minutes}-${seconds}-${milliseconds}Z`;
         preRestoreBackupPath = path.join(backupsDir, `vsol-admin-before-restore-${timestamp}.db`);
         
         try {

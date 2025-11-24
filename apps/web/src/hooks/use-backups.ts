@@ -70,6 +70,47 @@ export function useRestoreBackup() {
     onSuccess: () => {
       // Invalidate backups query after restore (new backup may have been created)
       queryClient.invalidateQueries({ queryKey: ['backups'] });
+      queryClient.invalidateQueries({ queryKey: ['backup-status'] });
+    },
+  });
+}
+
+/**
+ * Hook to get backup status information
+ */
+export function useBackupStatus() {
+  return useQuery({
+    queryKey: ['backup-status'],
+    queryFn: async () => {
+      return await apiClient.getBackupStatus();
+    },
+    staleTime: 30 * 1000, // 30 seconds
+  });
+}
+
+/**
+ * Hook to trigger a manual backup
+ */
+export function useTriggerBackup() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    {
+      success: boolean;
+      message: string;
+      backup: { filename: string; size: number; created: string };
+      deletedOldBackups: string[];
+    },
+    Error,
+    void
+  >({
+    mutationFn: async () => {
+      return await apiClient.triggerBackup();
+    },
+    onSuccess: () => {
+      // Invalidate both backups and backup status queries
+      queryClient.invalidateQueries({ queryKey: ['backups'] });
+      queryClient.invalidateQueries({ queryKey: ['backup-status'] });
     },
   });
 }

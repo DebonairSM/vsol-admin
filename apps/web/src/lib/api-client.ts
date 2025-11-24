@@ -424,6 +424,42 @@ class ApiClient {
     });
   }
 
+  // System/Backup status methods
+  async getBackupStatus() {
+    return this.request<{
+      backupDirectory: string;
+      totalCount: number;
+      lastBackup: {
+        filename: string;
+        created: string;
+        timestamp: string;
+        size: number;
+      } | null;
+      recentBackups: Array<{
+        filename: string;
+        created: string;
+        timestamp: string;
+        size: number;
+      }>;
+      environment: string;
+    }>('/system/backup-status');
+  }
+
+  async triggerBackup() {
+    return this.request<{
+      success: boolean;
+      message: string;
+      backup: {
+        filename: string;
+        size: number;
+        created: string;
+      };
+      deletedOldBackups: string[];
+    }>('/system/backup-now', {
+      method: 'POST',
+    });
+  }
+
   // Generic HTTP methods for extensibility
   async get<T = any>(endpoint: string): Promise<{ data: T }> {
     const result = await this.request<T>(endpoint);
