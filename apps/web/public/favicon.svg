@@ -1,0 +1,22 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#1e40af"/>
+  
+  <!-- Grid pattern representing spreadsheet -->
+  <rect x="4" y="6" width="24" height="20" rx="2" fill="#ffffff" fill-opacity="0.95"/>
+  
+  <!-- Grid lines -->
+  <line x1="8" y1="6" x2="8" y2="26" stroke="#1e40af" stroke-width="0.5"/>
+  <line x1="12" y1="6" x2="12" y2="26" stroke="#1e40af" stroke-width="0.5"/>
+  <line x1="16" y1="6" x2="16" y2="26" stroke="#1e40af" stroke-width="0.5"/>
+  <line x1="20" y1="6" x2="20" y2="26" stroke="#1e40af" stroke-width="0.5"/>
+  <line x1="24" y1="6" x2="24" y2="26" stroke="#1e40af" stroke-width="0.5"/>
+  
+  <line x1="4" y1="10" x2="28" y2="10" stroke="#1e40af" stroke-width="0.5"/>
+  <line x1="4" y1="14" x2="28" y2="14" stroke="#1e40af" stroke-width="0.5"/>
+  <line x1="4" y1="18" x2="28" y2="18" stroke="#1e40af" stroke-width="0.5"/>
+  <line x1="4" y1="22" x2="28" y2="22" stroke="#1e40af" stroke-width="0.5"/>
+  
+  <!-- VS text -->
+  <text x="16" y="19" font-family="Arial, sans-serif" font-size="8" font-weight="bold" text-anchor="middle" fill="#1e40af">VS</text>
+</svg>

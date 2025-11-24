@@ -82,7 +82,10 @@ jspm_packages/
 
 # Gatsby files
 .cache/
-public
+# Note: apps/web/public/ should be tracked (contains static assets)
+# Only ignore public in build outputs
+dist/public
+build/public
 
 # Storybook build outputs
 .out
@@ -111,6 +114,10 @@ Thumbs.db
 # Backups
 backups/
 *.backup
+
+# Uploads (contains sensitive consultant documents)
+apps/api/uploads/
+uploads/
 
 # Turbo
 .turbo
