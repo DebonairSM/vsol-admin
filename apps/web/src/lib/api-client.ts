@@ -1,6 +1,18 @@
 // Use Vite proxy in development (relative URL), or explicit URL if set
 // When VITE_API_URL is not set, use relative URL which goes through Vite proxy
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+let API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
+// Validate and normalize the API base URL
+if (API_BASE_URL && !API_BASE_URL.startsWith('/') && !API_BASE_URL.startsWith('http')) {
+  // If it's malformed (e.g., ":2021/api"), default to proxy
+  console.warn('Invalid VITE_API_URL format, using proxy:', API_BASE_URL);
+  API_BASE_URL = '/api';
+}
+
+// Ensure trailing slash is removed for consistency
+if (API_BASE_URL.endsWith('/')) {
+  API_BASE_URL = API_BASE_URL.slice(0, -1);
+}
 
 class ApiClient {
   private baseURL: string;
