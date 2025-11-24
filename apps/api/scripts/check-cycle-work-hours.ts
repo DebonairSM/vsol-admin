@@ -58,6 +58,3 @@ if (isOctober && cycle.global_work_hours === 160) {
 }
 
 db.close();
-
-
-

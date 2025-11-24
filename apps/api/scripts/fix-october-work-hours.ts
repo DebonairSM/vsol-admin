@@ -47,6 +47,3 @@ console.log(`Verified: global_work_hours is now ${updated.global_work_hours}`);
 
 db.close();
 console.log('\n✅ Done! Refresh the page to see the updated USD Total.');
-
-
-
