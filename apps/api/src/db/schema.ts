@@ -65,6 +65,7 @@ export const payrollCycles = sqliteTable('payroll_cycles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   monthLabel: text('month_label').notNull(),
   // Header dates
+  payoneerAccountFundedDate: integer('payoneer_account_funded_date', { mode: 'timestamp' }),
   calculatedPaymentDate: integer('calculated_payment_date', { mode: 'timestamp' }),
   paymentArrivalDate: integer('payment_arrival_date', { mode: 'timestamp' }),
   sendReceiptDate: integer('send_receipt_date', { mode: 'timestamp' }),

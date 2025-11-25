@@ -181,14 +181,11 @@ export class CycleService {
     // Calculate total hourly value (sum of all consultant rates)
     const totalHourlyValue = cycle.lines.reduce((sum, line) => sum + line.ratePerHour, 0);
     
-    // Calculate USD total using individual consultant work hours
-    // Base amount = sum of (each consultant's work hours * their rate)
-    // Then subtract payments and add bonuses
+    // Calculate USD total using Excel formula: =B22*B26-(B23+B24)+B25+B27
+    // B22 = totalHourlyValue, B26 = globalWorkHours, B23 = pagamentoPIX, B24 = pagamentoInter
+    // B25 = omnigoBonus, B27 = equipmentsUSD
     const globalWorkHours = cycle.globalWorkHours || 0;
-    const baseAmount = cycle.lines.reduce((sum, line) => {
-      const workHours = line.workHours || globalWorkHours;
-      return sum + (workHours * line.ratePerHour);
-    }, 0);
+    const baseAmount = totalHourlyValue * globalWorkHours;
     const paymentSubtractions = (cycle.pagamentoPIX || 0) + (cycle.pagamentoInter || 0);
     const bonuses = (cycle.omnigoBonus || 0) + (cycle.equipmentsUSD || 0);
     const usdTotal = baseAmount - paymentSubtractions + bonuses;

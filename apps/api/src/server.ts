@@ -322,11 +322,21 @@ async function startServer() {
     }
     
     const availablePort = await findAvailablePort(Number(PORT));
+    const host = process.env.HOST || '0.0.0.0'; // Listen on all interfaces by default
     
-    server = app.listen(availablePort, () => {
-      console.log(`🚀 Server running on port ${availablePort}`);
-      console.log(`📊 Health check: http://localhost:${availablePort}/health`);
+    server = app.listen(availablePort, host, () => {
+      const address = server.address();
+      const serverUrl = typeof address === 'string' 
+        ? address 
+        : `http://${host === '0.0.0.0' ? 'localhost' : host}:${availablePort}`;
+      
+      console.log(`🚀 Server running on ${host}:${availablePort}`);
+      console.log(`📊 Health check: ${serverUrl}/health`);
       console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+      
+      if (host === '0.0.0.0') {
+        console.log(`🌐 Server accessible from network on port ${availablePort}`);
+      }
       
       if (availablePort !== Number(PORT)) {
         console.log(`⚠️  Note: Port ${PORT} was busy, using ${availablePort} instead`);

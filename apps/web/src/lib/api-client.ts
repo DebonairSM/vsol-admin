@@ -56,13 +56,48 @@ class ApiClient {
     const response = await fetch(url, config);
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-      const error = new Error(errorData.message || errorData.error || `HTTP ${response.status}`);
+      let errorData: any = {};
+      const contentType = response.headers.get('content-type');
+      
+      try {
+        // Clone the response to avoid consuming the body
+        const clonedResponse = response.clone();
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            errorData = await clonedResponse.json();
+          } catch (jsonError) {
+            // If JSON parsing fails, try text
+            const text = await response.text();
+            errorData = text ? { error: text } : { error: `HTTP ${response.status} ${response.statusText}` };
+          }
+        } else {
+          // If not JSON, get text
+          const text = await response.text();
+          errorData = text ? { error: text } : { error: `HTTP ${response.status} ${response.statusText}` };
+        }
+      } catch (parseError) {
+        // If all parsing fails, create a generic error
+        errorData = { error: `HTTP ${response.status} ${response.statusText || 'Unknown error'}` };
+      }
+      
+      // Ensure errorData is an object
+      if (typeof errorData !== 'object' || errorData === null || Array.isArray(errorData)) {
+        errorData = { error: String(errorData) || `HTTP ${response.status}` };
+      }
+      
+      const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
+      const error = new Error(errorMessage);
       (error as any).response = { data: errorData, status: response.status };
       throw error;
     }
 
-    return response.json();
+    try {
+      return await response.json();
+    } catch (jsonError) {
+      // If response is not JSON, return empty object or handle appropriately
+      throw new Error(`Invalid JSON response from server: ${jsonError}`);
+    }
   }
 
   // Auth methods

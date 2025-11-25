@@ -5,7 +5,7 @@ export interface WorkflowStep {
   id: string;
   title: string;
   description: string;
-  fieldName: keyof Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'clientInvoicePaymentDate' | 'clientPaymentScheduledDate' | 'consultantsPaidDate' | 'timeDoctorMarkedPaidDate' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
+  fieldName: keyof Pick<PayrollCycle, 'payoneerAccountFundedDate' | 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'clientInvoicePaymentDate' | 'clientPaymentScheduledDate' | 'consultantsPaidDate' | 'timeDoctorMarkedPaidDate' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
   icon: any;
   color: {
     complete: string;
@@ -16,9 +16,22 @@ export interface WorkflowStep {
   dependsOn?: string; // Optional: ID of step that must be completed first
 }
 
-export type PayrollCycleWorkflow = Pick<PayrollCycle, 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'clientInvoicePaymentDate' | 'clientPaymentScheduledDate' | 'consultantsPaidDate' | 'timeDoctorMarkedPaidDate' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
+export type PayrollCycleWorkflow = Pick<PayrollCycle, 'payoneerAccountFundedDate' | 'calculatedPaymentDate' | 'paymentArrivalDate' | 'sendInvoiceDate' | 'clientInvoicePaymentDate' | 'clientPaymentScheduledDate' | 'consultantsPaidDate' | 'timeDoctorMarkedPaidDate' | 'hoursLimitChangedOn' | 'sendReceiptDate'>;
 
 export const workflowSteps: WorkflowStep[] = [
+  {
+    id: 'payoneer-account-funded',
+    title: 'Payoneer Account Funded',
+    description: 'Payoneer partner account funded from Wells Fargo Bank account',
+    fieldName: 'payoneerAccountFundedDate',
+    icon: DollarSign,
+    color: {
+      complete: 'text-blue-700 border-blue-300 bg-blue-100',
+      pending: 'text-gray-400 border-gray-200 bg-gray-50',
+      background: 'bg-blue-200'
+    },
+    order: 0
+  },
   {
     id: 'send-invoice',
     title: 'Send Invoice',
