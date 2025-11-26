@@ -35,7 +35,8 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryOnAuthError: boolean = true
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     
@@ -54,6 +55,40 @@ class ApiClient {
     };
 
     const response = await fetch(url, config);
+
+    // Handle 403/401 errors by attempting token refresh (except for auth endpoints)
+    if (!response.ok && (response.status === 403 || response.status === 401) && retryOnAuthError && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
+      // Try to refresh the token
+      try {
+        const refreshToken = this.getRefreshToken();
+        if (refreshToken) {
+          const tokens = await this.refreshAccessToken();
+          this.setToken(tokens.accessToken);
+          this.setRefreshToken(tokens.refreshToken);
+          
+          // Retry the original request with new token
+          headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+          const retryResponse = await fetch(url, {
+            ...options,
+            headers,
+          });
+          
+          if (retryResponse.ok) {
+            try {
+              return await retryResponse.json();
+            } catch (jsonError) {
+              throw new Error(`Invalid JSON response from server: ${jsonError}`);
+            }
+          }
+          // If retry also fails, fall through to error handling below
+        }
+      } catch (refreshError) {
+        // Token refresh failed, clear tokens and let the error propagate
+        this.setToken(null);
+        this.setRefreshToken(null);
+        // Fall through to error handling below
+      }
+    }
 
     if (!response.ok) {
       let errorData: any = {};

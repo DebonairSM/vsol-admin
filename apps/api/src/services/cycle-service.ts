@@ -1,4 +1,4 @@
-import { eq, isNull, sum } from 'drizzle-orm';
+import { eq, isNull, sum, desc } from 'drizzle-orm';
 import { db, payrollCycles, cycleLineItems, consultants } from '../db';
 import { CreateCycleRequest, UpdateCycleRequest, CycleSummary, PaymentCalculationResult, ConsultantPaymentDetail } from '@vsol-admin/shared';
 import { NotFoundError, ValidationError } from '../middleware/errors';
@@ -7,7 +7,7 @@ export class CycleService {
   static async getAll() {
     return db.query.payrollCycles.findMany({
       where: isNull(payrollCycles.archivedAt),
-      orderBy: (cycles, { desc }) => [desc(cycles.createdAt)]
+      orderBy: [desc(payrollCycles.createdAt)]
     });
   }
 
