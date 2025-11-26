@@ -147,6 +147,7 @@ export const createCycleSchema = z.object({
 export const updateCycleSchema = z.object({
   monthLabel: z.string().min(1).optional(),
   payoneerAccountFundedDate: z.string().datetime().nullable().optional(),
+  payoneerFundingDate: z.string().datetime().nullable().optional(),
   calculatedPaymentDate: z.string().datetime().nullable().optional(),
   paymentArrivalDate: z.string().datetime().nullable().optional(),
   sendReceiptDate: z.string().datetime().nullable().optional(),

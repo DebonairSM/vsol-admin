@@ -1,0 +1,1 @@
+ALTER TABLE payroll_cycles ADD `payoneer_funding_date` integer;

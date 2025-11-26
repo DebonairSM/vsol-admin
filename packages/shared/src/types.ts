@@ -60,6 +60,7 @@ export interface PayrollCycle {
   monthLabel: string;
   // Header dates
   payoneerAccountFundedDate?: Date | null;
+  payoneerFundingDate?: Date | null;
   calculatedPaymentDate?: Date | null;
   paymentArrivalDate?: Date | null;
   sendReceiptDate?: Date | null;

@@ -138,6 +138,34 @@ export function parseMonthLabel(monthLabel: string): { year: number; month: numb
   return { year, month };
 }
 
+/**
+ * Get the previous month's label from a given month label
+ * Example: "February 2025" -> "January 2025"
+ * Example: "January 2025" -> "December 2024"
+ */
+export function getPreviousMonthLabel(monthLabel: string): string | null {
+  const parsed = parseMonthLabel(monthLabel);
+  if (!parsed) {
+    return null;
+  }
+  
+  const { year, month } = parsed;
+  let previousMonth = month - 1;
+  let previousYear = year;
+  
+  if (previousMonth < 1) {
+    previousMonth = 12;
+    previousYear = year - 1;
+  }
+  
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  
+  return `${monthNames[previousMonth - 1]} ${previousYear}`;
+}
+
 export type DeadlineAlertStatus = 'normal' | 'warning' | 'critical';
 
 export interface DeadlineAlertInfo {

@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom';
 import { useCycles } from '@/hooks/use-cycles';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Plus, Calendar, DollarSign, Users, FileText, CalendarCheck } from 'lucide-react';
+import { Plus, Calendar, DollarSign, Users, FileText, CalendarCheck, Sparkles } from 'lucide-react';
 
 export default function DashboardPage() {
   const { data: cycles, isLoading } = useCycles();
@@ -16,7 +17,7 @@ export default function DashboardPage() {
     );
   }
 
-  const latestCycle = cycles?.[0]; // Cycles are sorted by monthLabel desc
+  const latestCycle = cycles?.[0]; // Cycles are sorted by createdAt desc
   const currentYear = new Date().getFullYear();
   
   // Calculate total bonus for current year
@@ -126,28 +127,57 @@ export default function DashboardPage() {
         <CardContent>
           {cycles && cycles.length > 0 ? (
             <div className="space-y-3">
-              {cycles.slice(0, 5).map((cycle: any) => (
-                <Link
-                  key={cycle.id}
-                  to={`/cycles/${cycle.id}`}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div>
-                    <h3 className="font-medium">{cycle.monthLabel}</h3>
-                    <p className="text-sm text-gray-600">
-                      Created {formatDate(cycle.createdAt)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">
-                      {cycle.globalWorkHours} hours
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {cycle.omnigoBonus ? formatCurrency(cycle.omnigoBonus) : 'No bonus'}
-                    </p>
-                  </div>
-                </Link>
-              ))}
+              {cycles.slice(0, 5).map((cycle: any, index: number) => {
+                const isLatest = index === 0;
+                return (
+                  <Link
+                    key={cycle.id}
+                    to={`/cycles/${cycle.id}`}
+                    className={`
+                      relative flex items-center justify-between p-4 rounded-lg transition-all duration-200
+                      ${isLatest 
+                        ? 'border-2 border-blue-500/30 bg-gradient-to-r from-blue-50/50 to-transparent shadow-md hover:shadow-lg hover:border-blue-500/50' 
+                        : 'border rounded-lg hover:bg-gray-50 hover:border-gray-300'
+                      }
+                    `}
+                  >
+                    {isLatest && (
+                      <div className="absolute -top-2 -right-2">
+                        <Badge 
+                          variant="default" 
+                          className="bg-blue-600 text-white shadow-sm flex items-center gap-1 px-2 py-0.5"
+                        >
+                          <Sparkles className="h-3 w-3" />
+                          Latest
+                        </Badge>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 flex-1">
+                      {isLatest && (
+                        <div className="w-1 h-12 bg-gradient-to-b from-blue-500 to-blue-400 rounded-full" />
+                      )}
+                      <div className={isLatest ? 'flex-1' : ''}>
+                        <div className="flex items-center gap-2">
+                          <h3 className={`font-medium ${isLatest ? 'text-blue-900' : 'text-gray-900'}`}>
+                            {cycle.monthLabel}
+                          </h3>
+                        </div>
+                        <p className={`text-sm ${isLatest ? 'text-blue-700' : 'text-gray-600'}`}>
+                          Created {formatDate(cycle.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-medium ${isLatest ? 'text-blue-900' : 'text-gray-900'}`}>
+                        {cycle.globalWorkHours} hours
+                      </p>
+                      <p className={`text-sm ${isLatest ? 'text-blue-700' : 'text-gray-600'}`}>
+                        {cycle.omnigoBonus ? formatCurrency(cycle.omnigoBonus) : 'No bonus'}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">

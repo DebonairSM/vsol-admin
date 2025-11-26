@@ -12,6 +12,7 @@ import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle, Lock } f
 import { useCalculatePayment } from '@/hooks/use-cycles';
 import { calculateDeadlineAlert, parseMonthLabel } from '@/lib/business-days';
 import { getWorkHoursForMonthByNumber, getMonthName } from '@/lib/work-hours';
+import { toast } from 'sonner';
 import type { PayrollCycle } from '@vsol-admin/shared';
 
 interface WorkflowTrackerProps {
@@ -22,6 +23,7 @@ interface WorkflowTrackerProps {
 export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: WorkflowTrackerProps) {
   const [editingStep, setEditingStep] = useState<string | null>(null);
   const [editDate, setEditDate] = useState('');
+  const [editFundingDate, setEditFundingDate] = useState('');
   const [calculationResult, setCalculationResult] = useState<any>(null);
   
   const calculatePaymentMutation = useCalculatePayment();
@@ -67,6 +69,19 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     } else {
       setEditDate('');
     }
+    
+    // For Payoneer Account Funded step, also load funding date
+    if (stepId === 'payoneer-account-funded') {
+      if (cycle.payoneerFundingDate) {
+        const fundingDate = new Date(cycle.payoneerFundingDate);
+        const localFundingDate = new Date(fundingDate.getTime() - (fundingDate.getTimezoneOffset() * 60000));
+        setEditFundingDate(localFundingDate.toISOString().split('T')[0]);
+      } else {
+        setEditFundingDate('');
+      }
+    } else {
+      setEditFundingDate('');
+    }
   };
 
   const handleDateSave = async () => {
@@ -76,56 +91,119 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     if (!step) return;
 
     try {
-      let dateToSave = null;
-      if (editDate) {
-        // Create date in local timezone to match what user sees
-        const localDate = new Date(editDate + 'T12:00:00'); // Use noon to avoid DST issues
-        dateToSave = localDate.toISOString();
+      // For Payoneer Account Funded step, save both dates
+      if (editingStep === 'payoneer-account-funded') {
+        let completionDateToSave = null;
+        if (editDate) {
+          const localDate = new Date(editDate + 'T12:00:00');
+          completionDateToSave = localDate.toISOString();
+        }
+        await onUpdateWorkflowDate('payoneerAccountFundedDate', completionDateToSave);
+        
+        let fundingDateToSave = null;
+        if (editFundingDate) {
+          const localFundingDate = new Date(editFundingDate + 'T12:00:00');
+          fundingDateToSave = localFundingDate.toISOString();
+        }
+        await onUpdateWorkflowDate('payoneerFundingDate', fundingDateToSave);
+        
+        setEditingStep(null);
+        setEditFundingDate('');
+        toast.success(`${step.title} dates updated`);
+      } else {
+        let dateToSave = null;
+        if (editDate) {
+          // Create date in local timezone to match what user sees
+          const localDate = new Date(editDate + 'T12:00:00'); // Use noon to avoid DST issues
+          dateToSave = localDate.toISOString();
+        }
+        await onUpdateWorkflowDate(step.fieldName, dateToSave);
+        setEditingStep(null);
+        toast.success(`${step.title} date updated`);
       }
-      await onUpdateWorkflowDate(step.fieldName, dateToSave);
-      setEditingStep(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update workflow date:', error);
+      toast.error(error.message || `Failed to update ${step.title} date`);
     }
   };
 
   const handleDateCancel = () => {
     setEditingStep(null);
     setEditDate('');
+    setEditFundingDate('');
     setCalculationResult(null);
   };
 
   const handleMarkComplete = async (step: typeof workflowSteps[0]) => {
     try {
-      let dateToSave: string;
-      
-      if (editDate) {
-        // User selected a specific date - use it
-        const localDate = new Date(editDate + 'T12:00:00');
-        dateToSave = localDate.toISOString();
+      // For Payoneer Account Funded step, handle both dates
+      if (step.id === 'payoneer-account-funded') {
+        let completionDateToSave: string;
+        if (editDate) {
+          const localDate = new Date(editDate + 'T12:00:00');
+          completionDateToSave = localDate.toISOString();
+        } else {
+          const now = new Date();
+          const localNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+          completionDateToSave = localNoon.toISOString();
+        }
+        await onUpdateWorkflowDate('payoneerAccountFundedDate', completionDateToSave);
+        
+        // Funding date is optional, only save if provided
+        if (editFundingDate) {
+          const localFundingDate = new Date(editFundingDate + 'T12:00:00');
+          await onUpdateWorkflowDate('payoneerFundingDate', localFundingDate.toISOString());
+        }
+        
+        setEditingStep(null);
+        setEditDate('');
+        setEditFundingDate('');
+        toast.success(`${step.title} marked as complete`);
       } else {
-        // No date selected - use today
-        const now = new Date();
-        const localNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
-        dateToSave = localNoon.toISOString();
+        let dateToSave: string;
+        
+        if (editDate) {
+          // User selected a specific date - use it
+          const localDate = new Date(editDate + 'T12:00:00');
+          dateToSave = localDate.toISOString();
+        } else {
+          // No date selected - use today
+          const now = new Date();
+          const localNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+          dateToSave = localNoon.toISOString();
+        }
+        
+        await onUpdateWorkflowDate(step.fieldName, dateToSave);
+        setEditingStep(null); // Close popup
+        setEditDate(''); // Clear date state
+        toast.success(`${step.title} marked as complete`);
       }
-      
-      await onUpdateWorkflowDate(step.fieldName, dateToSave);
-      setEditingStep(null); // Close popup
-      setEditDate(''); // Clear date state
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to mark step complete:', error);
+      toast.error(error.message || `Failed to mark ${step.title} as complete`);
     }
   };
 
   const handleResetDate = async (step: typeof workflowSteps[0]) => {
     try {
-      await onUpdateWorkflowDate(step.fieldName, null);
-      setEditingStep(null);
-      setEditDate('');
-      setCalculationResult(null);
-    } catch (error) {
+      if (step.id === 'payoneer-account-funded') {
+        await onUpdateWorkflowDate('payoneerAccountFundedDate', null);
+        await onUpdateWorkflowDate('payoneerFundingDate', null);
+        setEditingStep(null);
+        setEditDate('');
+        setEditFundingDate('');
+        setCalculationResult(null);
+        toast.success(`${step.title} dates reset`);
+      } else {
+        await onUpdateWorkflowDate(step.fieldName, null);
+        setEditingStep(null);
+        setEditDate('');
+        setCalculationResult(null);
+        toast.success(`${step.title} date reset`);
+      }
+    } catch (error: any) {
       console.error('Failed to reset workflow date:', error);
+      toast.error(error.message || `Failed to reset ${step.title} date`);
     }
   };
 
@@ -170,7 +248,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
 
       <CardContent>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-          {workflowSteps.map((step, index) => {
+          {[...workflowSteps].sort((a, b) => a.order - b.order).map((step, index) => {
             const isCompleted = isStepCompleted(cycle, step);
             const canComplete = canCompleteStep(cycle, step);
             const isBlocked = !canComplete && !isCompleted;
@@ -262,9 +340,16 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                           );
                         })()}
                         {isCompleted && currentDate && (
-                          <p className="text-xs font-mono mt-2 text-gray-800">
-                            {formatDate(currentDate)}
-                          </p>
+                          <div className="text-xs mt-2 space-y-1">
+                            <p className="font-mono text-gray-800">
+                              Completed: {formatDate(currentDate)}
+                            </p>
+                            {step.id === 'payoneer-account-funded' && cycle.payoneerFundingDate && (
+                              <p className="font-mono text-blue-700">
+                                Funding: {formatDate(cycle.payoneerFundingDate)}
+                              </p>
+                            )}
+                          </div>
                         )}
                         {showDeadlineAlert && deadlineAlert && (
                           <div className={cn(
@@ -384,6 +469,37 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                 </div>
                               )}
                             </>
+                          ) : step.id === 'payoneer-account-funded' ? (
+                            /* Payoneer Account Funded - Two Date Fields */
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="completionDate" className="text-xs">
+                                  Completion Date
+                                </Label>
+                                <Input
+                                  id="completionDate"
+                                  type="date"
+                                  value={editDate}
+                                  onChange={(e) => setEditDate(e.target.value)}
+                                  className="text-sm"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="fundingDate" className="text-xs">
+                                  Funding Date
+                                </Label>
+                                <Input
+                                  id="fundingDate"
+                                  type="date"
+                                  value={editFundingDate}
+                                  onChange={(e) => setEditFundingDate(e.target.value)}
+                                  className="text-sm"
+                                />
+                                <p className="text-xs text-gray-500">
+                                  Expected date when the deposit will clear in Payoneer account
+                                </p>
+                              </div>
+                            </div>
                           ) : (
                             /* Standard Date Picker for Other Steps */
                             <div className="space-y-2">

@@ -30,7 +30,7 @@ export const workflowSteps: WorkflowStep[] = [
       pending: 'text-gray-400 border-gray-200 bg-gray-50',
       background: 'bg-blue-200'
     },
-    order: 0
+    order: 10
   },
   {
     id: 'send-invoice',
@@ -163,7 +163,7 @@ export function calculateWorkflowProgress(cycle: PayrollCycleWorkflow): {
     return value !== null && value !== undefined;
   });
 
-  const nextPendingStep = workflowSteps.find(step => {
+  const nextPendingStep = [...workflowSteps].sort((a, b) => a.order - b.order).find(step => {
     const value = cycle[step.fieldName];
     return value === null || value === undefined;
   });

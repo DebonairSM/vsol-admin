@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useCycle, useCycleSummary, useUpdateLineItem, useUpdateCycle, useDeleteCycle } from '@/hooks/use-cycles';
+import { useCycle, useCycleSummary, useUpdateLineItem, useUpdateCycle, useDeleteCycle, useCycles } from '@/hooks/use-cycles';
 import { useBonusWorkflow } from '@/hooks/use-bonus-workflow';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,13 +20,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useState, useMemo } from 'react';
-import { Trash2, X } from 'lucide-react';
+import { Trash2, X, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import BonusInfoCell from '@/components/bonus-info-cell';
 import WorkflowTracker from '@/components/workflow-tracker';
 import BonusWorkflowSection from '@/components/bonus-workflow-section';
 import AdditionalPaidModal from '@/components/additional-paid-modal';
-import { parseMonthLabel } from '@/lib/business-days';
+import { parseMonthLabel, getPreviousMonthLabel } from '@/lib/business-days';
 import { getWorkHoursForMonthByNumber } from '@/lib/work-hours';
 
 export default function GoldenSheetPage() {
@@ -36,6 +37,7 @@ export default function GoldenSheetPage() {
   const { data: cycle, isLoading: cycleLoading } = useCycle(cycleId);
   const { data: summary, isLoading: summaryLoading } = useCycleSummary(cycleId);
   const { data: bonusWorkflow } = useBonusWorkflow(cycleId);
+  const { data: allCycles } = useCycles();
   const updateLineItem = useUpdateLineItem();
   const updateCycle = useUpdateCycle();
   const deleteCycle = useDeleteCycle();
@@ -53,6 +55,31 @@ export default function GoldenSheetPage() {
     if (!parsed) return null;
     return getWorkHoursForMonthByNumber(parsed.year, parsed.month);
   }, [cycle?.monthLabel]);
+
+  // Find previous month's cycle and funding date
+  const previousMonthFundingInfo = useMemo(() => {
+    if (!cycle || !allCycles) return null;
+    
+    const previousMonthLabel = getPreviousMonthLabel(cycle.monthLabel);
+    if (!previousMonthLabel) return null;
+    
+    const previousCycle = allCycles.find(c => c.monthLabel === previousMonthLabel);
+    if (!previousCycle || !previousCycle.payoneerFundingDate) return null;
+    
+    const fundingDate = new Date(previousCycle.payoneerFundingDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    fundingDate.setHours(0, 0, 0, 0);
+    
+    // Only show if funding date is in the future
+    if (fundingDate < today) return null;
+    
+    return {
+      cycle: previousCycle,
+      fundingDate: previousCycle.payoneerFundingDate,
+      monthLabel: previousMonthLabel
+    };
+  }, [cycle, allCycles]);
 
   if (cycleLoading || summaryLoading) {
     return (
@@ -118,8 +145,15 @@ export default function GoldenSheetPage() {
     try {
       let value: any = null;
       if (editValue) {
-        // globalWorkHours should be an integer
-        if (editingCycleField === 'globalWorkHours') {
+        // monthLabel is a string
+        if (editingCycleField === 'monthLabel') {
+          value = editValue.trim();
+          if (!value) {
+            toast.error('Month label cannot be empty');
+            return;
+          }
+        } else if (editingCycleField === 'globalWorkHours') {
+          // globalWorkHours should be an integer
           value = parseInt(editValue, 10);
         } else {
           value = parseFloat(editValue);
@@ -134,9 +168,9 @@ export default function GoldenSheetPage() {
       setEditingCycleField(null);
       setEditValue('');
       toast.success('Cycle updated successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update cycle:', error);
-      toast.error('Failed to update cycle');
+      toast.error(error.message || 'Failed to update cycle');
     }
   };
 
@@ -171,9 +205,33 @@ export default function GoldenSheetPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold text-gray-900">Golden Sheet</h1>
-          <p className="text-gray-600">{cycle.monthLabel} Payroll Cycle</p>
+          {editingCycleField === 'monthLabel' ? (
+            <div className="flex gap-2 items-center mt-1">
+              <Input
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                className="w-64"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCycleFieldSave();
+                  if (e.key === 'Escape') handleCycleFieldCancel();
+                }}
+                autoFocus
+                placeholder="Month Label (e.g., January 2024)"
+              />
+              <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+              <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+            </div>
+          ) : (
+            <p 
+              className="text-gray-600 cursor-pointer hover:text-gray-900 hover:underline mt-1"
+              onClick={() => handleCycleFieldEdit('monthLabel', cycle.monthLabel)}
+              title="Click to rename cycle"
+            >
+              {cycle.monthLabel} Payroll Cycle
+            </p>
+          )}
         </div>
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -209,6 +267,20 @@ export default function GoldenSheetPage() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+
+      {/* Previous Month Funding Date Alert */}
+      {previousMonthFundingInfo && (
+        <Alert className="border-blue-200 bg-blue-50/50">
+          <Calendar className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-900 font-medium">
+            Payoneer Funding Expected
+          </AlertTitle>
+          <AlertDescription className="text-blue-800 mt-1">
+            Funding from <span className="font-semibold">{previousMonthFundingInfo.monthLabel}</span> cycle is expected to clear on{' '}
+            <span className="font-bold">{formatDate(previousMonthFundingInfo.fundingDate)}</span>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Workflow Tracker */}
       <WorkflowTracker 

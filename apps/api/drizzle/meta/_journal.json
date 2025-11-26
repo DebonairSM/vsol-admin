@@ -141,6 +141,13 @@
       "when": 1764015730329,
       "tag": "0019_brief_scourge",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1764163417483,
+      "tag": "0020_mute_shotgun",
+      "breakpoints": true
     }
   ]
 }

@@ -7,7 +7,7 @@ export class CycleService {
   static async getAll() {
     return db.query.payrollCycles.findMany({
       where: isNull(payrollCycles.archivedAt),
-      orderBy: (cycles, { desc }) => [desc(cycles.monthLabel)]
+      orderBy: (cycles, { desc }) => [desc(cycles.createdAt)]
     });
   }
 
@@ -129,6 +129,12 @@ export class CycleService {
       updatedAt: new Date()
     };
     if (data.monthLabel !== undefined) updateData.monthLabel = data.monthLabel;
+    if (data.payoneerAccountFundedDate !== undefined) {
+      updateData.payoneerAccountFundedDate = data.payoneerAccountFundedDate ? new Date(data.payoneerAccountFundedDate) : null;
+    }
+    if (data.payoneerFundingDate !== undefined) {
+      updateData.payoneerFundingDate = data.payoneerFundingDate ? new Date(data.payoneerFundingDate) : null;
+    }
     if (data.calculatedPaymentDate !== undefined) {
       updateData.calculatedPaymentDate = data.calculatedPaymentDate ? new Date(data.calculatedPaymentDate) : null;
     }
