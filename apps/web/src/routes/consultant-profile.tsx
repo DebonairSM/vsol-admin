@@ -52,9 +52,27 @@ export default function ConsultantProfilePage() {
     }
   };
 
-  const handleDownloadDocument = (documentType: 'cnh' | 'address_proof') => {
-    const url = apiClient.getConsultantDocumentUrl(consultantId, documentType);
-    window.open(url, '_blank');
+  const handleDownloadDocument = async (documentType: 'cnh' | 'address_proof') => {
+    try {
+      const blob = await apiClient.downloadConsultantDocument(consultantId, documentType);
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Open in new tab
+      window.open(blobUrl, '_blank');
+      
+      // Clean up after a delay (give time for the tab to load)
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 1000);
+    } catch (error: any) {
+      console.error('Failed to download document:', error);
+      if (error.message?.includes('401') || error.message?.includes('Access token')) {
+        alert('Session expired. Please log in again.');
+        window.location.href = '/login';
+      } else {
+        alert(error.message || 'Failed to load document. Please try again.');
+      }
+    }
   };
 
   const handleGenerateContract = async () => {
@@ -148,48 +166,48 @@ export default function ConsultantProfilePage() {
               Basic Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-500">Name</label>
-                <p className="font-medium">{consultant.name}</p>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Name</label>
+                <p className="text-base font-semibold text-gray-900">{consultant.name}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Hourly Rate</label>
-                <p className="font-mono font-medium">{formatCurrency(consultant.hourlyRate)}</p>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Hourly Rate</label>
+                <p className="text-base font-mono font-semibold text-gray-900">{formatCurrency(consultant.hourlyRate)}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Start Date</label>
-                <p>{formatDate(consultant.startDate)}</p>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Start Date</label>
+                <p className="text-base text-gray-900">{formatDate(consultant.startDate)}</p>
               </div>
               {consultant.terminationDate && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Termination Date</label>
-                  <p>{formatDate(consultant.terminationDate)}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Termination Date</label>
+                  <p className="text-base text-gray-900">{formatDate(consultant.terminationDate)}</p>
                 </div>
               )}
               {consultant.email && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Email</label>
-                  <p>{consultant.email}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Email</label>
+                  <p className="text-base text-gray-900">{consultant.email}</p>
                 </div>
               )}
               {consultant.phone && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Phone</label>
-                  <p>{consultant.phone}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone</label>
+                  <p className="text-base text-gray-900">{consultant.phone}</p>
                 </div>
               )}
               {consultant.birthDate && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Birth Date</label>
-                  <p>{formatDate(consultant.birthDate)}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Birth Date</label>
+                  <p className="text-base text-gray-900">{formatDate(consultant.birthDate)}</p>
                 </div>
               )}
               {consultant.shirtSize && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Shirt Size</label>
-                  <p>{consultant.shirtSize}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Shirt Size</label>
+                  <p className="text-base text-gray-900">{consultant.shirtSize}</p>
                 </div>
               )}
             </div>
@@ -207,27 +225,27 @@ export default function ConsultantProfilePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {consultant.companyTradeName && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Trade Name</label>
-                  <p className="font-medium">{consultant.companyTradeName}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Trade Name</label>
+                  <p className="text-base font-semibold text-gray-900">{consultant.companyTradeName}</p>
                 </div>
               )}
               {consultant.companyLegalName && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Legal Name</label>
-                  <p>{consultant.companyLegalName}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Legal Name</label>
+                  <p className="text-base text-gray-900">{consultant.companyLegalName}</p>
                 </div>
               )}
               {consultant.cnpj && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">CNPJ</label>
-                  <p className="font-mono">{consultant.cnpj}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">CNPJ</label>
+                  <p className="text-base font-mono text-gray-900">{consultant.cnpj}</p>
                 </div>
               )}
               {consultant.payoneerID && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Payoneer ID</label>
-                  <p className="font-mono text-blue-600">{consultant.payoneerID}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Payoneer ID</label>
+                  <p className="text-base font-mono font-semibold text-blue-600">{consultant.payoneerID}</p>
                 </div>
               )}
             </CardContent>
@@ -243,19 +261,31 @@ export default function ConsultantProfilePage() {
                 Address
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3">
               {consultant.address && (
-                <p>{consultant.address}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Street Address</label>
+                  <p className="text-base text-gray-900">{consultant.address}</p>
+                </div>
               )}
               {consultant.neighborhood && (
-                <p className="text-gray-600">{consultant.neighborhood}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Neighborhood</label>
+                  <p className="text-base text-gray-900">{consultant.neighborhood}</p>
+                </div>
               )}
-              <div className="flex gap-2">
-                {consultant.city && <span>{consultant.city}</span>}
-                {consultant.state && <span>- {consultant.state}</span>}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">City & State</label>
+                <div className="flex gap-2">
+                  {consultant.city && <span className="text-base text-gray-900">{consultant.city}</span>}
+                  {consultant.state && <span className="text-base text-gray-900">- {consultant.state}</span>}
+                </div>
               </div>
               {consultant.cep && (
-                <p className="text-sm text-gray-500">CEP: {consultant.cep}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">CEP</label>
+                  <p className="text-base font-mono text-gray-900">{consultant.cep}</p>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -270,23 +300,23 @@ export default function ConsultantProfilePage() {
                 Emergency Contact
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-4">
               {consultant.emergencyContactName && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Name</label>
-                  <p>{consultant.emergencyContactName}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Name</label>
+                  <p className="text-base font-semibold text-gray-900">{consultant.emergencyContactName}</p>
                 </div>
               )}
               {consultant.emergencyContactRelation && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Relation</label>
-                  <p>{consultant.emergencyContactRelation}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Relation</label>
+                  <p className="text-base text-gray-900">{consultant.emergencyContactRelation}</p>
                 </div>
               )}
               {consultant.emergencyContactPhone && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Phone</label>
-                  <p>{consultant.emergencyContactPhone}</p>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone</label>
+                  <p className="text-base text-gray-900">{consultant.emergencyContactPhone}</p>
                 </div>
               )}
             </CardContent>
@@ -305,15 +335,15 @@ export default function ConsultantProfilePage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {consultant.cpf && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">CPF</label>
-                    <p className="font-mono">{consultant.cpf}</p>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">CPF</label>
+                    <p className="text-base font-mono text-gray-900">{consultant.cpf}</p>
                   </div>
                 )}
                 
                 {consultant.cnhPhotoPath && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">CNH Photo</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">CNH Photo</label>
                     <Button
                       variant="outline"
                       size="sm"
@@ -327,8 +357,8 @@ export default function ConsultantProfilePage() {
                 )}
                 
                 {consultant.addressProofPhotoPath && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Address Proof</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Address Proof</label>
                     <Button
                       variant="outline"
                       size="sm"
@@ -366,15 +396,15 @@ export default function ConsultantProfilePage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {consultant.bonusMonth && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Bonus Month</label>
-                    <p className="font-medium">{formatMonthName(consultant.bonusMonth) || 'Not set'}</p>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Bonus Month</label>
+                    <p className="text-base font-semibold text-gray-900">{formatMonthName(consultant.bonusMonth) || 'Not set'}</p>
                   </div>
                 )}
                 {consultant.yearlyBonus && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Yearly Bonus</label>
-                    <p className="font-mono font-medium">{formatCurrency(consultant.yearlyBonus)}</p>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Yearly Bonus</label>
+                    <p className="text-base font-mono font-semibold text-gray-900">{formatCurrency(consultant.yearlyBonus)}</p>
                   </div>
                 )}
               </div>

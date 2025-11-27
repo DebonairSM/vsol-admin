@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UpdateConsultantRequest } from '@vsol-admin/shared';
-import { ArrowLeft, Save, X } from 'lucide-react';
+import { ArrowLeft, Save, X, Upload, CheckCircle2, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import EquipmentManagement from '@/components/equipment-management';
 import TerminationWorkflow from '@/components/termination-workflow';
 import { getMonthsList } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ConsultantEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,10 +22,12 @@ export default function ConsultantEditPage() {
   const { data: consultant, isLoading, error } = useConsultantProfile(consultantId);
   const updateProfile = useUpdateConsultantProfile();
   const uploadDocument = useUploadConsultantDocument();
+  const { toast } = useToast();
 
   const [formState, setFormState] = useState<UpdateConsultantRequest>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState<'cnh' | 'address_proof' | null>(null);
 
   // Helper function to safely convert date to YYYY-MM-DD format
   const formatDateForInput = (dateValue: any): string | undefined => {
@@ -149,10 +152,48 @@ export default function ConsultantEditPage() {
   };
 
   const handleFileUpload = async (documentType: 'cnh' | 'address_proof', file: File) => {
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'File size must be less than 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Only JPEG and PNG files are allowed',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingDocument(documentType);
     try {
       await uploadDocument.mutateAsync({ consultantId, documentType, file });
-    } catch (error) {
+      toast({
+        title: 'Document uploaded successfully',
+        description: `${documentType === 'cnh' ? 'CNH' : 'Address proof'} photo has been saved.`,
+      });
+      // Reset file input
+      const input = document.getElementById(documentType === 'cnh' ? 'cnhPhoto' : 'addressProofPhoto') as HTMLInputElement;
+      if (input) {
+        input.value = '';
+      }
+    } catch (error: any) {
       console.error('Failed to upload document:', error);
+      toast({
+        title: 'Upload failed',
+        description: error?.response?.data?.message || error?.message || 'Failed to upload document. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingDocument(null);
     }
   };
 
@@ -446,34 +487,64 @@ export default function ConsultantEditPage() {
               
               <div>
                 <Label htmlFor="cnhPhoto">CNH Photo</Label>
-                <Input
-                  id="cnhPhoto"
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleFileUpload('cnh', file);
-                    }
-                  }}
-                />
-                <p className="text-sm text-gray-500 mt-1">Formats: JPEG, PNG (max. 5MB)</p>
+                <div className="space-y-2">
+                  {consultant.cnhPhotoPath && (
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Document uploaded</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="cnhPhoto"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleFileUpload('cnh', file);
+                        }
+                      }}
+                      disabled={uploadingDocument === 'cnh'}
+                      className="flex-1"
+                    />
+                    {uploadingDocument === 'cnh' && (
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500">Formats: JPEG, PNG (max. 5MB)</p>
+                </div>
               </div>
               
               <div>
                 <Label htmlFor="addressProofPhoto">Address Proof Photo</Label>
-                <Input
-                  id="addressProofPhoto"
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleFileUpload('address_proof', file);
-                    }
-                  }}
-                />
-                <p className="text-sm text-gray-500 mt-1">Formats: JPEG, PNG (max. 5MB)</p>
+                <div className="space-y-2">
+                  {consultant.addressProofPhotoPath && (
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Document uploaded</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="addressProofPhoto"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleFileUpload('address_proof', file);
+                        }
+                      }}
+                      disabled={uploadingDocument === 'address_proof'}
+                      className="flex-1"
+                    />
+                    {uploadingDocument === 'address_proof' && (
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-500">Formats: JPEG, PNG (max. 5MB)</p>
+                </div>
               </div>
             </div>
           </CardContent>

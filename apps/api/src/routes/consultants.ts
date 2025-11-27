@@ -3,6 +3,7 @@ import { ConsultantService } from '../services/consultant-service';
 import { EquipmentService } from '../services/equipment-service';
 import { TerminationService } from '../services/termination-service';
 import { DocumentService } from '../services/document-service';
+import { ContractService } from '../services/contract-service';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
@@ -40,6 +41,34 @@ router.get('/active', async (req, res, next) => {
     next(error);
   }
 });
+
+// GET /api/consultants/:id/contract - Generate and download Master Services Agreement contract
+// NOTE: This must come before /:id route to avoid route matching conflicts
+router.get('/:id/contract',
+  auditMiddleware('GENERATE_CONTRACT', 'consultant'),
+  async (req, res, next) => {
+    try {
+      const consultantId = parseInt(req.params.id);
+      
+      // Get consultant data
+      const consultant = await ConsultantService.getById(consultantId);
+      
+      // Generate contract text (service will validate required fields)
+      const contractText = ContractService.generateContract(consultant);
+      const filename = ContractService.generateContractFilename(consultant);
+      
+      // Set headers for text file download
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', Buffer.byteLength(contractText, 'utf8'));
+      
+      // Send contract text
+      res.send(contractText);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 // GET /api/consultants/:id
 router.get('/:id', async (req, res, next) => {
