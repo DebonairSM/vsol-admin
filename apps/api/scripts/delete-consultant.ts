@@ -74,8 +74,9 @@ async function deleteConsultant(consultantId: number) {
 const consultantId = process.argv[2] ? parseInt(process.argv[2], 10) : null;
 
 if (!consultantId || isNaN(consultantId)) {
-  console.error('❌ Usage: tsx scripts/delete-consultant.ts <consultant-id>');
+  console.error('❌ Usage: tsx scripts/delete-consultant.ts [consultant-id]');
   console.error('   Example: tsx scripts/delete-consultant.ts 7');
+  console.error('   Note: Replace [consultant-id] with the actual numeric ID');
   process.exit(1);
 }
 
@@ -83,3 +84,4 @@ deleteConsultant(consultantId).catch((error) => {
   console.error('Unhandled error:', error);
   process.exit(1);
 });
+

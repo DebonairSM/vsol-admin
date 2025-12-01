@@ -69,14 +69,25 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   const [selectedConsultantId, setSelectedConsultantId] = useState<number | null>(
     workflow?.bonusRecipientConsultantId || null
   );
+  // Helper to convert UTC date to date input string (YYYY-MM-DD)
+  const utcDateToInputString = (date: Date | string | null | undefined): string => {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    // Extract UTC date components to avoid timezone shifts
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [announcementDate, setAnnouncementDate] = useState<string>(
     workflow?.bonusAnnouncementDate 
-      ? new Date(workflow.bonusAnnouncementDate).toISOString().split('T')[0]
+      ? utcDateToInputString(workflow.bonusAnnouncementDate)
       : ''
   );
   const [paymentDate, setPaymentDate] = useState<string>(
     workflow?.bonusPaymentDate 
-      ? new Date(workflow.bonusPaymentDate).toISOString().split('T')[0]
+      ? utcDateToInputString(workflow.bonusPaymentDate)
       : ''
   );
   const [emailSubject, setEmailSubject] = useState('');
@@ -89,16 +100,8 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   useEffect(() => {
     if (workflow) {
       setSelectedConsultantId(workflow.bonusRecipientConsultantId || null);
-      setAnnouncementDate(
-        workflow.bonusAnnouncementDate 
-          ? new Date(workflow.bonusAnnouncementDate).toISOString().split('T')[0]
-          : ''
-      );
-      setPaymentDate(
-        workflow.bonusPaymentDate 
-          ? new Date(workflow.bonusPaymentDate).toISOString().split('T')[0]
-          : ''
-      );
+      setAnnouncementDate(utcDateToInputString(workflow.bonusAnnouncementDate));
+      setPaymentDate(utcDateToInputString(workflow.bonusPaymentDate));
       setEmailContent(workflow.emailContent || '');
       setNotes(workflow.notes || '');
       setEmailGenerated(workflow.emailGenerated || false);

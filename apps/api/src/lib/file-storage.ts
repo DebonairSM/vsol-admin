@@ -144,7 +144,7 @@ export class FileStorageService {
     
     // Validate check digits
     const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-    const weights2 = [6, 7, 8, 9, 2, 3, 4, 5, 6, 7, 8, 9];
+    const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
     
     let sum = 0;
     for (let i = 0; i < 12; i++) {

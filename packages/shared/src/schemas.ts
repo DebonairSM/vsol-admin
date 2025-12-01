@@ -48,7 +48,7 @@ const validateCNPJ = (cnpj: string): boolean => {
   if (/^(.)\1*$/.test(cleanCNPJ)) return false;
   
   const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  const weights2 = [6, 7, 8, 9, 2, 3, 4, 5, 6, 7, 8, 9];
+  const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
   
   let sum = 0;
   for (let i = 0; i < 12; i++) {
@@ -133,10 +133,25 @@ export const updateConsultantSchema = z.object({
     (val) => {
       // Normalize: convert empty string to null
       if (val === '' || val === null || val === undefined) return null;
+      // Strip formatting to normalize the value
+      if (typeof val === 'string') {
+        const cleaned = val.replace(/\D/g, '');
+        // If empty after cleaning, return null
+        if (cleaned === '') return null;
+        // Return cleaned value for validation
+        return cleaned;
+      }
       return val;
     },
     z.union([
-      z.string().refine(validateCNPJ, 'Invalid CNPJ format'),
+      z.string().refine((val) => {
+        // If we have exactly 14 digits, validate the CNPJ format and check digits
+        if (val.length === 14) {
+          return validateCNPJ(val);
+        }
+        // Reject incomplete CNPJs (must be exactly 14 digits or null)
+        return false;
+      }, 'Invalid CNPJ format. CNPJ must have exactly 14 digits with valid check digits.'),
       z.null()
     ]).optional()
   ),

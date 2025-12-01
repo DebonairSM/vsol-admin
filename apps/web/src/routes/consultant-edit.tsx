@@ -197,7 +197,14 @@ export default function ConsultantEditPage() {
       // Company Data
       if (formState.companyLegalName !== undefined) dataToUpdate.companyLegalName = toNullIfEmpty(formState.companyLegalName);
       if (formState.companyTradeName !== undefined) dataToUpdate.companyTradeName = toNullIfEmpty(formState.companyTradeName);
-      if (formState.cnpj !== undefined) dataToUpdate.cnpj = toNullIfEmpty(formState.cnpj);
+      if (formState.cnpj !== undefined) {
+        const cnpjValue = toNullIfEmpty(formState.cnpj);
+        // If CNPJ has a value, strip formatting to send only digits
+        // The API validation will handle the validation, but we normalize the format
+        dataToUpdate.cnpj = cnpjValue && typeof cnpjValue === 'string' 
+          ? cnpjValue.replace(/\D/g, '') || null 
+          : cnpjValue;
+      }
       if (formState.payoneerID !== undefined) dataToUpdate.payoneerID = toNullIfEmpty(formState.payoneerID);
       
       // Emergency Contact

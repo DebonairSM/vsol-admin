@@ -15,7 +15,16 @@ export function formatCurrency(amount: number): string {
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return ''
   const d = typeof date === 'string' ? new Date(date) : date
-  return d.toLocaleDateString('en-US', {
+  // Extract date components from UTC to avoid timezone shifts
+  // Dates are stored as UTC (GMT) and should display the UTC date, not local date
+  const utcYear = d.getUTCFullYear()
+  const utcMonth = d.getUTCMonth()
+  const utcDay = d.getUTCDate()
+  
+  // Create a date object in local timezone with the UTC date components
+  // This ensures the date displays correctly regardless of timezone
+  const localDate = new Date(utcYear, utcMonth, utcDay)
+  return localDate.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'

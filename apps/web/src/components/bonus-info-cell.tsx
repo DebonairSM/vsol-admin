@@ -20,10 +20,21 @@ interface BonusInfoCellProps {
 }
 
 export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRecipientConsultantId, onUpdate }: BonusInfoCellProps) {
+  // Helper to convert UTC date to date input string (YYYY-MM-DD)
+  const utcDateToInputString = (date: Date | string | null | undefined): string => {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    // Extract UTC date components to avoid timezone shifts
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
-    informedDate: lineItem.informedDate ? new Date(lineItem.informedDate).toISOString().split('T')[0] : '',
-    bonusPaydate: lineItem.bonusPaydate ? new Date(lineItem.bonusPaydate).toISOString().split('T')[0] : '',
+    informedDate: utcDateToInputString(lineItem.informedDate),
+    bonusPaydate: utcDateToInputString(lineItem.bonusPaydate),
   });
 
   // Check if this consultant is the bonus recipient
@@ -34,8 +45,16 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
       const updatePayload: Record<string, any> = {};
       
       // Only allow editing bonusPaydate, not informedDate (which is synced from workflow)
-      if (editData.bonusPaydate !== (lineItem.bonusPaydate ? new Date(lineItem.bonusPaydate).toISOString().split('T')[0] : '')) {
-        updatePayload.bonusPaydate = editData.bonusPaydate ? new Date(editData.bonusPaydate).toISOString() : null;
+      const currentPaydate = utcDateToInputString(lineItem.bonusPaydate);
+      if (editData.bonusPaydate !== currentPaydate) {
+        // Convert date string to ISO string at noon UTC to avoid timezone issues
+        if (editData.bonusPaydate) {
+          const [year, month, day] = editData.bonusPaydate.split('-').map(Number);
+          const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+          updatePayload.bonusPaydate = date.toISOString();
+        } else {
+          updatePayload.bonusPaydate = null;
+        }
       }
 
       // Only update if there are changes
@@ -51,8 +70,8 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
 
   const handleCancel = () => {
     setEditData({
-      informedDate: lineItem.informedDate ? new Date(lineItem.informedDate).toISOString().split('T')[0] : '',
-      bonusPaydate: lineItem.bonusPaydate ? new Date(lineItem.bonusPaydate).toISOString().split('T')[0] : '',
+      informedDate: utcDateToInputString(lineItem.informedDate),
+      bonusPaydate: utcDateToInputString(lineItem.bonusPaydate),
     });
     setIsEditing(false);
   };
@@ -60,8 +79,8 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
   // Update editData when lineItem changes (for when workflow syncs the date)
   useEffect(() => {
     setEditData({
-      informedDate: lineItem.informedDate ? new Date(lineItem.informedDate).toISOString().split('T')[0] : '',
-      bonusPaydate: lineItem.bonusPaydate ? new Date(lineItem.bonusPaydate).toISOString().split('T')[0] : '',
+      informedDate: utcDateToInputString(lineItem.informedDate),
+      bonusPaydate: utcDateToInputString(lineItem.bonusPaydate),
     });
   }, [lineItem.informedDate, lineItem.bonusPaydate]);
 
