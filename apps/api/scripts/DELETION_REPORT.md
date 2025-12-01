@@ -67,3 +67,4 @@ For test data deletion, the script approach is correct. For production, consider
 - Using termination dates instead of deletion
 - Adding a "force delete" admin endpoint
 - Better error messages explaining why deletion is blocked
+

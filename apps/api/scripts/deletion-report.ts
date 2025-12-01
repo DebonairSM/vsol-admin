@@ -106,3 +106,4 @@ generateReport().catch(error => {
   console.error('ERROR generating report:', error);
   process.exit(1);
 });
+

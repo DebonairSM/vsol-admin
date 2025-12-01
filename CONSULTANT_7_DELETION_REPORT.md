@@ -112,3 +112,4 @@ This is **intentional data protection**:
 ## Conclusion
 
 The difficulty is **by design** - the system protects against accidental deletion. The script solution works but requires API server restart to take effect. This is expected behavior for a production system protecting financial data integrity.
+
