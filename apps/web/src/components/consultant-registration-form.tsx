@@ -69,7 +69,30 @@ export default function ConsultantRegistrationForm({ onSubmit, loading = false }
 
   const formatCNPJ = (value: string) => {
     const numbers = value.replace(/\D/g, '');
-    return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    
+    // If we have exactly 14 digits, format it as XX.XXX.XXX/XXXX-XX
+    if (numbers.length === 14) {
+      return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12, 14)}`;
+    }
+    
+    // Allow partial formatting while typing
+    if (numbers.length > 0 && numbers.length < 14) {
+      let formatted = '';
+      if (numbers.length > 0) formatted += numbers.slice(0, 2);
+      if (numbers.length > 2) formatted += '.' + numbers.slice(2, 5);
+      if (numbers.length > 5) formatted += '.' + numbers.slice(5, 8);
+      if (numbers.length > 8) formatted += '/' + numbers.slice(8, 12);
+      if (numbers.length > 12) formatted += '-' + numbers.slice(12, 14);
+      return formatted;
+    }
+    
+    // If more than 14 digits, take only first 14 and format
+    if (numbers.length > 14) {
+      const first14 = numbers.slice(0, 14);
+      return `${first14.slice(0, 2)}.${first14.slice(2, 5)}.${first14.slice(5, 8)}/${first14.slice(8, 12)}-${first14.slice(12, 14)}`;
+    }
+    
+    return value;
   };
 
   const formatPhone = (value: string) => {

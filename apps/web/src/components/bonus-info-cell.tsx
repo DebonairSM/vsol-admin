@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,10 +33,7 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
     try {
       const updatePayload: Record<string, any> = {};
       
-      // Convert dates back to ISO strings or null
-      if (editData.informedDate !== (lineItem.informedDate ? new Date(lineItem.informedDate).toISOString().split('T')[0] : '')) {
-        updatePayload.informedDate = editData.informedDate ? new Date(editData.informedDate).toISOString() : null;
-      }
+      // Only allow editing bonusPaydate, not informedDate (which is synced from workflow)
       if (editData.bonusPaydate !== (lineItem.bonusPaydate ? new Date(lineItem.bonusPaydate).toISOString().split('T')[0] : '')) {
         updatePayload.bonusPaydate = editData.bonusPaydate ? new Date(editData.bonusPaydate).toISOString() : null;
       }
@@ -59,6 +56,14 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
     });
     setIsEditing(false);
   };
+
+  // Update editData when lineItem changes (for when workflow syncs the date)
+  useEffect(() => {
+    setEditData({
+      informedDate: lineItem.informedDate ? new Date(lineItem.informedDate).toISOString().split('T')[0] : '',
+      bonusPaydate: lineItem.bonusPaydate ? new Date(lineItem.bonusPaydate).toISOString().split('T')[0] : '',
+    });
+  }, [lineItem.informedDate, lineItem.bonusPaydate]);
 
   const hasAnyBonusData = lineItem.informedDate || lineItem.bonusPaydate;
 
@@ -125,21 +130,11 @@ export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRec
                     id="informedDate"
                     type="date"
                     value={editData.informedDate}
-                    onChange={(e) => setEditData(prev => ({ ...prev, informedDate: e.target.value }))}
-                    className="text-xs flex-1"
+                    disabled
+                    className="text-xs flex-1 bg-gray-50 cursor-not-allowed"
                   />
-                  {editData.informedDate && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setEditData(prev => ({ ...prev, informedDate: '' }))}
-                      className="flex-shrink-0 h-9 w-9"
-                      title="Clear date"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
                 </div>
+                <p className="text-xs text-gray-500">Set in Bonus Workflow</p>
               </div>
 
               <div className="space-y-2">

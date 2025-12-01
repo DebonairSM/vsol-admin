@@ -18,7 +18,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
+import { useCountdown } from '@/hooks/use-countdown';
 import { useState, useMemo } from 'react';
 import { Trash2, X, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,6 +29,54 @@ import BonusWorkflowSection from '@/components/bonus-workflow-section';
 import AdditionalPaidModal from '@/components/additional-paid-modal';
 import { parseMonthLabel, getPreviousMonthLabel } from '@/lib/business-days';
 import { getWorkHoursForMonthByNumber } from '@/lib/work-hours';
+import { Clock } from 'lucide-react';
+
+interface FundingDateAlertProps {
+  fundingInfo: {
+    cycle: any;
+    fundingDate: Date | string;
+    monthLabel: string;
+  };
+}
+
+function FundingDateAlert({ fundingInfo }: FundingDateAlertProps) {
+  const countdown = useCountdown(fundingInfo.fundingDate);
+
+  return (
+    <Alert className="border-blue-200 bg-blue-50/50">
+      <Calendar className="h-4 w-4 text-blue-600" />
+      <AlertTitle className="text-blue-900 font-medium">
+        Payoneer Funding Expected
+      </AlertTitle>
+      <AlertDescription className="text-blue-800 mt-1 space-y-2">
+        <div>
+          Funding from <span className="font-semibold">{fundingInfo.monthLabel}</span> cycle is expected to clear on{' '}
+          <span className="font-bold">{formatDateTime(fundingInfo.fundingDate)}</span>
+        </div>
+        {countdown && (
+          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-blue-200">
+            <Clock className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium">
+              {countdown.isExpired ? (
+                <span className="text-red-600">Funding date has passed</span>
+              ) : (
+                <>
+                  <span className="font-bold">
+                    {countdown.days > 0 && `${countdown.days}d `}
+                    {countdown.hours > 0 && `${countdown.hours}h `}
+                    {countdown.minutes > 0 && `${countdown.minutes}m `}
+                    {countdown.seconds}s
+                  </span>
+                  {' '}remaining
+                </>
+              )}
+            </span>
+          </div>
+        )}
+      </AlertDescription>
+    </Alert>
+  );
+}
 
 export default function GoldenSheetPage() {
   const { id } = useParams<{ id: string }>();
@@ -67,12 +116,11 @@ export default function GoldenSheetPage() {
     if (!previousCycle || !previousCycle.payoneerFundingDate) return null;
     
     const fundingDate = new Date(previousCycle.payoneerFundingDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    fundingDate.setHours(0, 0, 0, 0);
+    const now = new Date();
     
-    // Only show if funding date is in the future
-    if (fundingDate < today) return null;
+    // Show alert if funding date is in the future or within the last 24 hours (to show countdown even if slightly past)
+    const hoursUntilFunding = (fundingDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    if (hoursUntilFunding < -24) return null;
     
     return {
       cycle: previousCycle,
@@ -269,18 +317,7 @@ export default function GoldenSheetPage() {
       </div>
 
       {/* Previous Month Funding Date Alert */}
-      {previousMonthFundingInfo && (
-        <Alert className="border-blue-200 bg-blue-50/50">
-          <Calendar className="h-4 w-4 text-blue-600" />
-          <AlertTitle className="text-blue-900 font-medium">
-            Payoneer Funding Expected
-          </AlertTitle>
-          <AlertDescription className="text-blue-800 mt-1">
-            Funding from <span className="font-semibold">{previousMonthFundingInfo.monthLabel}</span> cycle is expected to clear on{' '}
-            <span className="font-bold">{formatDate(previousMonthFundingInfo.fundingDate)}</span>
-          </AlertDescription>
-        </Alert>
-      )}
+      {previousMonthFundingInfo && <FundingDateAlert fundingInfo={previousMonthFundingInfo} />}
 
       {/* Workflow Tracker */}
       <WorkflowTracker 

@@ -68,21 +68,11 @@ export class LineItemService {
     if (data.invoiceSent !== undefined) updateData.invoiceSent = data.invoiceSent;
     if (data.adjustmentValue !== undefined) updateData.adjustmentValue = validateNumber(data.adjustmentValue, 'adjustmentValue');
     if (data.informedDate !== undefined) {
-      updateData.informedDate = data.informedDate ? new Date(data.informedDate) : null;
-      
-      // Sync to workflow's bonusAnnouncementDate if this consultant is the bonus recipient
-      const workflow = await db.query.bonusWorkflows.findFirst({
-        where: eq(bonusWorkflows.cycleId, existing.cycleId)
-      });
-      
-      if (workflow && workflow.bonusRecipientConsultantId === existing.consultantId) {
-        await db.update(bonusWorkflows)
-          .set({
-            bonusAnnouncementDate: updateData.informedDate,
-            updatedAt: new Date()
-          })
-          .where(eq(bonusWorkflows.cycleId, existing.cycleId));
-      }
+      // Prevent editing informedDate from line item - it should only be set via bonus workflow
+      // The workflow syncs to the line item, not the other way around
+      throw new ValidationError(
+        'Bonus announcement date can only be set in the Bonus Workflow. It will automatically sync to the line item.'
+      );
     }
     if (data.bonusPaydate !== undefined) {
       updateData.bonusPaydate = data.bonusPaydate ? new Date(data.bonusPaydate) : null;

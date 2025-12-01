@@ -75,7 +75,13 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
       if (cycle.payoneerFundingDate) {
         const fundingDate = new Date(cycle.payoneerFundingDate);
         const localFundingDate = new Date(fundingDate.getTime() - (fundingDate.getTimezoneOffset() * 60000));
-        setEditFundingDate(localFundingDate.toISOString().split('T')[0]);
+        // Format as datetime-local string (YYYY-MM-DDTHH:mm)
+        const year = localFundingDate.getFullYear();
+        const month = String(localFundingDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localFundingDate.getDate()).padStart(2, '0');
+        const hours = String(localFundingDate.getHours()).padStart(2, '0');
+        const minutes = String(localFundingDate.getMinutes()).padStart(2, '0');
+        setEditFundingDate(`${year}-${month}-${day}T${hours}:${minutes}`);
       } else {
         setEditFundingDate('');
       }
@@ -102,7 +108,8 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
         
         let fundingDateToSave = null;
         if (editFundingDate) {
-          const localFundingDate = new Date(editFundingDate + 'T12:00:00');
+          // editFundingDate is in datetime-local format (YYYY-MM-DDTHH:mm)
+          const localFundingDate = new Date(editFundingDate);
           fundingDateToSave = localFundingDate.toISOString();
         }
         await onUpdateWorkflowDate('payoneerFundingDate', fundingDateToSave);
@@ -151,7 +158,8 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
         
         // Funding date is optional, only save if provided
         if (editFundingDate) {
-          const localFundingDate = new Date(editFundingDate + 'T12:00:00');
+          // editFundingDate is in datetime-local format (YYYY-MM-DDTHH:mm)
+          const localFundingDate = new Date(editFundingDate);
           await onUpdateWorkflowDate('payoneerFundingDate', localFundingDate.toISOString());
         }
         
@@ -486,17 +494,17 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor="fundingDate" className="text-xs">
-                                  Funding Date
+                                  Funding Date & Time
                                 </Label>
                                 <Input
                                   id="fundingDate"
-                                  type="date"
+                                  type="datetime-local"
                                   value={editFundingDate}
                                   onChange={(e) => setEditFundingDate(e.target.value)}
                                   className="text-sm"
                                 />
                                 <p className="text-xs text-gray-500">
-                                  Expected date when the deposit will clear in Payoneer account
+                                  Expected date and time when the deposit will clear in Payoneer account
                                 </p>
                               </div>
                             </div>

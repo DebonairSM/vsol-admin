@@ -117,7 +117,30 @@ export default function ConsultantEditPage() {
 
   const formatCNPJ = (value: string) => {
     const numbers = value.replace(/\D/g, '');
-    return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    
+    // If we have exactly 14 digits, format it as XX.XXX.XXX/XXXX-XX
+    if (numbers.length === 14) {
+      return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12, 14)}`;
+    }
+    
+    // Allow partial formatting while typing
+    if (numbers.length > 0 && numbers.length < 14) {
+      let formatted = '';
+      if (numbers.length > 0) formatted += numbers.slice(0, 2);
+      if (numbers.length > 2) formatted += '.' + numbers.slice(2, 5);
+      if (numbers.length > 5) formatted += '.' + numbers.slice(5, 8);
+      if (numbers.length > 8) formatted += '/' + numbers.slice(8, 12);
+      if (numbers.length > 12) formatted += '-' + numbers.slice(12, 14);
+      return formatted;
+    }
+    
+    // If more than 14 digits, take only first 14 and format
+    if (numbers.length > 14) {
+      const first14 = numbers.slice(0, 14);
+      return `${first14.slice(0, 2)}.${first14.slice(2, 5)}.${first14.slice(5, 8)}/${first14.slice(8, 12)}-${first14.slice(12, 14)}`;
+    }
+    
+    return value;
   };
 
   const formatPhone = (value: string) => {
@@ -137,17 +160,87 @@ export default function ConsultantEditPage() {
     e.preventDefault();
     
     try {
-      // Convert birthDate back to ISO string if it exists
-      const dataToUpdate = { ...formState };
-      if (dataToUpdate.birthDate) {
-        dataToUpdate.birthDate = new Date(dataToUpdate.birthDate).toISOString();
+      // Prepare data for submission - convert empty strings to null for nullable fields
+      const dataToUpdate: UpdateConsultantRequest = {};
+      
+      // Basic fields
+      if (formState.name !== undefined) dataToUpdate.name = formState.name;
+      if (formState.hourlyRate !== undefined) dataToUpdate.hourlyRate = formState.hourlyRate;
+      if (formState.terminationDate !== undefined) {
+        dataToUpdate.terminationDate = formState.terminationDate ? new Date(formState.terminationDate).toISOString() : null;
       }
+      if (formState.evaluationNotes !== undefined) {
+        dataToUpdate.evaluationNotes = formState.evaluationNotes || null;
+      }
+      
+      // Helper to convert empty strings to null
+      const toNullIfEmpty = (value: string | null | undefined): string | null | undefined => {
+        if (value === undefined) return undefined;
+        if (value === null) return null;
+        const trimmed = typeof value === 'string' ? value.trim() : value;
+        return trimmed === '' ? null : trimmed;
+      };
+      
+      // Personal Data - convert empty strings to null
+      if (formState.email !== undefined) dataToUpdate.email = toNullIfEmpty(formState.email);
+      if (formState.address !== undefined) dataToUpdate.address = toNullIfEmpty(formState.address);
+      if (formState.neighborhood !== undefined) dataToUpdate.neighborhood = toNullIfEmpty(formState.neighborhood);
+      if (formState.city !== undefined) dataToUpdate.city = toNullIfEmpty(formState.city);
+      if (formState.state !== undefined) dataToUpdate.state = toNullIfEmpty(formState.state);
+      if (formState.cep !== undefined) dataToUpdate.cep = toNullIfEmpty(formState.cep);
+      if (formState.phone !== undefined) dataToUpdate.phone = toNullIfEmpty(formState.phone);
+      if (formState.birthDate !== undefined) {
+        dataToUpdate.birthDate = formState.birthDate ? new Date(formState.birthDate).toISOString() : null;
+      }
+      if (formState.shirtSize !== undefined) dataToUpdate.shirtSize = formState.shirtSize || null;
+      
+      // Company Data
+      if (formState.companyLegalName !== undefined) dataToUpdate.companyLegalName = toNullIfEmpty(formState.companyLegalName);
+      if (formState.companyTradeName !== undefined) dataToUpdate.companyTradeName = toNullIfEmpty(formState.companyTradeName);
+      if (formState.cnpj !== undefined) dataToUpdate.cnpj = toNullIfEmpty(formState.cnpj);
+      if (formState.payoneerID !== undefined) dataToUpdate.payoneerID = toNullIfEmpty(formState.payoneerID);
+      
+      // Emergency Contact
+      if (formState.emergencyContactName !== undefined) dataToUpdate.emergencyContactName = toNullIfEmpty(formState.emergencyContactName);
+      if (formState.emergencyContactRelation !== undefined) dataToUpdate.emergencyContactRelation = toNullIfEmpty(formState.emergencyContactRelation);
+      if (formState.emergencyContactPhone !== undefined) dataToUpdate.emergencyContactPhone = toNullIfEmpty(formState.emergencyContactPhone);
+      
+      // Documents
+      if (formState.cpf !== undefined) dataToUpdate.cpf = toNullIfEmpty(formState.cpf);
+      
+      // Bonus
+      if (formState.bonusMonth !== undefined) dataToUpdate.bonusMonth = formState.bonusMonth || null;
       
       await updateProfile.mutateAsync({ id: consultantId, data: dataToUpdate });
       setHasChanges(false);
+      toast({
+        title: 'Success',
+        description: 'Consultant profile updated successfully.',
+      });
       navigate(`/consultants/${consultantId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update consultant:', error);
+      
+      // Extract validation details if available
+      const errorData = error?.response?.data;
+      let errorMessage = error?.message || 'Failed to update consultant';
+      
+      if (errorData?.details && Array.isArray(errorData.details)) {
+        console.log('Validation error details:', JSON.stringify(errorData.details, null, 2));
+        const validationErrors = errorData.details.map((err: any) => 
+          `${err.path.join('.')}: ${err.message}`
+        ).join(', ');
+        errorMessage = `Validation failed: ${validationErrors}`;
+      } else if (errorData?.error) {
+        errorMessage = errorData.error;
+      }
+      console.log('Full error response:', JSON.stringify(errorData, null, 2));
+      
+      toast({
+        title: 'Update failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     }
   };
 

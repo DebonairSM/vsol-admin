@@ -27,9 +27,15 @@ export function useUpdateBonusWorkflow(cycleId: number) {
 
   return useMutation({
     mutationFn: (data: UpdateBonusWorkflowRequest) => apiClient.updateBonusWorkflow(cycleId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bonus-workflow', cycleId] });
-      queryClient.invalidateQueries({ queryKey: ['lines', cycleId] });
+    onSuccess: async () => {
+      // Invalidate and refetch to ensure fresh data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['bonus-workflow', cycleId] }),
+        queryClient.invalidateQueries({ queryKey: ['cycles', cycleId, 'lines'] }),
+        queryClient.invalidateQueries({ queryKey: ['cycles', cycleId] })
+      ]);
+      // Force refetch to ensure UI updates immediately
+      await queryClient.refetchQueries({ queryKey: ['cycles', cycleId, 'lines'] });
     }
   });
 }

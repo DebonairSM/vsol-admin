@@ -22,6 +22,19 @@ export function formatDate(date: Date | string | null | undefined): string {
   })
 }
 
+export function formatDateTime(date: Date | string | null | undefined): string {
+  if (!date) return ''
+  const d = typeof date === 'string' ? new Date(date) : date
+  return d.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  })
+}
+
 export function isSameDate(date1: Date | string | null | undefined, date2: Date | string | null | undefined): boolean {
   if (!date1 || !date2) return false
   

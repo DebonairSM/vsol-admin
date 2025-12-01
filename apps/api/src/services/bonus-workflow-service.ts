@@ -108,6 +108,29 @@ export class BonusWorkflowService {
       if (existing.bonusRecipientConsultantId !== null && 
           data.bonusRecipientConsultantId !== existing.bonusRecipientConsultantId) {
         await this.clearBonusFieldsFromOtherConsultants(cycleId, data.bonusRecipientConsultantId);
+        
+        // If there's an existing announcement date, sync it to the new recipient's line item
+        const announcementDateToSync = data.bonusAnnouncementDate !== undefined 
+          ? (data.bonusAnnouncementDate ? new Date(data.bonusAnnouncementDate) : null)
+          : existing.bonusAnnouncementDate;
+        
+        if (announcementDateToSync && newRecipientId !== null) {
+          const recipientLineItem = await db.query.cycleLineItems.findFirst({
+            where: and(
+              eq(cycleLineItems.cycleId, cycleId),
+              eq(cycleLineItems.consultantId, newRecipientId)
+            )
+          });
+          
+          if (recipientLineItem) {
+            await db.update(cycleLineItems)
+              .set({
+                informedDate: announcementDateToSync,
+                updatedAt: new Date()
+              })
+              .where(eq(cycleLineItems.id, recipientLineItem.id));
+          }
+        }
       }
     }
     if (data.bonusAnnouncementDate !== undefined) {

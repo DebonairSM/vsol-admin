@@ -455,7 +455,10 @@ async function migrate(): Promise<void> {
       }
       
       if (!consultant) {
-        if (!consultantData.hourlyRate) {
+        // Only set hourlyRate to 0 if creating a completely new consultant
+        // and no rate was extracted. Otherwise, try to preserve from existing data.
+        if (!consultantData.hourlyRate || consultantData.hourlyRate === 0) {
+          console.log('  ⚠️  No hourly rate found in document. Setting to 0 - must be set manually.');
           consultantData.hourlyRate = 0; // Will need to be set manually
         }
       
@@ -486,8 +489,14 @@ async function migrate(): Promise<void> {
         const updateData: Partial<UpdateConsultantRequest> = {};
         
         // Only include fields that were successfully extracted (don't overwrite with null)
+        // IMPORTANT: Never overwrite hourlyRate if it's not in the extracted data
         Object.keys(consultantData).forEach(key => {
           const value = consultantData[key as keyof UpdateConsultantRequest];
+          // Preserve existing hourlyRate if not extracted from document
+          if (key === 'hourlyRate' && (value === null || value === undefined || value === 0)) {
+            console.log(`  ⚠️  Skipping hourlyRate update to preserve existing rate: $${consultant.hourlyRate}`);
+            return;
+          }
           if (value !== null && value !== undefined && key !== 'name') {
             (updateData as any)[key] = value;
           }
@@ -506,8 +515,14 @@ async function migrate(): Promise<void> {
       const updateData: Partial<UpdateConsultantRequest> = {};
       
       // Only include fields that were successfully extracted (don't overwrite with null)
+      // IMPORTANT: Never overwrite hourlyRate if it's not in the extracted data
       Object.keys(consultantData).forEach(key => {
         const value = consultantData[key as keyof UpdateConsultantRequest];
+        // Preserve existing hourlyRate if not extracted from document
+        if (key === 'hourlyRate' && (value === null || value === undefined || value === 0)) {
+          console.log(`  ⚠️  Skipping hourlyRate update to preserve existing rate`);
+          return;
+        }
         if (value !== null && value !== undefined) {
           (updateData as any)[key] = value;
         }

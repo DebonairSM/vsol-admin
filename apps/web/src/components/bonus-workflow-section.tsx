@@ -162,10 +162,19 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
 
   const handleSave = async () => {
     try {
+      // Convert date string to ISO string at noon UTC to avoid timezone issues
+      const formatDateForAPI = (dateStr: string | null): string | null => {
+        if (!dateStr) return null;
+        // Create date at noon UTC to avoid timezone shifts
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+        return date.toISOString();
+      };
+
       await updateWorkflow.mutateAsync({
         bonusRecipientConsultantId: selectedConsultantId,
-        bonusAnnouncementDate: announcementDate ? new Date(announcementDate).toISOString() : null,
-        bonusPaymentDate: paymentDate ? new Date(paymentDate).toISOString() : null,
+        bonusAnnouncementDate: formatDateForAPI(announcementDate),
+        bonusPaymentDate: formatDateForAPI(paymentDate),
         emailContent,
         notes,
         emailGenerated,

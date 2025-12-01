@@ -88,7 +88,17 @@ export const createConsultantSchema = z.object({
   // Company Data
   companyLegalName: z.string().optional(),
   companyTradeName: z.string().optional(),
-  cnpj: z.string().refine(validateCNPJ, 'Invalid CNPJ format').optional(),
+  cnpj: z.string().optional().superRefine((val, ctx) => {
+    if (val === undefined || val === '') {
+      return; // Skip validation for empty/undefined values
+    }
+    if (!validateCNPJ(val)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Invalid CNPJ format'
+      });
+    }
+  }),
   payoneerID: z.string().optional(),
   // Emergency Contact
   emergencyContactName: z.string().optional(),
@@ -119,7 +129,17 @@ export const updateConsultantSchema = z.object({
   // Company Data
   companyLegalName: z.string().nullable().optional(),
   companyTradeName: z.string().nullable().optional(),
-  cnpj: z.string().refine(validateCNPJ, 'Invalid CNPJ format').nullable().optional(),
+  cnpj: z.preprocess(
+    (val) => {
+      // Normalize: convert empty string to null
+      if (val === '' || val === null || val === undefined) return null;
+      return val;
+    },
+    z.union([
+      z.string().refine(validateCNPJ, 'Invalid CNPJ format'),
+      z.null()
+    ]).optional()
+  ),
   payoneerID: z.string().nullable().optional(),
   // Emergency Contact
   emergencyContactName: z.string().nullable().optional(),
