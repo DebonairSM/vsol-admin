@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { BlurredValue } from '@/components/ui/blurred-value';
 import { formatCurrency, formatDate, formatMonthAbbr } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
 import { Link } from 'react-router-dom';
@@ -128,7 +129,7 @@ export default function ConsultantsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono">{formatCurrency(consultant.hourlyRate)}</TableCell>
+                      <TableCell className="font-mono"><BlurredValue>{formatCurrency(consultant.hourlyRate)}</BlurredValue></TableCell>
                       <TableCell>
                         {consultant.bonusMonth ? (
                           <span className="text-xs font-medium text-gray-700">{formatMonthAbbr(consultant.bonusMonth)}</span>

@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { BlurredValue } from '@/components/ui/blurred-value';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 import { useCountdown } from '@/hooks/use-countdown';
 import { useState, useMemo } from 'react';
@@ -407,7 +408,7 @@ export default function GoldenSheetPage() {
                           className="cursor-pointer hover:bg-gray-100 p-1 rounded"
                           onClick={() => handleCellEdit(line.id, 'adjustmentValue', line.adjustmentValue)}
                         >
-                          {line.adjustmentValue ? formatCurrency(line.adjustmentValue) : '-'}
+                          {line.adjustmentValue ? <BlurredValue>{formatCurrency(line.adjustmentValue)}</BlurredValue> : '-'}
                         </div>
                       )}
                     </TableCell>
@@ -470,7 +471,7 @@ export default function GoldenSheetPage() {
                           className="cursor-pointer hover:bg-gray-100 p-1 rounded"
                           onClick={() => handleCellEdit(line.id, 'bonusAdvance', line.bonusAdvance)}
                         >
-                          {line.bonusAdvance ? formatCurrency(line.bonusAdvance) : '-'}
+                          {line.bonusAdvance ? <BlurredValue>{formatCurrency(line.bonusAdvance)}</BlurredValue> : '-'}
                         </div>
                       )}
                     </TableCell>
@@ -524,7 +525,7 @@ export default function GoldenSheetPage() {
                         {line.additionalPaidAmount || line.additionalPaidDate || line.additionalPaidMethod
                           ? (
                               <>
-                                {line.additionalPaidAmount && formatCurrency(line.additionalPaidAmount)}
+                                {line.additionalPaidAmount && <BlurredValue>{formatCurrency(line.additionalPaidAmount)}</BlurredValue>}
                                 {line.additionalPaidAmount && (line.additionalPaidDate || line.additionalPaidMethod) && ' • '}
                                 {line.additionalPaidDate && formatDate(line.additionalPaidDate)}
                                 {line.additionalPaidDate && line.additionalPaidMethod && ' • '}
@@ -537,11 +538,11 @@ export default function GoldenSheetPage() {
 
 
                     <TableCell className="font-mono">
-                      {formatCurrency(line.ratePerHour)}
+                      <BlurredValue>{formatCurrency(line.ratePerHour)}</BlurredValue>
                     </TableCell>
 
                     <TableCell className="font-mono font-bold">
-                      {formatCurrency(line.subtotal)}
+                      <BlurredValue>{formatCurrency(line.subtotal)}</BlurredValue>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -560,7 +561,7 @@ export default function GoldenSheetPage() {
           <CardContent className="space-y-2">
             <div className="flex justify-between">
               <span>Total Hourly Value:</span>
-              <span className="font-mono">{formatCurrency(summary.totalHourlyValue)}</span>
+              <span className="font-mono"><BlurredValue>{formatCurrency(summary.totalHourlyValue)}</BlurredValue></span>
             </div>
             <div className="flex justify-between items-center">
               <span>Global Work Hours:</span>
@@ -599,7 +600,7 @@ export default function GoldenSheetPage() {
             </div>
             <div className="flex justify-between font-bold text-lg border-t pt-2">
               <span>USD Total:</span>
-              <span className="font-mono">{formatCurrency(summary.usdTotal)}</span>
+              <span className="font-mono"><BlurredValue>{formatCurrency(summary.usdTotal)}</BlurredValue></span>
             </div>
           </CardContent>
         </Card>
@@ -634,7 +635,7 @@ export default function GoldenSheetPage() {
                   className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
                   onClick={() => handleCycleFieldEdit('omnigoBonus', cycle.omnigoBonus)}
                 >
-                  {formatCurrency(cycle.omnigoBonus || 0)}
+                  <BlurredValue>{formatCurrency(cycle.omnigoBonus || 0)}</BlurredValue>
                 </span>
               )}
             </div>
@@ -662,7 +663,7 @@ export default function GoldenSheetPage() {
                   className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
                   onClick={() => handleCycleFieldEdit('pagamentoPIX', cycle.pagamentoPIX)}
                 >
-                  {formatCurrency(cycle.pagamentoPIX || 0)}
+                  <BlurredValue>{formatCurrency(cycle.pagamentoPIX || 0)}</BlurredValue>
                 </span>
               )}
             </div>
@@ -690,7 +691,7 @@ export default function GoldenSheetPage() {
                   className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
                   onClick={() => handleCycleFieldEdit('pagamentoInter', cycle.pagamentoInter)}
                 >
-                  {formatCurrency(cycle.pagamentoInter || 0)}
+                  <BlurredValue>{formatCurrency(cycle.pagamentoInter || 0)}</BlurredValue>
                 </span>
               )}
             </div>
@@ -718,7 +719,7 @@ export default function GoldenSheetPage() {
                   className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
                   onClick={() => handleCycleFieldEdit('equipmentsUSD', cycle.equipmentsUSD)}
                 >
-                  {formatCurrency(cycle.equipmentsUSD || 0)}
+                  <BlurredValue>{formatCurrency(cycle.equipmentsUSD || 0)}</BlurredValue>
                 </span>
               )}
             </div>
@@ -747,7 +748,7 @@ export default function GoldenSheetPage() {
                   className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
                   onClick={() => handleCycleFieldEdit('payoneerBalanceCarryover', cycle.payoneerBalanceCarryover)}
                 >
-                  {formatCurrency(cycle.payoneerBalanceCarryover || 0)}
+                  <BlurredValue>{formatCurrency(cycle.payoneerBalanceCarryover || 0)}</BlurredValue>
                 </span>
               )}
             </div>
@@ -775,7 +776,7 @@ export default function GoldenSheetPage() {
                   className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
                   onClick={() => handleCycleFieldEdit('payoneerBalanceApplied', cycle.payoneerBalanceApplied)}
                 >
-                  {formatCurrency(cycle.payoneerBalanceApplied || 0)}
+                  <BlurredValue>{formatCurrency(cycle.payoneerBalanceApplied || 0)}</BlurredValue>
                 </span>
               )}
             </div>

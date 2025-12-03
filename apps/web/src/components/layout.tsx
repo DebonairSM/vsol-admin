@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth-context';
+import { useDemo } from '@/contexts/demo-context';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
@@ -14,7 +15,9 @@ import {
   Laptop,
   Clock,
   Settings,
-  Calendar
+  Calendar,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const navigation = [
@@ -30,6 +33,7 @@ const navigation = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
+  const { isDemoMode, toggleDemoMode } = useDemo();
   const location = useLocation();
 
   return (
@@ -77,6 +81,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               Schedule Meeting
             </a>
           </nav>
+
+          {/* Demo Mode Toggle */}
+          <div className="border-t px-4 py-3">
+            <Button
+              variant={isDemoMode ? "default" : "outline"}
+              size="sm"
+              onClick={toggleDemoMode}
+              className={`w-full justify-start ${
+                isDemoMode 
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {isDemoMode ? (
+                <EyeOff className="mr-2 h-4 w-4" />
+              ) : (
+                <Eye className="mr-2 h-4 w-4" />
+              )}
+              Demo Mode {isDemoMode ? 'On' : 'Off'}
+            </Button>
+          </div>
 
           {/* User info and logout */}
           <div className="border-t px-4 py-4">

@@ -3,6 +3,7 @@ import { useCycles } from '@/hooks/use-cycles';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { BlurredValue } from '@/components/ui/blurred-value';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Plus, Calendar, DollarSign, Users, FileText, CalendarCheck, Sparkles } from 'lucide-react';
 
@@ -107,7 +108,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(yearlyBonusTotal)}
+              <BlurredValue>{formatCurrency(yearlyBonusTotal)}</BlurredValue>
             </div>
             <p className="text-xs text-gray-500 mt-1">
               Total paid in {currentYear}
@@ -172,7 +173,7 @@ export default function DashboardPage() {
                         {cycle.globalWorkHours} hours
                       </p>
                       <p className={`text-sm ${isLatest ? 'text-blue-700' : 'text-gray-600'}`}>
-                        {cycle.omnigoBonus ? formatCurrency(cycle.omnigoBonus) : 'No bonus'}
+                        {cycle.omnigoBonus ? <BlurredValue>{formatCurrency(cycle.omnigoBonus)}</BlurredValue> : 'No bonus'}
                       </p>
                     </div>
                   </Link>
