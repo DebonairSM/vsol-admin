@@ -198,7 +198,9 @@ export const updateCycleSchema = z.object({
   omnigoBonus: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   pagamentoPIX: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   pagamentoInter: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
-  equipmentsUSD: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional()
+  equipmentsUSD: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
+  payoneerBalanceCarryover: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
+  payoneerBalanceApplied: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional()
 });
 
 // Line item schemas
@@ -420,3 +422,15 @@ export const payoneerConfigSchema = z.object({
 
 export type SettingRequest = z.infer<typeof settingSchema>;
 export type PayoneerConfigRequest = z.infer<typeof payoneerConfigSchema>;
+
+// Shipping address schema for equipment shipments
+export const shippingAddressSchema = z.object({
+  companyName: z.string().min(1, 'Company name is required'),
+  address: z.string().min(1, 'Address is required'),
+  neighborhood: z.string().min(1, 'Neighborhood is required'),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().length(2, 'State must be 2 characters (e.g., RJ)'),
+  cep: z.string().regex(/^\d{5}-?\d{3}$/, 'CEP must be in format 12345-678')
+});
+
+export type ShippingAddress = z.infer<typeof shippingAddressSchema>;

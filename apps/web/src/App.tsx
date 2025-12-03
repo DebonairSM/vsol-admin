@@ -8,6 +8,7 @@ import GoldenSheetPage from './routes/golden-sheet';
 import ConsultantsPage from './routes/consultants';
 import ConsultantProfilePage from './routes/consultant-profile';
 import ConsultantEditPage from './routes/consultant-edit';
+import ConsultantShippingLabelPage from './routes/consultant-shipping-label';
 import EquipmentPage from './routes/equipment';
 import NewEquipmentPage from './routes/equipment-new';
 import InvoicesPage from './routes/invoices';
@@ -46,6 +47,15 @@ function App() {
         <Route 
           path="/login" 
           element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
+        />
+        {/* Print-only route without Layout wrapper for clean printing */}
+        <Route
+          path="/consultants/:id/shipping-label"
+          element={
+            <ProtectedRoute>
+              <ConsultantShippingLabelPage />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/*"

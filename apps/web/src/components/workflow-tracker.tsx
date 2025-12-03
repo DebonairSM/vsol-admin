@@ -445,6 +445,12 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                         <span>Equipment USD:</span>
                                         <span className="font-mono">${calculationResult.equipmentsUSD?.toFixed(2)}</span>
                                       </div>
+                                      {cycle.payoneerBalanceApplied && cycle.payoneerBalanceApplied > 0 && (
+                                        <div className="flex justify-between text-green-600">
+                                          <span>Payoneer Balance Applied:</span>
+                                          <span className="font-mono">-${cycle.payoneerBalanceApplied.toFixed(2)}</span>
+                                        </div>
+                                      )}
                                       <hr className="border-green-200" />
                                       <div className="flex justify-between font-medium">
                                         <span>Wells Fargo Transfer:</span>

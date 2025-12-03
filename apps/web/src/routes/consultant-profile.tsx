@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatDate, formatMonthName } from '@/lib/utils';
 import { apiClient } from '@/lib/api-client';
-import { ArrowLeft, Edit, Trash2, Download, User, Building, Phone, MapPin, FileText, FileCheck } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Download, User, Building, Phone, MapPin, FileText, FileCheck, Printer } from 'lucide-react';
 import { useState } from 'react';
 
 export default function ConsultantProfilePage() {
@@ -113,6 +113,15 @@ export default function ConsultantProfilePage() {
           </div>
         </div>
         <div className="flex space-x-2">
+          {/* Print Shipping Label - only show if consultant has address */}
+          {(consultant.address || consultant.city) && (
+            <Link to={`/consultants/${consultantId}/shipping-label`}>
+              <Button variant="outline">
+                <Printer className="w-4 h-4 mr-2" />
+                Print Shipping Label
+              </Button>
+            </Link>
+          )}
           <Button 
             variant="outline"
             onClick={handleGenerateContract}

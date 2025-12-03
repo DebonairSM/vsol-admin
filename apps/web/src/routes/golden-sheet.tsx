@@ -722,6 +722,63 @@ export default function GoldenSheetPage() {
                 </span>
               )}
             </div>
+            <hr className="border-gray-200 my-2" />
+            <div className="flex justify-between items-center">
+              <span>Payoneer Balance Carryover:</span>
+              {editingCycleField === 'payoneerBalanceCarryover' ? (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="w-24 h-8 text-right font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCycleFieldSave();
+                      if (e.key === 'Escape') handleCycleFieldCancel();
+                    }}
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                </div>
+              ) : (
+                <span 
+                  className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
+                  onClick={() => handleCycleFieldEdit('payoneerBalanceCarryover', cycle.payoneerBalanceCarryover)}
+                >
+                  {formatCurrency(cycle.payoneerBalanceCarryover || 0)}
+                </span>
+              )}
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Payoneer Balance Applied:</span>
+              {editingCycleField === 'payoneerBalanceApplied' ? (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="w-24 h-8 text-right font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCycleFieldSave();
+                      if (e.key === 'Escape') handleCycleFieldCancel();
+                    }}
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                </div>
+              ) : (
+                <span 
+                  className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
+                  onClick={() => handleCycleFieldEdit('payoneerBalanceApplied', cycle.payoneerBalanceApplied)}
+                >
+                  {formatCurrency(cycle.payoneerBalanceApplied || 0)}
+                </span>
+              )}
+            </div>
           </CardContent>
         </Card>
 

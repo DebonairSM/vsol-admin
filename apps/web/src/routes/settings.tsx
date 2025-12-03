@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useGetSetting, useUpdateSetting, useTestPayoneerConnection, useTestTimeDoctorConnection } from '@/hooks/use-settings';
 import { useBackups, useCreateBackup, useRestoreBackup, useBackupStatus, useTriggerBackup } from '@/hooks/use-backups';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, Database, RefreshCw } from 'lucide-react';
+import { Loader2, AlertTriangle, Database, RefreshCw, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '@/lib/api-client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import type { ShippingAddress } from '@vsol-admin/shared';
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -29,6 +30,15 @@ export default function SettingsPage() {
     apiToken: '',
     companyId: '',
     apiUrl: 'https://api2.timedoctor.com/api/1.0'
+  });
+
+  const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
+    companyName: '',
+    address: '',
+    neighborhood: '',
+    city: '',
+    state: '',
+    cep: ''
   });
 
   // Backup restore dialog state
@@ -50,6 +60,9 @@ export default function SettingsPage() {
   const { data: tdTokenData } = useGetSetting('timedoctor_api_token');
   const { data: tdCompanyIdData } = useGetSetting('timedoctor_company_id');
   const { data: tdApiUrlData } = useGetSetting('timedoctor_api_url');
+
+  // Load shipping address setting
+  const { data: shippingAddressData } = useGetSetting('shipping_from_address');
 
   // Mutations
   const updateSystemSettings = useMutation({
@@ -122,6 +135,18 @@ export default function SettingsPage() {
       setTimeDoctorConfig(prev => ({ ...prev, apiUrl: tdApiUrlData.value }));
     }
   }, [tdApiUrlData]);
+
+  // Initialize shipping address
+  useEffect(() => {
+    if (shippingAddressData && shippingAddressData.value) {
+      try {
+        const parsed = JSON.parse(shippingAddressData.value);
+        setShippingAddress(parsed);
+      } catch (e) {
+        console.error('Failed to parse shipping address:', e);
+      }
+    }
+  }, [shippingAddressData]);
 
   const handleSaveSystemSettings = async () => {
     try {
@@ -234,6 +259,37 @@ export default function SettingsPage() {
       toast({
         title: 'Save Failed',
         description: error.message || 'Failed to save Time Doctor settings',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSaveShippingAddress = async () => {
+    // Validate required fields
+    if (!shippingAddress.companyName || !shippingAddress.address || !shippingAddress.city || !shippingAddress.state || !shippingAddress.cep) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await updateSetting.mutateAsync({
+        key: 'shipping_from_address',
+        value: JSON.stringify(shippingAddress)
+      });
+
+      toast({
+        title: 'Settings Saved',
+        description: 'Shipping address has been saved successfully',
+        variant: 'default'
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Save Failed',
+        description: error.message || 'Failed to save shipping address',
         variant: 'destructive'
       });
     }
@@ -353,6 +409,104 @@ export default function SettingsPage() {
             >
               {isSavingSystem && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save System Settings
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Equipment Shipping Address
+          </CardTitle>
+          <CardDescription>
+            Configure the "From" address used when printing shipping labels for equipment sent to consultants.
+            This is your company's shipping address in Brazil.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="shippingCompanyName">Company Name *</Label>
+            <Input
+              id="shippingCompanyName"
+              type="text"
+              placeholder="Your company name"
+              value={shippingAddress.companyName}
+              onChange={(e) => setShippingAddress(prev => ({ ...prev, companyName: e.target.value }))}
+              disabled={updateSetting.isPending}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shippingAddress">Street Address *</Label>
+            <Input
+              id="shippingAddress"
+              type="text"
+              placeholder="Rua Example, 123"
+              value={shippingAddress.address}
+              onChange={(e) => setShippingAddress(prev => ({ ...prev, address: e.target.value }))}
+              disabled={updateSetting.isPending}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shippingNeighborhood">Neighborhood *</Label>
+            <Input
+              id="shippingNeighborhood"
+              type="text"
+              placeholder="Bairro"
+              value={shippingAddress.neighborhood}
+              onChange={(e) => setShippingAddress(prev => ({ ...prev, neighborhood: e.target.value }))}
+              disabled={updateSetting.isPending}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="shippingCity">City *</Label>
+              <Input
+                id="shippingCity"
+                type="text"
+                placeholder="São Paulo"
+                value={shippingAddress.city}
+                onChange={(e) => setShippingAddress(prev => ({ ...prev, city: e.target.value }))}
+                disabled={updateSetting.isPending}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shippingState">State *</Label>
+              <Input
+                id="shippingState"
+                type="text"
+                placeholder="SP"
+                maxLength={2}
+                value={shippingAddress.state}
+                onChange={(e) => setShippingAddress(prev => ({ ...prev, state: e.target.value.toUpperCase() }))}
+                disabled={updateSetting.isPending}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shippingCep">CEP *</Label>
+            <Input
+              id="shippingCep"
+              type="text"
+              placeholder="12345-678"
+              value={shippingAddress.cep}
+              onChange={(e) => setShippingAddress(prev => ({ ...prev, cep: e.target.value }))}
+              disabled={updateSetting.isPending}
+            />
+          </div>
+
+          <div className="pt-4">
+            <Button
+              onClick={handleSaveShippingAddress}
+              disabled={updateSetting.isPending}
+            >
+              {updateSetting.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Shipping Address
             </Button>
           </div>
         </CardContent>

@@ -84,6 +84,8 @@ export const payrollCycles = sqliteTable('payroll_cycles', {
   pagamentoPIX: real('pagamento_pix'),
   pagamentoInter: real('pagamento_inter'),
   equipmentsUSD: real('equipments_usd'),
+  payoneerBalanceCarryover: real('payoneer_balance_carryover'),
+  payoneerBalanceApplied: real('payoneer_balance_applied'),
   archivedAt: integer('archived_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())

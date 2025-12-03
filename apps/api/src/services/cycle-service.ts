@@ -73,13 +73,21 @@ export class CycleService {
       throw new ValidationError('No active consultants found. Cannot create empty cycle.');
     }
 
+    // Find the most recent non-archived cycle to copy Payoneer balance carryover
+    const previousCycle = await db.query.payrollCycles.findFirst({
+      where: isNull(payrollCycles.archivedAt),
+      orderBy: [desc(payrollCycles.createdAt)]
+    });
+
     // Create cycle and line items in transaction
-    const result = db.transaction((tx) => {
+    const result = await db.transaction(async (tx) => {
       // Create the cycle
-      const [cycle] = tx.insert(payrollCycles).values({
+      const [cycle] = await tx.insert(payrollCycles).values({
         monthLabel: data.monthLabel,
         globalWorkHours: data.globalWorkHours || null,
-        omnigoBonus: data.omnigoBonus || null
+        omnigoBonus: data.omnigoBonus || null,
+        payoneerBalanceCarryover: previousCycle?.payoneerBalanceCarryover || null,
+        payoneerBalanceApplied: null
       }).returning();
 
       // Create line items for all active consultants
@@ -90,10 +98,10 @@ export class CycleService {
         bonusAdvance: consultant.yearlyBonus || null // Pre-fill yearly bonus if set
       }));
 
-      tx.insert(cycleLineItems).values(lineItemsData);
+      await tx.insert(cycleLineItems).values(lineItemsData);
 
       return cycle;
-    })();
+    });
 
     // Return cycle with populated lines
     return this.getById(result.id);
@@ -173,6 +181,8 @@ export class CycleService {
     if (data.pagamentoPIX !== undefined) updateData.pagamentoPIX = validateNumber(data.pagamentoPIX, 'pagamentoPIX');
     if (data.pagamentoInter !== undefined) updateData.pagamentoInter = validateNumber(data.pagamentoInter, 'pagamentoInter');
     if (data.equipmentsUSD !== undefined) updateData.equipmentsUSD = validateNumber(data.equipmentsUSD, 'equipmentsUSD');
+    if (data.payoneerBalanceCarryover !== undefined) updateData.payoneerBalanceCarryover = validateNumber(data.payoneerBalanceCarryover, 'payoneerBalanceCarryover');
+    if (data.payoneerBalanceApplied !== undefined) updateData.payoneerBalanceApplied = validateNumber(data.payoneerBalanceApplied, 'payoneerBalanceApplied');
 
     await db.update(payrollCycles)
       .set(updateData)
@@ -265,7 +275,8 @@ export class CycleService {
     const totalConsultantPayments = consultantPayments.reduce((sum, payment) => sum + payment.subtotal, 0);
     const omnigoBonus = cycle.omnigoBonus || 0;
     const equipmentsUSD = cycle.equipmentsUSD || 0;
-    const totalWellsFargoTransfer = totalConsultantPayments + omnigoBonus + equipmentsUSD;
+    const payoneerBalanceApplied = cycle.payoneerBalanceApplied || 0;
+    const totalWellsFargoTransfer = totalConsultantPayments + omnigoBonus + equipmentsUSD - payoneerBalanceApplied;
 
     // Get cycle summary for additional info
     const summary = await this.getSummary(id);

@@ -78,6 +78,8 @@ export interface PayrollCycle {
   pagamentoPIX?: number | null;
   pagamentoInter?: number | null;
   equipmentsUSD?: number | null;
+  payoneerBalanceCarryover?: number | null;
+  payoneerBalanceApplied?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
