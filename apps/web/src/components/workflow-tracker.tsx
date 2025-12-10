@@ -227,18 +227,18 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Payroll Workflow
+        <div className="flex items-center justify-between gap-4 overflow-hidden">
+          <CardTitle className="flex items-center gap-2 min-w-0 flex-shrink">
+            <Clock className="w-5 h-5 flex-shrink-0" />
+            <span className="truncate">Payroll Workflow</span>
           </CardTitle>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <Badge variant="secondary">
               {progress.completedSteps} of {progress.totalSteps} completed
             </Badge>
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <span>{progress.percentage}%</span>
-              <div className="w-24 bg-gray-200 rounded-full h-2">
+              <div className="w-24 bg-gray-200 rounded-full h-2 overflow-hidden">
                 <div
                   className="bg-green-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${progress.percentage}%` }}
