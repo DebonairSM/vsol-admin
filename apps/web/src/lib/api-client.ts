@@ -1,6 +1,30 @@
-// Use Vite proxy in development (relative URL), or explicit URL if set
-// When VITE_API_URL is not set, use relative URL which goes through Vite proxy
-let API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Determine API base URL
+// Priority: 1) VITE_API_URL env var, 2) Auto-detect from current hostname, 3) Use proxy
+let API_BASE_URL = import.meta.env.VITE_API_URL;
+
+// If VITE_API_URL is not set, try to auto-detect from current location
+// This handles remote browser access where localhost won't work
+if (!API_BASE_URL || API_BASE_URL === '/api') {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // If accessing from a remote IP (not localhost/127.0.0.1), use that IP for API
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+      // Remote IP access - construct API URL using same hostname
+      API_BASE_URL = `http://${hostname}:2020/api`;
+      console.log(`[API Client] Detected remote access from ${hostname}, using API URL: ${API_BASE_URL}`);
+    } else if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      // Hostname-based access (e.g., vsol-aurora.home) - construct API URL
+      API_BASE_URL = `http://${hostname}:2020/api`;
+      console.log(`[API Client] Detected hostname access from ${hostname}, using API URL: ${API_BASE_URL}`);
+    } else {
+      // Localhost access - use proxy
+      API_BASE_URL = '/api';
+    }
+  } else {
+    // Server-side or fallback - use proxy
+    API_BASE_URL = '/api';
+  }
+}
 
 // Validate and normalize the API base URL
 if (API_BASE_URL && !API_BASE_URL.startsWith('/') && !API_BASE_URL.startsWith('http')) {

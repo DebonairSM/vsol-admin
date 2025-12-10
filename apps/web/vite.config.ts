@@ -22,7 +22,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://localhost:2021',
+        target: 'http://localhost:2020',
         changeOrigin: true
       }
     }

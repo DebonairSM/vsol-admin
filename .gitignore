@@ -164,6 +164,18 @@ data-migration/**/*.gif
 !data-migration/**/*.ts
 !data-migration/**/*.js
 
+# Seeding data files (contains sensitive staff information, wages, etc.)
+seeding/**/*.csv
+seeding/**/*.json
+seeding/**/*.xlsx
+seeding/**/*.xls
+# Keep seeding scripts if any
+!seeding/**/*.ts
+!seeding/**/*.js
+
+# Cursor IDE temporary files (workspace storage images)
+assets/
+
 # =============================================================================
 # Temporary Files
 # =============================================================================
