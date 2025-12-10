@@ -72,8 +72,8 @@ export default function ConsultantsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Consultants</h1>
-        <p className="text-gray-600">Manage consultant information and rates</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Consultants</h1>
+        <p className="text-sm sm:text-base text-gray-600">Manage consultant information and rates</p>
       </div>
 
       <Tabs defaultValue="consultants" className="w-full">
@@ -102,25 +102,26 @@ export default function ConsultantsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Consultant Info</TableHead>
-                    <TableHead>Hourly Rate</TableHead>
-                    <TableHead>Bonus Month</TableHead>
-                    <TableHead>Company Details</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Termination Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {consultants?.map((consultant: any) => (
-                    <TableRow key={consultant.id}>
-                      <TableCell className="font-medium">
+              <div className="overflow-x-auto -mx-6 px-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="sticky left-0 z-10 bg-white min-w-[180px]">Consultant Info</TableHead>
+                      <TableHead className="text-xs md:text-sm">Hourly Rate</TableHead>
+                      <TableHead className="text-xs md:text-sm">Bonus Month</TableHead>
+                      <TableHead className="text-xs md:text-sm">Company Details</TableHead>
+                      <TableHead className="text-xs md:text-sm">Start Date</TableHead>
+                      <TableHead className="text-xs md:text-sm">Status</TableHead>
+                      <TableHead className="text-xs md:text-sm">Termination Date</TableHead>
+                      <TableHead className="text-xs md:text-sm">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {consultants?.map((consultant: any) => (
+                      <TableRow key={consultant.id}>
+                        <TableCell className="font-medium sticky left-0 z-10 bg-white min-w-[180px]">
                         <div>
-                          <div className="font-semibold">{consultant.name}</div>
+                          <div className="font-semibold text-xs md:text-sm">{consultant.name}</div>
                           {consultant.email && (
                             <div className="text-xs text-gray-600">{consultant.email}</div>
                           )}
@@ -129,7 +130,7 @@ export default function ConsultantsPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono"><BlurredValue>{formatCurrency(consultant.hourlyRate)}</BlurredValue></TableCell>
+                      <TableCell className="font-mono text-xs md:text-sm"><BlurredValue>{formatCurrency(consultant.hourlyRate)}</BlurredValue></TableCell>
                       <TableCell>
                         {consultant.bonusMonth ? (
                           <span className="text-xs font-medium text-gray-700">{formatMonthAbbr(consultant.bonusMonth)}</span>
@@ -167,17 +168,17 @@ export default function ConsultantsPage() {
                         {consultant.terminationDate ? formatDate(consultant.terminationDate) : '-'}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1 sm:gap-2">
                           <Link to={`/consultants/${consultant.id}`}>
-                            <Button variant="outline" size="sm">
-                              <Eye className="w-4 h-4 mr-1" />
-                              View
+                            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                              <Eye className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                              <span className="hidden sm:inline">View</span>
                             </Button>
                           </Link>
                           <Link to={`/consultants/${consultant.id}/edit`}>
-                            <Button variant="outline" size="sm">
-                              <Edit className="w-4 h-4 mr-1" />
-                              Edit
+                            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                              <Edit className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Edit</span>
                             </Button>
                           </Link>
                           <Button 
@@ -186,9 +187,11 @@ export default function ConsultantsPage() {
                             onClick={() => handleGenerateContract(consultant)}
                             disabled={generatingContracts[consultant.id] || !canGenerateContract(consultant)}
                             title={!canGenerateContract(consultant) ? 'Missing required fields: Name, Company Legal Name, or CNPJ' : 'Generate Master Services Agreement'}
+                            className="text-xs sm:text-sm"
                           >
-                            <FileCheck className="w-4 h-4 mr-1" />
-                            {generatingContracts[consultant.id] ? 'Generating...' : 'Contract'}
+                            <FileCheck className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">{generatingContracts[consultant.id] ? 'Generating...' : 'Contract'}</span>
+                            <span className="sm:hidden">{generatingContracts[consultant.id] ? '...' : 'Doc'}</span>
                           </Button>
                         </div>
                       </TableCell>
@@ -196,6 +199,7 @@ export default function ConsultantsPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

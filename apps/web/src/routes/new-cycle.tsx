@@ -138,20 +138,21 @@ export default function NewCyclePage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6 px-4 sm:px-0">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <Button
           variant="outline"
           size="sm"
           onClick={() => navigate('/dashboard')}
+          className="w-full sm:w-auto"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Dashboard
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Create New Cycle</h1>
-          <p className="text-gray-600">Set up a new payroll cycle</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Create New Cycle</h1>
+          <p className="text-sm sm:text-base text-gray-600">Set up a new payroll cycle</p>
         </div>
       </div>
 
@@ -281,11 +282,11 @@ export default function NewCyclePage() {
             )}
 
             {/* Actions */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button
                 type="submit"
                 disabled={createCycle.isPending}
-                className="flex-1"
+                className="flex-1 w-full sm:w-auto"
               >
                 {createCycle.isPending ? 'Creating...' : 'Create Cycle'}
               </Button>
@@ -294,6 +295,7 @@ export default function NewCyclePage() {
                 variant="outline"
                 onClick={() => navigate('/dashboard')}
                 disabled={createCycle.isPending}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>

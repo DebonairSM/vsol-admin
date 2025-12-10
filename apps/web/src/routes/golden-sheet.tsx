@@ -253,15 +253,15 @@ export default function GoldenSheetPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900">Golden Sheet</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Golden Sheet</h1>
           {editingCycleField === 'monthLabel' ? (
-            <div className="flex gap-2 items-center mt-1">
+            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center mt-1">
               <Input
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                className="w-64"
+                className="w-full sm:w-64"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleCycleFieldSave();
                   if (e.key === 'Escape') handleCycleFieldCancel();
@@ -269,8 +269,10 @@ export default function GoldenSheetPage() {
                 autoFocus
                 placeholder="Month Label (e.g., January 2024)"
               />
-              <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
-              <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+              </div>
             </div>
           ) : (
             <p 
@@ -338,28 +340,28 @@ export default function GoldenSheetPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-6 px-6">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Contractor Info</TableHead>
-                  <TableHead>Sent Invoice</TableHead>
-                  <TableHead>Adjustment Value</TableHead>
-                  <TableHead>Comments</TableHead>
-                  <TableHead>Bonus Information</TableHead>
-                  <TableHead>Bonus Advance</TableHead>
-                  <TableHead>Advance Date</TableHead>
-                  <TableHead>Additional Paid</TableHead>
-                  <TableHead>Rate/Hour</TableHead>
-                  <TableHead>Subtotal</TableHead>
+                  <TableHead className="sticky left-0 z-10 bg-white min-w-[180px]">Contractor Info</TableHead>
+                  <TableHead className="text-xs md:text-sm">Sent Invoice</TableHead>
+                  <TableHead className="text-xs md:text-sm">Adjustment Value</TableHead>
+                  <TableHead className="text-xs md:text-sm">Comments</TableHead>
+                  <TableHead className="text-xs md:text-sm">Bonus Information</TableHead>
+                  <TableHead className="text-xs md:text-sm">Bonus Advance</TableHead>
+                  <TableHead className="text-xs md:text-sm">Advance Date</TableHead>
+                  <TableHead className="text-xs md:text-sm">Additional Paid</TableHead>
+                  <TableHead className="text-xs md:text-sm">Rate/Hour</TableHead>
+                  <TableHead className="text-xs md:text-sm">Subtotal</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {cycle.lines?.map((line: any) => (
                   <TableRow key={line.id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium sticky left-0 z-10 bg-white min-w-[180px]">
                       <div>
-                        <div className="font-semibold">{line.consultant.name}</div>
+                        <div className="font-semibold text-xs md:text-sm">{line.consultant.name}</div>
                         {line.consultant.companyTradeName && (
                           <div className="text-xs text-gray-600">
                             {line.consultant.companyTradeName}
@@ -373,7 +375,7 @@ export default function GoldenSheetPage() {
                       </div>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className="text-xs md:text-sm">
                       <Checkbox
                         checked={line.invoiceSent || false}
                         onCheckedChange={(checked) => {
@@ -537,11 +539,11 @@ export default function GoldenSheetPage() {
                     </TableCell>
 
 
-                    <TableCell className="font-mono">
+                    <TableCell className="font-mono text-xs md:text-sm">
                       <BlurredValue>{formatCurrency(line.ratePerHour)}</BlurredValue>
                     </TableCell>
 
-                    <TableCell className="font-mono font-bold">
+                    <TableCell className="font-mono font-bold text-xs md:text-sm">
                       <BlurredValue>{formatCurrency(line.subtotal)}</BlurredValue>
                     </TableCell>
                   </TableRow>
@@ -553,7 +555,7 @@ export default function GoldenSheetPage() {
       </Card>
 
       {/* Footer Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Totals</CardTitle>

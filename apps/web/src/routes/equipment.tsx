@@ -128,13 +128,13 @@ export default function EquipmentPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center space-x-3">
-          <Laptop className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Equipment Inventory</h1>
+          <Laptop className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Equipment Inventory</h1>
         </div>
-        <Link to="/equipment/new">
-          <Button>
+        <Link to="/equipment/new" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Add Equipment
           </Button>
@@ -142,7 +142,7 @@ export default function EquipmentPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Equipment</CardTitle>
@@ -203,19 +203,20 @@ export default function EquipmentPage() {
 
       {/* Equipment Table */}
       <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Device</TableHead>
-              <TableHead>Model</TableHead>
-              <TableHead>Serial Number</TableHead>
-              <TableHead>Assigned To</TableHead>
-              <TableHead>Purchase Date</TableHead>
-              <TableHead>Return Status</TableHead>
-              <TableHead>Notes</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
+        <div className="overflow-x-auto -mx-6 px-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="sticky left-0 z-10 bg-white min-w-[120px]">Device</TableHead>
+                <TableHead className="text-xs md:text-sm">Model</TableHead>
+                <TableHead className="text-xs md:text-sm">Serial Number</TableHead>
+                <TableHead className="text-xs md:text-sm">Assigned To</TableHead>
+                <TableHead className="text-xs md:text-sm">Purchase Date</TableHead>
+                <TableHead className="text-xs md:text-sm">Return Status</TableHead>
+                <TableHead className="text-xs md:text-sm">Notes</TableHead>
+                <TableHead className="text-right text-xs md:text-sm">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
           <TableBody>
             {filteredEquipment.length === 0 ? (
               <TableRow>
@@ -229,7 +230,7 @@ export default function EquipmentPage() {
                 
                 return (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.deviceName}</TableCell>
+                    <TableCell className="font-medium sticky left-0 z-10 bg-white min-w-[120px] text-xs md:text-sm">{item.deviceName}</TableCell>
                     <TableCell>{item.model || '-'}</TableCell>
                     <TableCell className="font-mono text-sm">{item.serialNumber || '-'}</TableCell>
                     <TableCell>
@@ -302,6 +303,7 @@ export default function EquipmentPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
 
       {/* Delete Confirmation Dialog */}

@@ -44,13 +44,13 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">VSol Admin - Golden Sheet Management</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm sm:text-base text-gray-600">VSol Admin - Golden Sheet Management</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" asChild>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <Button variant="outline" asChild className="w-full sm:w-auto">
             <a
               href="https://calendly.com/vsol/meeting-with-bandeira"
               target="_blank"
@@ -60,7 +60,7 @@ export default function DashboardPage() {
               Schedule Meeting
             </a>
           </Button>
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link to="/cycles/new">
               <Plus className="mr-2 h-4 w-4" />
               New Cycle
@@ -70,7 +70,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Cycles</CardTitle>
@@ -153,26 +153,26 @@ export default function DashboardPage() {
                         </Badge>
                       </div>
                     )}
-                    <div className="flex items-center gap-3 flex-1">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       {isLatest && (
-                        <div className="w-1 h-12 bg-gradient-to-b from-blue-500 to-blue-400 rounded-full" />
+                        <div className="w-1 h-12 bg-gradient-to-b from-blue-500 to-blue-400 rounded-full flex-shrink-0" />
                       )}
-                      <div className={isLatest ? 'flex-1' : ''}>
+                      <div className={`${isLatest ? 'flex-1' : ''} min-w-0`}>
                         <div className="flex items-center gap-2">
-                          <h3 className={`font-medium ${isLatest ? 'text-blue-900' : 'text-gray-900'}`}>
+                          <h3 className={`font-medium text-sm sm:text-base truncate ${isLatest ? 'text-blue-900' : 'text-gray-900'}`}>
                             {cycle.monthLabel}
                           </h3>
                         </div>
-                        <p className={`text-sm ${isLatest ? 'text-blue-700' : 'text-gray-600'}`}>
+                        <p className={`text-xs sm:text-sm ${isLatest ? 'text-blue-700' : 'text-gray-600'}`}>
                           Created {formatDate(cycle.createdAt)}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`font-medium ${isLatest ? 'text-blue-900' : 'text-gray-900'}`}>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`font-medium text-sm sm:text-base ${isLatest ? 'text-blue-900' : 'text-gray-900'}`}>
                         {cycle.globalWorkHours} hours
                       </p>
-                      <p className={`text-sm ${isLatest ? 'text-blue-700' : 'text-gray-600'}`}>
+                      <p className={`text-xs sm:text-sm ${isLatest ? 'text-blue-700' : 'text-gray-600'}`}>
                         {cycle.omnigoBonus ? <BlurredValue>{formatCurrency(cycle.omnigoBonus)}</BlurredValue> : 'No bonus'}
                       </p>
                     </div>

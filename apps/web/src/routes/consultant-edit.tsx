@@ -300,17 +300,17 @@ export default function ConsultantEditPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <Link to={`/consultants/${consultantId}`}>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Profile
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
-            <p className="text-gray-600">{consultant.name}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Edit Profile</h1>
+            <p className="text-sm sm:text-base text-gray-600">{consultant.name}</p>
           </div>
         </div>
       </div>
@@ -720,15 +720,16 @@ export default function ConsultantEditPage() {
       {/* Submit Actions */}
       <div className="space-y-6">
         <form onSubmit={handleSubmit}>
-          <div className="flex justify-end space-x-4">
-            <Link to={`/consultants/${consultantId}`}>
-              <Button type="button" variant="outline">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+            <Link to={`/consultants/${consultantId}`} className="w-full sm:w-auto">
+              <Button type="button" variant="outline" className="w-full sm:w-auto">
                 Cancel
               </Button>
             </Link>
             <Button 
               type="submit" 
               disabled={updateProfile.isPending || !hasChanges}
+              className="w-full sm:w-auto"
             >
               <Save className="w-4 h-4 mr-2" />
               {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
