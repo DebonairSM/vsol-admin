@@ -196,8 +196,6 @@ The script will:
 
 ## ngrok Setup (Public Access)
 
-**Current ngrok URLs**: See `NGROK_URLS.md` for active tunnel URLs and configuration.
-
 To expose the application via ngrok public URLs:
 
 1. Start ngrok tunnels:
@@ -234,6 +232,18 @@ pnpm db:migrate  # Apply migrations
 pnpm db:seed     # Seed dev data
 pnpm db:studio   # Drizzle Studio
 pnpm kill-all-ports  # Free 2020/5173 if needed (Windows PowerShell)
+```
+
+### Utility Scripts
+
+Additional utility scripts are available in the `scripts/` folder:
+
+- `scripts/reset-db.ps1` - Reset database with backup (PowerShell)
+- `scripts/import-work-hours.js` - Import work hours from CSV
+
+Run from project root:
+```powershell
+.\scripts\reset-db.ps1
 ```
 
 ## Structure
