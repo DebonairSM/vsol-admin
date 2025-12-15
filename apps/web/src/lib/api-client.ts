@@ -2,6 +2,12 @@
 // Priority: 1) VITE_API_URL env var, 2) Auto-detect from current hostname, 3) Use proxy
 let API_BASE_URL = import.meta.env.VITE_API_URL;
 
+// If accessing from localhost, always use the Vite proxy to avoid CORS issues
+// This overrides VITE_API_URL when accessing from localhost
+if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+  API_BASE_URL = '/api';
+}
+
 // If VITE_API_URL is not set, try to auto-detect from current location
 // This handles remote browser access where localhost won't work
 if (!API_BASE_URL || API_BASE_URL === '/api') {
@@ -30,6 +36,12 @@ if (!API_BASE_URL || API_BASE_URL === '/api') {
 if (API_BASE_URL && !API_BASE_URL.startsWith('/') && !API_BASE_URL.startsWith('http')) {
   // If it's malformed (e.g., ":2021/api"), default to proxy
   console.warn('Invalid VITE_API_URL format, using proxy:', API_BASE_URL);
+  API_BASE_URL = '/api';
+}
+
+// Ensure API_BASE_URL is never empty - default to proxy if somehow empty
+if (!API_BASE_URL) {
+  console.warn('[API Client] API_BASE_URL is empty, defaulting to /api proxy');
   API_BASE_URL = '/api';
 }
 
@@ -78,7 +90,15 @@ class ApiClient {
       headers,
     };
 
-    const response = await fetch(url, config);
+    let response: Response;
+    try {
+      response = await fetch(url, config);
+    } catch (fetchError: any) {
+      // Re-throw with more context
+      const enhancedError = new Error(`Network error: ${fetchError?.message || 'Unknown error'} (URL: ${url})`);
+      (enhancedError as any).originalError = fetchError;
+      throw enhancedError;
+    }
 
     // Handle 403/401 errors by attempting token refresh (except for auth endpoints)
     if (!response.ok && (response.status === 403 || response.status === 401) && retryOnAuthError && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
@@ -410,9 +430,10 @@ class ApiClient {
   }
 
   // Payment calculation
-  async calculatePayment(cycleId: number) {
+  async calculatePayment(cycleId: number, noBonus: boolean = false) {
     return this.request<any>(`/cycles/${cycleId}/calculate-payment`, {
       method: 'POST',
+      body: JSON.stringify({ noBonus }),
     });
   }
 
@@ -689,22 +710,26 @@ class ApiClient {
 
   // Update login method to store refresh token
   async login(username: string, password: string) {
-    const response = await this.request<{ 
-      token: string; 
-      accessToken: string;
-      refreshToken: string;
-      user: any 
-    }>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      const response = await this.request<{ 
+        token: string; 
+        accessToken: string;
+        refreshToken: string;
+        user: any 
+      }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      });
 
-    // Store refresh token
-    if (response.refreshToken) {
-      this.setRefreshToken(response.refreshToken);
+      // Store refresh token
+      if (response.refreshToken) {
+        this.setRefreshToken(response.refreshToken);
+      }
+
+      return response;
+    } catch (error: any) {
+      throw error;
     }
-
-    return response;
   }
 
   // Update logout to revoke refresh token

@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, cn } from '@/lib/utils';
 import { workflowSteps, calculateWorkflowProgress, isStepCompleted, canCompleteStep } from '@/lib/workflow-config';
-import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle, Lock } from 'lucide-react';
+import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle, Lock, ExternalLink } from 'lucide-react';
 import { useCalculatePayment } from '@/hooks/use-cycles';
 import { calculateDeadlineAlert, parseMonthLabel } from '@/lib/business-days';
 import { getWorkHoursForMonthByNumber, getMonthName } from '@/lib/work-hours';
@@ -25,6 +26,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const [editDate, setEditDate] = useState('');
   const [editFundingDate, setEditFundingDate] = useState('');
   const [calculationResult, setCalculationResult] = useState<any>(null);
+  const [noBonus, setNoBonus] = useState(false);
   
   const calculatePaymentMutation = useCalculatePayment();
 
@@ -139,6 +141,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     setEditDate('');
     setEditFundingDate('');
     setCalculationResult(null);
+    setNoBonus(false);
   };
 
   const handleMarkComplete = async (step: typeof workflowSteps[0]) => {
@@ -217,7 +220,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
 
   const handleCalculatePayment = async () => {
     try {
-      const result = await calculatePaymentMutation.mutateAsync(cycle.id);
+      const result = await calculatePaymentMutation.mutateAsync({ cycleId: cycle.id, noBonus });
       setCalculationResult(result);
     } catch (error) {
       console.error('Failed to calculate payment:', error);
@@ -376,6 +379,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                       if (!open) {
                         setEditingStep(null);
                         setCalculationResult(null);
+                        setNoBonus(false);
                       }
                     }}>
                       <PopoverTrigger asChild disabled={isBlocked}>
@@ -412,6 +416,16 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                               {/* Payment Calculation Section */}
                               {!calculationResult ? (
                                 <div className="space-y-3">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id="noBonus"
+                                      checked={noBonus}
+                                      onCheckedChange={(checked) => setNoBonus(checked as boolean)}
+                                    />
+                                    <Label htmlFor="noBonus" className="text-xs cursor-pointer">
+                                      No bonus this month
+                                    </Label>
+                                  </div>
                                   <Button 
                                     onClick={handleCalculatePayment}
                                     disabled={calculatePaymentMutation.isPending}
@@ -424,6 +438,20 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                   <p className="text-xs text-gray-500">
                                     This will calculate amounts for Wells Fargo transfer and prepare Payoneer dispersal data.
                                   </p>
+                                  <div className="pt-2 border-t">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full"
+                                      onClick={() => window.open('https://partners.payoneer.com/', '_blank', 'noopener,noreferrer')}
+                                    >
+                                      <ExternalLink className="w-4 h-4 mr-2" />
+                                      Open Payoneer Partners Portal
+                                    </Button>
+                                    <p className="text-xs text-gray-500 text-center mt-1">
+                                      Request funds from your bank to fund Payoneer account
+                                    </p>
+                                  </div>
                                 </div>
                               ) : (
                                 <div className="space-y-3">
@@ -464,6 +492,18 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                       <p className="text-amber-600">⚠ {calculationResult.anomalies.length} anomalies detected</p>
                                     )}
                                   </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full mt-2"
+                                    onClick={() => window.open('https://partners.payoneer.com/', '_blank', 'noopener,noreferrer')}
+                                  >
+                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                    Request Funds from Bank
+                                  </Button>
+                                  <p className="text-xs text-gray-500 text-center">
+                                    Open Payoneer Partners portal to request ${calculationResult.totalWellsFargoTransfer?.toFixed(2)} from Wells Fargo
+                                  </p>
                                 </div>
                               )}
 

@@ -3,13 +3,14 @@ import { apiClient } from '@/lib/api-client';
 
 /**
  * Hook to get Time Doctor sync status
+ * Note: Polling disabled until Time Doctor integration is fully working
  */
 export function useTimeDoctorSyncStatus() {
   return useQuery({
     queryKey: ['time-doctor', 'status'],
     queryFn: () => apiClient.getTimeDoctorSyncStatus(),
     staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 60 * 1000, // Refetch every minute
+    // refetchInterval: 60 * 1000, // Disabled - polling removed until integration is complete
   });
 }
 

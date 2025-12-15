@@ -24,7 +24,7 @@ import backupRoutes from './routes/backups';
 import systemRoutes from './routes/system';
 
 const app = express();
-const PORT = process.env.PORT || 2021;
+const PORT = process.env.PORT || 2020;
 
 // Keep track of the server instance for graceful shutdown
 let server: Server;

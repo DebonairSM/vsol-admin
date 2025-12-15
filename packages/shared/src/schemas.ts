@@ -311,7 +311,7 @@ export const generateTerminationDocumentSchema = z.object({
 
 // Payment calculation schemas
 export const calculatePaymentSchema = z.object({
-  // No body parameters needed - cycleId comes from URL
+  noBonus: z.boolean().optional(), // If true, set omnigoBonus to 0 for this calculation
 });
 
 // Work hours schemas

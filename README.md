@@ -26,6 +26,7 @@ pnpm dev
   - `CORS_ORIGIN` (optional) - Comma-separated list of allowed origins for CORS. Supports exact URLs and wildcard patterns (e.g., `https://abc123.ngrok.io` or `*.ngrok.io`). If not set, defaults to `http://localhost:5173` in development mode.
 - `apps/web/.env`
   - `VITE_API_URL=http://localhost:2020/api` - Backend API base URL. For ngrok setup, set this to your API ngrok URL (e.g., `https://def456.ngrok.io/api`)
+  - **Note**: When accessing the app from `localhost` or `127.0.0.1`, the API client automatically uses the Vite proxy (`/api`) instead of `VITE_API_URL` to avoid CORS issues. The `VITE_API_URL` setting is only used when accessing from remote IPs or hostnames.
 
 ## Tech Stack
 

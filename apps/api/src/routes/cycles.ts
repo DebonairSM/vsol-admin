@@ -53,10 +53,12 @@ router.get('/:id/lines', async (req, res, next) => {
 
 // POST /api/cycles/:id/calculate-payment
 router.post('/:id/calculate-payment',
+  validateBody(calculatePaymentSchema),
   auditMiddleware('CALCULATE_PAYMENT', 'cycle'),
   async (req, res, next) => {
     try {
-      const paymentCalculation = await CycleService.calculatePayment(parseInt(req.params.id));
+      const noBonus = req.body.noBonus || false;
+      const paymentCalculation = await CycleService.calculatePayment(parseInt(req.params.id), noBonus);
       res.json(paymentCalculation);
     } catch (error) {
       next(error);

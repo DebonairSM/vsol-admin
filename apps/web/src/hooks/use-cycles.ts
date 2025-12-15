@@ -74,8 +74,9 @@ export function useCalculatePayment() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (cycleId: number) => apiClient.calculatePayment(cycleId),
-    onSuccess: (_, cycleId) => {
+    mutationFn: ({ cycleId, noBonus }: { cycleId: number; noBonus?: boolean }) => 
+      apiClient.calculatePayment(cycleId, noBonus || false),
+    onSuccess: (_, { cycleId }) => {
       // Invalidate cycle data to refresh the calculatedPaymentDate field
       queryClient.invalidateQueries({ queryKey: ['cycles', cycleId] });
       queryClient.invalidateQueries({ queryKey: ['cycles', cycleId, 'summary'] });

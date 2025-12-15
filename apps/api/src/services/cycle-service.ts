@@ -242,7 +242,7 @@ export class CycleService {
     return rateAmount + adjustment - advance;
   }
 
-  static async calculatePayment(id: number): Promise<PaymentCalculationResult> {
+  static async calculatePayment(id: number, noBonus: boolean = false): Promise<PaymentCalculationResult> {
     const cycle = await this.getById(id);
     const globalWorkHours = cycle.globalWorkHours || 0;
 
@@ -273,7 +273,8 @@ export class CycleService {
 
     // Calculate totals
     const totalConsultantPayments = consultantPayments.reduce((sum, payment) => sum + payment.subtotal, 0);
-    const omnigoBonus = cycle.omnigoBonus || 0;
+    // If noBonus is true, set omnigoBonus to 0 for this calculation
+    const omnigoBonus = noBonus ? 0 : (cycle.omnigoBonus || 0);
     const equipmentsUSD = cycle.equipmentsUSD || 0;
     const payoneerBalanceApplied = cycle.payoneerBalanceApplied || 0;
     const totalWellsFargoTransfer = totalConsultantPayments + omnigoBonus + equipmentsUSD - payoneerBalanceApplied;

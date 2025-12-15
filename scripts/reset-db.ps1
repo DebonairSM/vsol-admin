@@ -71,3 +71,6 @@ Write-Host "✅ Database reset complete!" -ForegroundColor Green
 Write-Host "🚀 You can now run: pnpm dev" -ForegroundColor Cyan
 
 
+
+
+

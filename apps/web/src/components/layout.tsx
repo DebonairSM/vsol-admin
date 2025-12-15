@@ -161,7 +161,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </Sheet>
 
       {/* Desktop sidebar */}
-      <div className="hidden md:fixed md:inset-y-0 md:left-0 md:z-50 md:w-64 md:bg-white md:shadow-lg">
+      <div className="hidden md:block md:fixed md:inset-y-0 md:left-0 md:z-50 md:w-64 md:bg-white md:shadow-lg">
         <SidebarContent />
       </div>
 
