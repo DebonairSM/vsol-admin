@@ -22,7 +22,7 @@ import { BlurredValue } from '@/components/ui/blurred-value';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 import { useCountdown } from '@/hooks/use-countdown';
 import { useState, useMemo } from 'react';
-import { Trash2, X, Calendar } from 'lucide-react';
+import { Trash2, X, Calendar, CreditCard, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import BonusInfoCell from '@/components/bonus-info-cell';
 import WorkflowTracker from '@/components/workflow-tracker';
@@ -30,7 +30,6 @@ import BonusWorkflowSection from '@/components/bonus-workflow-section';
 import AdditionalPaidModal from '@/components/additional-paid-modal';
 import { parseMonthLabel, getPreviousMonthLabel } from '@/lib/business-days';
 import { getWorkHoursForMonthByNumber } from '@/lib/work-hours';
-import { Clock } from 'lucide-react';
 
 interface FundingDateAlertProps {
   fundingInfo: {
@@ -206,6 +205,27 @@ export default function GoldenSheetPage() {
           value = parseInt(editValue, 10);
         } else {
           value = parseFloat(editValue);
+          // Validate payoneerBalanceApplied - must be positive
+          if (editingCycleField === 'payoneerBalanceApplied') {
+            if (value < 0) {
+              toast.error('Payoneer credit must be a positive number');
+              return;
+            }
+            if (isNaN(value) || !isFinite(value)) {
+              toast.error('Please enter a valid number');
+              return;
+            }
+            // Warn if credit seems unusually high (more than 50% of USD total)
+            if (summary && summary.usdTotal > 0 && value > summary.usdTotal * 0.5) {
+              const confirmed = window.confirm(
+                `Warning: The Payoneer credit (${formatCurrency(value)}) is more than 50% of the cycle total (${formatCurrency(summary.usdTotal)}). ` +
+                `This will result in a Wells Fargo transfer of ${formatCurrency(summary.usdTotal - value)}. Continue?`
+              );
+              if (!confirmed) {
+                return;
+              }
+            }
+          }
         }
       }
 
@@ -754,33 +774,50 @@ export default function GoldenSheetPage() {
                 </span>
               )}
             </div>
-            <div className="flex justify-between items-center">
-              <span>Payoneer Balance Applied:</span>
-              {editingCycleField === 'payoneerBalanceApplied' ? (
-                <div className="flex gap-2 items-center">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    className="w-24 h-8 text-right font-mono"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleCycleFieldSave();
-                      if (e.key === 'Escape') handleCycleFieldCancel();
-                    }}
-                    autoFocus
-                  />
-                  <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
-                  <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+            <div className="flex flex-col gap-1 p-2 rounded-md border border-blue-200 bg-blue-50/30">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2 flex-col sm:flex-row">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium">Apply Payoneer Credit:</span>
+                  </div>
+                  <span className="text-xs text-gray-600">Enter amount from Payoneer to reduce Wells Fargo request</span>
                 </div>
-              ) : (
-                <span 
-                  className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
-                  onClick={() => handleCycleFieldEdit('payoneerBalanceApplied', cycle.payoneerBalanceApplied)}
-                >
-                  <BlurredValue>{formatCurrency(cycle.payoneerBalanceApplied || 0)}</BlurredValue>
-                </span>
-              )}
+                {editingCycleField === 'payoneerBalanceApplied' ? (
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editValue}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        // Prevent negative values
+                        if (val === '' || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0)) {
+                          setEditValue(val);
+                        }
+                      }}
+                      className="w-24 h-8 text-right font-mono"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCycleFieldSave();
+                        if (e.key === 'Escape') handleCycleFieldCancel();
+                      }}
+                      autoFocus
+                      placeholder="0.00"
+                    />
+                    <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                    <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                  </div>
+                ) : (
+                  <span 
+                    className="font-mono cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
+                    onClick={() => handleCycleFieldEdit('payoneerBalanceApplied', cycle.payoneerBalanceApplied)}
+                    title="Click to edit Payoneer credit amount"
+                  >
+                    <BlurredValue>{formatCurrency(cycle.payoneerBalanceApplied || 0)}</BlurredValue>
+                  </span>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
