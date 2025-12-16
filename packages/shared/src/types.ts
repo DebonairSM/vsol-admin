@@ -51,6 +51,8 @@ export interface Consultant {
   // Bonus
   yearlyBonus?: number | null;
   bonusMonth?: number | null; // 1-12, month when consultant receives yearly bonus
+  // Number field for custom assignment
+  number?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,6 +64,7 @@ export interface PayrollCycle {
   payoneerAccountFundedDate?: Date | null;
   payoneerFundingDate?: Date | null;
   calculatedPaymentDate?: Date | null;
+  paymentArrivalExpectedDate?: Date | null;
   paymentArrivalDate?: Date | null;
   sendReceiptDate?: Date | null;
   sendInvoiceDate?: Date | null;
@@ -163,6 +166,13 @@ export interface CycleSummary {
   usdTotal: number;
   lineCount: number;
   anomalies: string[];
+  // Diagnostic: breakdown of consultants and rates included in totalHourlyValue
+  hourlyValueBreakdown?: Array<{
+    consultantId: number;
+    consultantName: string;
+    snapshottedRate: number;
+    currentRate?: number; // For comparison
+  }>;
 }
 
 // Brazilian-specific types
@@ -247,6 +257,9 @@ export interface PaymentCalculationResult {
   // Cycle summary info
   totalHourlyValue: number;
   globalWorkHours: number;
+  // Payment calculation uses next month's hours
+  paymentMonthWorkHours: number; // Work hours from the month after cycle month
+  paymentMonthLabel: string; // Label of the month whose hours were used (e.g., "December 2025")
   usdTotal: number; // Final cycle total after PIX/Inter deductions
   anomalies: string[];
 }

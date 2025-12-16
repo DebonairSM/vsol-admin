@@ -56,6 +56,8 @@ export const consultants = sqliteTable('consultants', {
   // Bonus
   yearlyBonus: real('yearly_bonus'),
   bonusMonth: integer('bonus_month'), // 1-12, month when consultant receives yearly bonus
+  // Number field for custom assignment
+  number: real('number'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
@@ -68,6 +70,7 @@ export const payrollCycles = sqliteTable('payroll_cycles', {
   payoneerAccountFundedDate: integer('payoneer_account_funded_date', { mode: 'timestamp' }),
   payoneerFundingDate: integer('payoneer_funding_date', { mode: 'timestamp' }),
   calculatedPaymentDate: integer('calculated_payment_date', { mode: 'timestamp' }),
+  paymentArrivalExpectedDate: integer('payment_arrival_expected_date', { mode: 'timestamp' }),
   paymentArrivalDate: integer('payment_arrival_date', { mode: 'timestamp' }),
   sendReceiptDate: integer('send_receipt_date', { mode: 'timestamp' }),
   sendInvoiceDate: integer('send_invoice_date', { mode: 'timestamp' }),

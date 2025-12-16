@@ -106,7 +106,7 @@ Website: www.vsol.software
 
     try {
       const result = await resend.emails.send({
-        from: 'VSol Admin <noreply@vsol.software>', // TODO: Configure verified domain in Resend
+        from: 'VSol Admin <noreply@notifications.vsol.software>',
         to: recipientEmail,
         subject: subject,
         html: htmlBody,

@@ -1,0 +1,1 @@
+ALTER TABLE payroll_cycles ADD `payment_arrival_expected_date` integer;

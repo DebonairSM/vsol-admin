@@ -1,7 +1,8 @@
-import { useConsultants } from '@/hooks/use-consultants';
+import { useConsultants, useUpdateConsultant } from '@/hooks/use-consultants';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BlurredValue } from '@/components/ui/blurred-value';
@@ -14,7 +15,9 @@ import PayrollSettingsTable from '@/components/payroll-settings-table';
 
 export default function ConsultantsPage() {
   const { data: consultants, isLoading } = useConsultants();
+  const updateConsultant = useUpdateConsultant();
   const [generatingContracts, setGeneratingContracts] = useState<Record<number, boolean>>({});
+  const [editingNumber, setEditingNumber] = useState<{ consultantId: number; value: string } | null>(null);
 
   // Check if there are any consultants with bonuses that need to be dissolved
   const hasConsultantsWithBonuses = useMemo(() => {
@@ -60,6 +63,47 @@ export default function ConsultantsPage() {
     consultant.name?.trim() && 
     consultant.companyLegalName?.trim() && 
     consultant.cnpj?.trim();
+
+  const handleNumberEdit = (consultantId: number, currentValue: number | null) => {
+    setEditingNumber({ consultantId, value: currentValue?.toString() || '' });
+  };
+
+  const handleNumberSave = async () => {
+    if (!editingNumber) return;
+
+    try {
+      const value = editingNumber.value.trim() === '' ? null : parseFloat(editingNumber.value);
+      await updateConsultant.mutateAsync({
+        id: editingNumber.consultantId,
+        data: { number: isNaN(value as number) ? null : value }
+      });
+      setEditingNumber(null);
+    } catch (error) {
+      console.error('Failed to update number:', error);
+    }
+  };
+
+  const handleNumberCancel = () => {
+    setEditingNumber(null);
+  };
+
+  // Calculate total of all numbers
+  const totalNumber = useMemo(() => {
+    if (!consultants) return 0;
+    return consultants.reduce((sum: number, consultant: any) => {
+      const num = consultant.number;
+      return sum + (num != null && !isNaN(num) ? num : 0);
+    }, 0);
+  }, [consultants]);
+
+  // Calculate total hourly rate (sum of all consultant hourly rates)
+  const totalHourlyRate = useMemo(() => {
+    if (!consultants) return 0;
+    return consultants.reduce((sum: number, consultant: any) => {
+      const rate = consultant.hourlyRate;
+      return sum + (rate != null && !isNaN(rate) ? rate : 0);
+    }, 0);
+  }, [consultants]);
 
   if (isLoading) {
     return (
@@ -107,6 +151,7 @@ export default function ConsultantsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="sticky left-0 z-10 bg-white min-w-[180px]">Consultant Info</TableHead>
+                      <TableHead className="text-xs md:text-sm">Number</TableHead>
                       <TableHead className="text-xs md:text-sm">Hourly Rate</TableHead>
                       <TableHead className="text-xs md:text-sm">Bonus Month</TableHead>
                       <TableHead className="text-xs md:text-sm">Company Details</TableHead>
@@ -129,6 +174,32 @@ export default function ConsultantsPage() {
                             <div className="text-xs text-gray-500">{consultant.phone}</div>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {editingNumber?.consultantId === consultant.id ? (
+                          <div className="flex gap-1 items-center">
+                            <Input
+                              type="number"
+                              value={editingNumber.value}
+                              onChange={(e) => setEditingNumber({ ...editingNumber, value: e.target.value })}
+                              className="w-20 h-8 text-xs"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleNumberSave();
+                                if (e.key === 'Escape') handleNumberCancel();
+                              }}
+                              autoFocus
+                            />
+                            <Button size="sm" variant="ghost" onClick={handleNumberSave} className="h-8 px-2 text-xs">✓</Button>
+                            <Button size="sm" variant="ghost" onClick={handleNumberCancel} className="h-8 px-2 text-xs">✕</Button>
+                          </div>
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:bg-gray-100 p-1 rounded text-xs md:text-sm font-mono"
+                            onClick={() => handleNumberEdit(consultant.id, consultant.number ?? null)}
+                          >
+                            {consultant.number != null ? consultant.number : '-'}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="font-mono text-xs md:text-sm"><BlurredValue>{formatCurrency(consultant.hourlyRate)}</BlurredValue></TableCell>
                       <TableCell>
@@ -198,6 +269,20 @@ export default function ConsultantsPage() {
                     </TableRow>
                   ))}
                 </TableBody>
+                <tfoot>
+                  <TableRow className="bg-gray-50 font-semibold">
+                    <TableCell colSpan={1} className="sticky left-0 z-10 bg-gray-50">
+                      <span className="text-xs md:text-sm">Total</span>
+                    </TableCell>
+                    <TableCell className="text-xs md:text-sm font-mono">
+                      {totalNumber.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-xs md:text-sm font-mono">
+                      <BlurredValue>{formatCurrency(totalHourlyRate)}</BlurredValue>
+                    </TableCell>
+                    <TableCell colSpan={6}></TableCell>
+                  </TableRow>
+                </tfoot>
               </Table>
               </div>
             </CardContent>

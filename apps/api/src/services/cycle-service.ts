@@ -1,5 +1,6 @@
 import { eq, isNull, sum, desc } from 'drizzle-orm';
 import { db, payrollCycles, cycleLineItems, consultants } from '../db';
+import { WorkHoursService } from './work-hours-service';
 import { CreateCycleRequest, UpdateCycleRequest, CycleSummary, PaymentCalculationResult, ConsultantPaymentDetail } from '@vsol-admin/shared';
 import { NotFoundError, ValidationError } from '../middleware/errors';
 
@@ -73,11 +74,17 @@ export class CycleService {
       throw new ValidationError('No active consultants found. Cannot create empty cycle.');
     }
 
-    // Find the most recent non-archived cycle to copy Payoneer balance carryover
+    // Find the most recent non-archived cycle to calculate remaining Payoneer balance
     const previousCycle = await db.query.payrollCycles.findFirst({
       where: isNull(payrollCycles.archivedAt),
       orderBy: [desc(payrollCycles.createdAt)]
     });
+
+    // Calculate remaining balance from previous cycle (carryover - applied)
+    // This becomes the new cycle's carryover
+    const newCarryover = previousCycle
+      ? (previousCycle.payoneerBalanceCarryover || 0) - (previousCycle.payoneerBalanceApplied || 0)
+      : null;
 
     // Create cycle and line items in transaction
     const result = await db.transaction(async (tx) => {
@@ -86,7 +93,7 @@ export class CycleService {
         monthLabel: data.monthLabel,
         globalWorkHours: data.globalWorkHours || null,
         omnigoBonus: data.omnigoBonus || null,
-        payoneerBalanceCarryover: previousCycle?.payoneerBalanceCarryover || null,
+        payoneerBalanceCarryover: newCarryover !== null ? newCarryover : null,
         payoneerBalanceApplied: null
       }).returning();
 
@@ -146,6 +153,9 @@ export class CycleService {
     if (data.calculatedPaymentDate !== undefined) {
       updateData.calculatedPaymentDate = data.calculatedPaymentDate ? new Date(data.calculatedPaymentDate) : null;
     }
+    if (data.paymentArrivalExpectedDate !== undefined) {
+      updateData.paymentArrivalExpectedDate = data.paymentArrivalExpectedDate ? new Date(data.paymentArrivalExpectedDate) : null;
+    }
     if (data.paymentArrivalDate !== undefined) {
       updateData.paymentArrivalDate = data.paymentArrivalDate ? new Date(data.paymentArrivalDate) : null;
     }
@@ -196,7 +206,20 @@ export class CycleService {
     const cycle = await this.getById(id);
     
     // Calculate total hourly value (sum of all consultant rates)
-    const totalHourlyValue = cycle.lines.reduce((sum, line) => sum + line.ratePerHour, 0);
+    // NOTE: This uses snapshotted ratePerHour values from line items, not current Consultant.hourlyRate
+    // This preserves historical accuracy - rates are captured when the cycle is created
+    const totalHourlyValue = cycle.lines.reduce((sum, line) => {
+      const rate = line.ratePerHour || 0;
+      return sum + rate;
+    }, 0);
+    
+    // Build breakdown for diagnostics (shows which consultants and rates are included)
+    const hourlyValueBreakdown = cycle.lines.map(line => ({
+      consultantId: line.consultantId,
+      consultantName: line.consultant.name,
+      snapshottedRate: line.ratePerHour || 0,
+      currentRate: line.consultant.hourlyRate // For comparison with current rate
+    }));
     
     // Calculate USD total using Excel formula: =B22*B26-(B23+B24)+B25+B27
     // B22 = totalHourlyValue, B26 = globalWorkHours, B23 = pagamentoPIX, B24 = pagamentoInter
@@ -231,7 +254,8 @@ export class CycleService {
       totalHourlyValue,
       usdTotal,
       lineCount: cycle.lines.length,
-      anomalies
+      anomalies,
+      hourlyValueBreakdown
     };
   }
 
@@ -244,16 +268,56 @@ export class CycleService {
   }
 
   static async calculatePayment(id: number, noBonus: boolean = false): Promise<PaymentCalculationResult> {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:247',message:'calculatePayment entry',data:{cycleId:id,noBonus},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     const cycle = await this.getById(id);
-    const globalWorkHours = cycle.globalWorkHours || 0;
 
-    if (globalWorkHours === 0) {
-      throw new ValidationError('Global work hours must be set before calculating payments');
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:250',message:'cycle retrieved',data:{cycleId:cycle.id,monthLabel:cycle.monthLabel},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+
+    const parsedMonth = this.parseMonthLabel(cycle.monthLabel);
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:252',message:'parseMonthLabel result',data:{monthLabel:cycle.monthLabel,parsedMonth},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    if (!parsedMonth) {
+      throw new ValidationError('Invalid month label format. Expected "Month YYYY".');
     }
+
+    const { year: nextYear, month: nextMonth } = this.getNextMonth(parsedMonth.year, parsedMonth.month);
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:258',message:'getNextMonth result',data:{currentYear:parsedMonth.year,currentMonth:parsedMonth.month,nextYear,nextMonth},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    const nextMonthWorkHoursRef = await WorkHoursService.getByYearMonth(nextYear, nextMonth);
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:260',message:'WorkHoursService.getByYearMonth result',data:{nextYear,nextMonth,workHoursRef:nextMonthWorkHoursRef?{id:nextMonthWorkHoursRef.id,workHours:nextMonthWorkHoursRef.workHours}:null,globalWorkHours:cycle.globalWorkHours},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
+
+    let paymentWorkHours: number;
+    let usingCalculatedFallback = false;
+
+    if (!nextMonthWorkHoursRef || !nextMonthWorkHoursRef.workHours || nextMonthWorkHoursRef.workHours <= 0) {
+      // Calculate work hours on the fly for the next month (matches UI calculation logic)
+      // This ensures we use the correct hours (e.g., 184 for December 2025) even if not in DB yet
+      paymentWorkHours = this.calculateWorkHoursForMonth(nextYear, nextMonth);
+      usingCalculatedFallback = true;
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:295',message:'Using calculated work hours fallback',data:{nextYear,nextMonth,calculatedWorkHours:paymentWorkHours,cycleId:cycle.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
+      // #endregion
+    } else {
+      paymentWorkHours = nextMonthWorkHoursRef.workHours;
+    }
+
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:299',message:'paymentWorkHours value before consultant calculations',data:{paymentWorkHours,nextYear,nextMonth,usingCalculatedFallback,cycleId:cycle.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H'})}).catch(()=>{});
+    // #endregion
+
+    const paymentMonthLabel = `${this.getMonthName(nextMonth)} ${nextYear}`;
 
     // Calculate individual consultant payment details
     const consultantPayments: ConsultantPaymentDetail[] = cycle.lines.map(line => {
-      const workHours = line.workHours || globalWorkHours;
+      const workHours = paymentWorkHours;
       const baseAmount = workHours * line.ratePerHour;
       const adjustmentValue = line.adjustmentValue || 0;
       const bonusAdvance = line.bonusAdvance || 0;
@@ -280,15 +344,23 @@ export class CycleService {
     const payoneerBalanceApplied = cycle.payoneerBalanceApplied || 0;
     const totalWellsFargoTransfer = totalConsultantPayments + omnigoBonus + equipmentsUSD - payoneerBalanceApplied;
 
-    // Get cycle summary for additional info
+    // Get cycle summary for additional info (for totalHourlyValue and anomalies)
     const summary = await this.getSummary(id);
+    
+    // Calculate USD total using payment month's work hours (not cycle's globalWorkHours)
+    // Formula: =B22*B26-(B23+B24)+B25+B27 where B26 is paymentMonthWorkHours
+    const totalHourlyValue = summary.totalHourlyValue;
+    const baseAmount = totalHourlyValue * paymentWorkHours;
+    const paymentSubtractions = (cycle.pagamentoPIX || 0) + (cycle.pagamentoInter || 0);
+    const bonuses = omnigoBonus + equipmentsUSD;
+    const usdTotalForPayment = baseAmount - paymentSubtractions + bonuses;
 
     // Update cycle with calculated payment date
     await this.update(id, {
       calculatedPaymentDate: new Date().toISOString()
     });
 
-    return {
+    const result = {
       cycleId: cycle.id,
       monthLabel: cycle.monthLabel,
       calculatedAt: new Date(),
@@ -298,10 +370,97 @@ export class CycleService {
       equipmentsUSD,
       totalWellsFargoTransfer,
       totalHourlyValue: summary.totalHourlyValue,
-      globalWorkHours,
-      usdTotal: summary.usdTotal,
+      globalWorkHours: cycle.globalWorkHours || 0,
+      paymentMonthWorkHours: paymentWorkHours,
+      paymentMonthLabel,
+      usdTotal: usdTotalForPayment, // Use payment month's work hours, not cycle's globalWorkHours
       anomalies: summary.anomalies
     };
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:365',message:'Payment calculation result being returned',data:{paymentMonthWorkHours:result.paymentMonthWorkHours,paymentMonthLabel:result.paymentMonthLabel,globalWorkHours:result.globalWorkHours,usdTotal:result.usdTotal,usdTotalFromSummary:summary.usdTotal,firstConsultantWorkHours:result.consultantPayments[0]?.workHours,cycleId:result.cycleId},timestamp:Date.now(),sessionId:'debug-session',runId:'run5',hypothesisId:'J'})}).catch(()=>{});
+    // #endregion
+    
+    return result;
+  }
+
+  private static parseMonthLabel(monthLabel: string): { year: number; month: number } | null {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:327',message:'parseMonthLabel entry',data:{monthLabel},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    const match = monthLabel.match(/^(\w+)\s+(\d{4})$/);
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:329',message:'parseMonthLabel regex match',data:{monthLabel,match:match?match[0]:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    if (!match) {
+      return null;
+    }
+
+    const [, monthName, yearStr] = match;
+    const year = parseInt(yearStr, 10);
+
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const month = monthNames.indexOf(monthName) + 1;
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:343',message:'parseMonthLabel result',data:{monthLabel,monthName,year,month,monthIndex:monthNames.indexOf(monthName)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    if (month === 0) {
+      return null;
+    }
+
+    return { year, month };
+  }
+
+  private static getNextMonth(year: number, month: number): { year: number; month: number } {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:351',message:'getNextMonth entry',data:{year,month},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    let nextMonth = month + 1;
+    let nextYear = year;
+
+    if (nextMonth > 12) {
+      nextMonth = 1;
+      nextYear = year + 1;
+    }
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:359',message:'getNextMonth result',data:{inputYear:year,inputMonth:month,nextYear,nextMonth},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+
+    return { year: nextYear, month: nextMonth };
+  }
+
+  private static getMonthName(monthNumber: number): string {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    return months[monthNumber - 1] || '';
+  }
+
+  /**
+   * Calculate work hours for a given month (weekdays * 8 hours)
+   * This matches the client-side calculation logic
+   */
+  private static calculateWorkHoursForMonth(year: number, monthNumber: number): number {
+    // monthNumber is 1-12, Date month is 0-11
+    const monthIndex = monthNumber - 1;
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    let weekdays = 0;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayOfWeek = new Date(year, monthIndex, day).getDay();
+      // 0 = Sunday, 6 = Saturday, so weekdays are 1-5 (Monday-Friday)
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        weekdays++;
+      }
+    }
+
+    return weekdays * 8;
   }
 
   static async archive(id: number) {

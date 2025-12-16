@@ -22,7 +22,7 @@ import { BlurredValue } from '@/components/ui/blurred-value';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 import { useCountdown } from '@/hooks/use-countdown';
 import { useState, useMemo } from 'react';
-import { Trash2, X, Calendar, CreditCard, Clock } from 'lucide-react';
+import { Trash2, X, Calendar, CreditCard, Clock, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import BonusInfoCell from '@/components/bonus-info-cell';
 import WorkflowTracker from '@/components/workflow-tracker';
@@ -87,6 +87,7 @@ export default function GoldenSheetPage() {
   const { data: summary, isLoading: summaryLoading } = useCycleSummary(cycleId);
   const { data: bonusWorkflow } = useBonusWorkflow(cycleId);
   const { data: allCycles } = useCycles();
+  const [showHourlyBreakdown, setShowHourlyBreakdown] = useState(false);
   const updateLineItem = useUpdateLineItem();
   const updateCycle = useUpdateCycle();
   const deleteCycle = useDeleteCycle();
@@ -364,6 +365,7 @@ export default function GoldenSheetPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12 text-center">#</TableHead>
                   <TableHead className="sticky left-0 z-10 bg-white min-w-[180px]">Contractor Info</TableHead>
                   <TableHead className="text-xs md:text-sm">Sent Invoice</TableHead>
                   <TableHead className="text-xs md:text-sm">Adjustment Value</TableHead>
@@ -377,8 +379,11 @@ export default function GoldenSheetPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cycle.lines?.map((line: any) => (
+                {cycle.lines?.map((line: any, index: number) => (
                   <TableRow key={line.id}>
+                    <TableCell className="text-center font-medium text-gray-500">
+                      {index + 1}
+                    </TableCell>
                     <TableCell className="font-medium sticky left-0 z-10 bg-white min-w-[180px]">
                       <div>
                         <div className="font-semibold text-xs md:text-sm">{line.consultant.name}</div>
@@ -579,12 +584,45 @@ export default function GoldenSheetPage() {
         <Card>
           <CardHeader>
             <CardTitle>Totals</CardTitle>
+            {cycle && <CardDescription>Cycle: {cycle.monthLabel}</CardDescription>}
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex justify-between">
-              <span>Total Hourly Value:</span>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span>Total Hourly Value:</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => setShowHourlyBreakdown(!showHourlyBreakdown)}
+                  title="Show breakdown of consultants and rates"
+                >
+                  <Info className="h-3 w-3" />
+                </Button>
+              </div>
               <span className="font-mono"><BlurredValue>{formatCurrency(summary.totalHourlyValue)}</BlurredValue></span>
             </div>
+            {showHourlyBreakdown && summary.hourlyValueBreakdown && (
+              <div className="mt-2 pt-2 border-t text-xs space-y-1 bg-gray-50 p-2 rounded">
+                <div className="font-semibold text-gray-700 mb-1">Breakdown (snapshotted rates):</div>
+                {summary.hourlyValueBreakdown.map((item) => (
+                  <div key={item.consultantId} className="flex justify-between text-gray-600">
+                    <span className="truncate">{item.consultantName}:</span>
+                    <span className="font-mono ml-2">
+                      ${item.snapshottedRate.toFixed(2)}
+                      {item.currentRate !== undefined && item.currentRate !== item.snapshottedRate && (
+                        <span className="text-gray-400 ml-1">
+                          (current: ${item.currentRate.toFixed(2)})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+                <div className="pt-1 mt-1 border-t text-gray-500 italic">
+                  Note: Uses snapshotted rates from cycle creation, not current consultant rates
+                </div>
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <span>Global Work Hours:</span>
               {editingCycleField === 'globalWorkHours' ? (
@@ -746,77 +784,98 @@ export default function GoldenSheetPage() {
               )}
             </div>
             <hr className="border-gray-200 my-2" />
-            <div className="flex justify-between items-center">
-              <span>Payoneer Balance Carryover:</span>
-              {editingCycleField === 'payoneerBalanceCarryover' ? (
-                <div className="flex gap-2 items-center">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    className="w-24 h-8 text-right font-mono"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleCycleFieldSave();
-                      if (e.key === 'Escape') handleCycleFieldCancel();
-                    }}
-                    autoFocus
-                  />
-                  <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
-                  <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+            
+            {/* Payoneer Balance Subsection */}
+            <div className="mt-4 p-4 rounded-lg border border-blue-200 bg-blue-50/30">
+              <div className="flex items-center gap-2 mb-3">
+                <CreditCard className="h-4 w-4 text-blue-600" />
+                <h3 className="font-semibold text-sm text-gray-900">Payoneer Balance</h3>
+              </div>
+              
+              <div className="space-y-3">
+                {/* Balance Carryover */}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-700">Balance Carryover:</span>
+                  {editingCycleField === 'payoneerBalanceCarryover' ? (
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="w-24 h-8 text-right font-mono"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleCycleFieldSave();
+                          if (e.key === 'Escape') handleCycleFieldCancel();
+                        }}
+                        autoFocus
+                      />
+                      <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                    </div>
+                  ) : (
+                    <span 
+                      className="font-mono cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
+                      onClick={() => handleCycleFieldEdit('payoneerBalanceCarryover', cycle.payoneerBalanceCarryover)}
+                    >
+                      <BlurredValue>{formatCurrency(cycle.payoneerBalanceCarryover || 0)}</BlurredValue>
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <span 
-                  className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
-                  onClick={() => handleCycleFieldEdit('payoneerBalanceCarryover', cycle.payoneerBalanceCarryover)}
-                >
-                  <BlurredValue>{formatCurrency(cycle.payoneerBalanceCarryover || 0)}</BlurredValue>
-                </span>
-              )}
-            </div>
-            <div className="flex flex-col gap-1 p-2 rounded-md border border-blue-200 bg-blue-50/30">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2 flex-col sm:flex-row">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-blue-600" />
-                    <span className="font-medium">Apply Payoneer Credit:</span>
+
+                {/* Applied Credit */}
+                <div className="flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-gray-700">Applied Credit:</span>
+                    <span className="text-xs text-gray-500">Amount from Payoneer to reduce Wells Fargo request</span>
                   </div>
-                  <span className="text-xs text-gray-600">Enter amount from Payoneer to reduce Wells Fargo request</span>
+                  {editingCycleField === 'payoneerBalanceApplied' ? (
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={editValue}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          // Prevent negative values
+                          if (val === '' || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0)) {
+                            setEditValue(val);
+                          }
+                        }}
+                        className="w-24 h-8 text-right font-mono"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleCycleFieldSave();
+                          if (e.key === 'Escape') handleCycleFieldCancel();
+                        }}
+                        autoFocus
+                        placeholder="0.00"
+                      />
+                      <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                    </div>
+                  ) : (
+                    <span 
+                      className="font-mono cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
+                      onClick={() => handleCycleFieldEdit('payoneerBalanceApplied', cycle.payoneerBalanceApplied)}
+                      title="Click to edit Payoneer credit amount"
+                    >
+                      <BlurredValue>{formatCurrency(cycle.payoneerBalanceApplied || 0)}</BlurredValue>
+                    </span>
+                  )}
                 </div>
-                {editingCycleField === 'payoneerBalanceApplied' ? (
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={editValue}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        // Prevent negative values
-                        if (val === '' || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0)) {
-                          setEditValue(val);
-                        }
-                      }}
-                      className="w-24 h-8 text-right font-mono"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleCycleFieldSave();
-                        if (e.key === 'Escape') handleCycleFieldCancel();
-                      }}
-                      autoFocus
-                      placeholder="0.00"
-                    />
-                    <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
-                    <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+
+                {/* Remaining Balance */}
+                <div className="pt-2 border-t border-blue-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-900">Remaining Balance:</span>
+                    <span className="font-mono font-semibold text-gray-900">
+                      {formatCurrency(
+                        (cycle.payoneerBalanceCarryover || 0) - (cycle.payoneerBalanceApplied || 0)
+                      )}
+                    </span>
                   </div>
-                ) : (
-                  <span 
-                    className="font-mono cursor-pointer hover:bg-blue-100 p-1 rounded transition-colors"
-                    onClick={() => handleCycleFieldEdit('payoneerBalanceApplied', cycle.payoneerBalanceApplied)}
-                    title="Click to edit Payoneer credit amount"
-                  >
-                    <BlurredValue>{formatCurrency(cycle.payoneerBalanceApplied || 0)}</BlurredValue>
-                  </span>
-                )}
+                </div>
               </div>
             </div>
           </CardContent>

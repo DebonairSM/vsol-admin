@@ -1,0 +1,1 @@
+ALTER TABLE consultants ADD `number` real;

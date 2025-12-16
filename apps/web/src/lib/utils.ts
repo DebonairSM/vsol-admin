@@ -83,3 +83,51 @@ export function getMonthsList(): Array<{ value: number; label: string }> {
     { value: 12, label: 'December' }
   ]
 }
+
+export function calculateCountdown(targetDate: Date | string | null | undefined): {
+  days: number;
+  hours: number;
+  minutes: number;
+  isPast: boolean;
+  displayText: string;
+} | null {
+  if (!targetDate) return null;
+  
+  const target = typeof targetDate === 'string' ? new Date(targetDate) : targetDate;
+  const now = new Date();
+  const diffMs = target.getTime() - now.getTime();
+  
+  const isPast = diffMs < 0;
+  const absDiffMs = Math.abs(diffMs);
+  
+  const days = Math.floor(absDiffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((absDiffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((absDiffMs % (1000 * 60 * 60)) / (1000 * 60));
+  
+  let displayText = '';
+  if (isPast) {
+    if (days > 0) {
+      displayText = `${days} day${days !== 1 ? 's' : ''} ago`;
+    } else if (hours > 0) {
+      displayText = `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    } else {
+      displayText = `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    }
+  } else {
+    if (days > 0) {
+      displayText = `${days} day${days !== 1 ? 's' : ''} left`;
+    } else if (hours > 0) {
+      displayText = `${hours} hour${hours !== 1 ? 's' : ''} left`;
+    } else {
+      displayText = `${minutes} minute${minutes !== 1 ? 's' : ''} left`;
+    }
+  }
+  
+  return {
+    days,
+    hours,
+    minutes,
+    isPast,
+    displayText
+  };
+}

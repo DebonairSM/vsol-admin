@@ -108,7 +108,9 @@ export const createConsultantSchema = z.object({
       cpf: z.string().refine(validateCPF, 'Invalid CPF format').optional(),
       // Bonus
       yearlyBonus: z.number().positive().optional(),
-      bonusMonth: z.number().int().min(1).max(12).optional()
+      bonusMonth: z.number().int().min(1).max(12).optional(),
+      // Number field for custom assignment
+      number: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional()
 });
 
 export const updateConsultantSchema = z.object({
@@ -169,7 +171,9 @@ export const updateConsultantSchema = z.object({
       terminationReason: z.enum(['FIRED', 'LAID_OFF', 'QUIT', 'MUTUAL_AGREEMENT']).nullable().optional(),
       // Bonus
       yearlyBonus: z.number().positive().nullable().optional(),
-      bonusMonth: z.number().int().min(1).max(12).nullable().optional()
+      bonusMonth: z.number().int().min(1).max(12).nullable().optional(),
+      // Number field for custom assignment
+      number: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional()
 });
 
 // Cycle schemas
@@ -184,6 +188,7 @@ export const updateCycleSchema = z.object({
   payoneerAccountFundedDate: z.string().datetime().nullable().optional(),
   payoneerFundingDate: z.string().datetime().nullable().optional(),
   calculatedPaymentDate: z.string().datetime().nullable().optional(),
+  paymentArrivalExpectedDate: z.string().datetime().nullable().optional(),
   paymentArrivalDate: z.string().datetime().nullable().optional(),
   sendReceiptDate: z.string().datetime().nullable().optional(),
   sendInvoiceDate: z.string().datetime().nullable().optional(),

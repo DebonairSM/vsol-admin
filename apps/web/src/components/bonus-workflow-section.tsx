@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDate, formatMonthAbbr } from '@/lib/utils';
-import { Mail, Info, Copy, X } from 'lucide-react';
+import { Mail, Info, Copy, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useBonusWorkflow, useCreateBonusWorkflow, useUpdateBonusWorkflow, useGenerateBonusEmail } from '@/hooks/use-bonus-workflow';
 import { useCycleLines, useCycle } from '@/hooks/use-cycles';
 import { toast } from 'sonner';
@@ -25,6 +25,7 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   const createWorkflow = useCreateBonusWorkflow(cycleId);
   const updateWorkflow = useUpdateBonusWorkflow(cycleId);
   const generateEmail = useGenerateBonusEmail(cycleId);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Calculate the work payment month (next month after cycle start) and bonus payment month (one month after)
   const workPaymentMonth = useMemo(() => {
@@ -207,20 +208,38 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   if (!workflow) {
     return (
       <Card>
-        <CardContent className="p-6">
+        <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold mb-1">Bonus Workflow</h3>
-              <p className="text-sm text-gray-600 mb-2">No bonus workflow has been created for this cycle yet.</p>
-              <p className="text-xs text-gray-500">
-                Recipient will be auto-selected when bonus month matches the bonus payment month (one month after cycle start) or when bonus fields are set on line items.
-              </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="h-6 w-6"
+              >
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+              <CardTitle>Bonus Workflow</CardTitle>
             </div>
             <Button onClick={handleCreateWorkflow} disabled={createWorkflow.isPending}>
               Create Bonus Workflow
             </Button>
           </div>
-        </CardContent>
+        </CardHeader>
+        {isExpanded && (
+          <CardContent className="p-6 pt-0">
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">No bonus workflow has been created for this cycle yet.</p>
+              <p className="text-xs text-gray-500">
+                Recipient will be auto-selected when bonus month matches the bonus payment month (one month after cycle start) or when bonus fields are set on line items.
+              </p>
+            </div>
+          </CardContent>
+        )}
       </Card>
     );
   }
@@ -228,10 +247,29 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bonus Workflow</CardTitle>
-        <CardDescription>Manage yearly bonus announcement and payment tracking</CardDescription>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-6 w-6"
+            >
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+            <div>
+              <CardTitle>Bonus Workflow</CardTitle>
+              <CardDescription>Manage yearly bonus announcement and payment tracking</CardDescription>
+            </div>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      {isExpanded && (
+        <CardContent className="space-y-4">
         {/* Consultant Selection */}
         <div className="space-y-2">
           <Label>Bonus Recipient</Label>
@@ -492,7 +530,8 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
         >
           Save Changes
         </Button>
-      </CardContent>
+        </CardContent>
+      )}
     </Card>
   );
 }

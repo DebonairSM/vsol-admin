@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +7,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatDate, cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { formatDate, formatDateTime, cn, calculateCountdown } from '@/lib/utils';
 import { workflowSteps, calculateWorkflowProgress, isStepCompleted, canCompleteStep } from '@/lib/workflow-config';
-import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle, Lock, ExternalLink } from 'lucide-react';
+import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle, Lock, ExternalLink, Eye } from 'lucide-react';
 import { useCalculatePayment } from '@/hooks/use-cycles';
 import { calculateDeadlineAlert, parseMonthLabel } from '@/lib/business-days';
 import { getWorkHoursForMonthByNumber, getMonthName } from '@/lib/work-hours';
@@ -30,8 +31,19 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const [noBonus, setNoBonus] = useState(false);
   const [receiptAmount, setReceiptAmount] = useState<string>('');
   const [sendingReceipt, setSendingReceipt] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   
   const calculatePaymentMutation = useCalculatePayment();
+
+  // Update current time for countdown - more frequently when showing hours
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 10000); // Update every 10 seconds for accurate hour countdown
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Helper function to get next month's work hours data
   const getNextMonthInfo = () => {
@@ -66,17 +78,39 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
 
   const handleStepClick = (stepId: string, _fieldName: string, currentDate?: Date | string | null) => {
     setEditingStep(stepId);
-    if (currentDate) {
-      const date = new Date(currentDate);
-      // Use local date instead of UTC date to avoid timezone issues
-      const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-      setEditDate(localDate.toISOString().split('T')[0]);
-    } else {
-      setEditDate('');
-    }
     
-    // For Payoneer Account Funded step, also load funding date
-    if (stepId === 'payoneer-account-funded') {
+    // For Payment Arrival step, load both expected date (with time) and completion date (date only)
+    if (stepId === 'payment-arrival') {
+      // Load expected arrival date (with time)
+      if (cycle.paymentArrivalExpectedDate) {
+        const expectedDate = new Date(cycle.paymentArrivalExpectedDate);
+        const localExpectedDate = new Date(expectedDate.getTime() - (expectedDate.getTimezoneOffset() * 60000));
+        const year = localExpectedDate.getFullYear();
+        const month = String(localExpectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localExpectedDate.getDate()).padStart(2, '0');
+        const hours = String(localExpectedDate.getHours()).padStart(2, '0');
+        const minutes = String(localExpectedDate.getMinutes()).padStart(2, '0');
+        setEditFundingDate(`${year}-${month}-${day}T${hours}:${minutes}`);
+      } else {
+        setEditFundingDate('');
+      }
+      // Load completion date (date only)
+      if (currentDate) {
+        const date = new Date(currentDate);
+        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        setEditDate(localDate.toISOString().split('T')[0]);
+      } else {
+        setEditDate('');
+      }
+    } else if (stepId === 'payoneer-account-funded') {
+      // For Payoneer Account Funded step, load completion date and funding date
+      if (currentDate) {
+        const date = new Date(currentDate);
+        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        setEditDate(localDate.toISOString().split('T')[0]);
+      } else {
+        setEditDate('');
+      }
       if (cycle.payoneerFundingDate) {
         const fundingDate = new Date(cycle.payoneerFundingDate);
         const localFundingDate = new Date(fundingDate.getTime() - (fundingDate.getTimezoneOffset() * 60000));
@@ -91,6 +125,15 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
         setEditFundingDate('');
       }
     } else {
+      // For other steps, use date-only format
+      if (currentDate) {
+        const date = new Date(currentDate);
+        // Use local date instead of UTC date to avoid timezone issues
+        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        setEditDate(localDate.toISOString().split('T')[0]);
+      } else {
+        setEditDate('');
+      }
       setEditFundingDate('');
     }
   };
@@ -102,15 +145,23 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     if (!step) return;
 
     try {
-      // For Payoneer Account Funded step, save both dates
+      // For Payoneer Account Funded step, save both dates independently
       if (editingStep === 'payoneer-account-funded') {
+        // Save completion date (user can update or clear it)
         let completionDateToSave = null;
         if (editDate) {
           const localDate = new Date(editDate + 'T12:00:00');
           completionDateToSave = localDate.toISOString();
         }
-        await onUpdateWorkflowDate('payoneerAccountFundedDate', completionDateToSave);
+        // Only update completion date if it was explicitly changed from current value
+        const currentCompletionDate = cycle.payoneerAccountFundedDate 
+          ? new Date(cycle.payoneerAccountFundedDate).toISOString().split('T')[0]
+          : '';
+        if (editDate !== currentCompletionDate) {
+          await onUpdateWorkflowDate('payoneerAccountFundedDate', completionDateToSave);
+        }
         
+        // Always save funding date (can be saved independently)
         let fundingDateToSave = null;
         if (editFundingDate) {
           // editFundingDate is in datetime-local format (YYYY-MM-DDTHH:mm)
@@ -121,6 +172,33 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
         
         setEditingStep(null);
         setEditFundingDate('');
+        toast.success(`${step.title} dates updated`);
+      } else if (editingStep === 'payment-arrival') {
+        // For Payment Arrival step, save both expected date (with time) and completion date (date only)
+        // Save expected arrival date (with time)
+        let expectedDateToSave = null;
+        if (editFundingDate) {
+          const localDate = new Date(editFundingDate);
+          expectedDateToSave = localDate.toISOString();
+        }
+        await onUpdateWorkflowDate('paymentArrivalExpectedDate', expectedDateToSave);
+        
+        // Save completion date (date only) - only if it was explicitly changed
+        const currentCompletionDate = cycle.paymentArrivalDate 
+          ? new Date(cycle.paymentArrivalDate).toISOString().split('T')[0]
+          : '';
+        if (editDate !== currentCompletionDate) {
+          let completionDateToSave = null;
+          if (editDate) {
+            const localDate = new Date(editDate + 'T12:00:00');
+            completionDateToSave = localDate.toISOString();
+          }
+          await onUpdateWorkflowDate('paymentArrivalDate', completionDateToSave);
+        }
+        
+        setEditingStep(null);
+        setEditFundingDate('');
+        setEditDate('');
         toast.success(`${step.title} dates updated`);
       } else {
         let dateToSave = null;
@@ -174,6 +252,30 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
         setEditDate('');
         setEditFundingDate('');
         toast.success(`${step.title} marked as complete`);
+      } else if (step.id === 'payment-arrival') {
+        // For Payment Arrival step, handle both expected date (with time) and completion date (date only)
+        // Save expected arrival date (with time) if provided
+        if (editFundingDate) {
+          const localDate = new Date(editFundingDate);
+          await onUpdateWorkflowDate('paymentArrivalExpectedDate', localDate.toISOString());
+        }
+        
+        // Save completion date (date only) - use today if not provided
+        let completionDateToSave: string;
+        if (editDate) {
+          const localDate = new Date(editDate + 'T12:00:00');
+          completionDateToSave = localDate.toISOString();
+        } else {
+          const now = new Date();
+          const localNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+          completionDateToSave = localNoon.toISOString();
+        }
+        await onUpdateWorkflowDate('paymentArrivalDate', completionDateToSave);
+        
+        setEditingStep(null);
+        setEditFundingDate('');
+        setEditDate('');
+        toast.success(`${step.title} marked as complete`);
       } else {
         let dateToSave: string;
         
@@ -209,6 +311,14 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
         setEditFundingDate('');
         setCalculationResult(null);
         toast.success(`${step.title} dates reset`);
+      } else if (step.id === 'payment-arrival') {
+        await onUpdateWorkflowDate('paymentArrivalExpectedDate', null);
+        await onUpdateWorkflowDate('paymentArrivalDate', null);
+        setEditingStep(null);
+        setEditDate('');
+        setEditFundingDate('');
+        setCalculationResult(null);
+        toast.success(`${step.title} dates reset`);
       } else {
         await onUpdateWorkflowDate(step.fieldName, null);
         setEditingStep(null);
@@ -231,6 +341,63 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     }
   };
 
+  const generateReceiptPreview = (): string => {
+    const amount = parseFloat(receiptAmount) || 0;
+    const formattedAmount = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+
+    const paymentDate = cycle.sendReceiptDate || new Date();
+    const formattedDate = paymentDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Receipt</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+    <h2 style="color: #2c3e50; margin-top: 0;">Payment Receipt</h2>
+    <p>Dear Omnigo Accounts Payable Team,</p>
+    <p>This email confirms receipt of payment for the following invoice:</p>
+    
+    <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #3498db;">
+      <p style="margin: 5px 0;"><strong>Cycle Period:</strong> ${cycle.monthLabel}</p>
+      <p style="margin: 5px 0;"><strong>Receipt Amount:</strong> ${formattedAmount}</p>
+      <p style="margin: 5px 0;"><strong>Payment Date:</strong> ${formattedDate}</p>
+    </div>
+    
+    <p>Thank you for your prompt payment. We appreciate your business.</p>
+    
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+      <p style="margin: 5px 0;"><strong>VSol Admin</strong></p>
+      <p style="margin: 5px 0;">Phone: (407) 409-0874</p>
+      <p style="margin: 5px 0;">Email: admin@vsol.software</p>
+      <p style="margin: 5px 0;">Website: www.vsol.software</p>
+    </div>
+  </div>
+</body>
+</html>
+    `.trim();
+  };
+
+  const handlePreviewReceipt = () => {
+    const amount = parseFloat(receiptAmount);
+    if (!amount || amount <= 0) {
+      toast.error('Please enter a valid receipt amount greater than zero');
+      return;
+    }
+    setShowPreview(true);
+  };
+
   const handleSendReceipt = async () => {
     const amount = parseFloat(receiptAmount);
     if (!amount || amount <= 0) {
@@ -251,6 +418,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
       // Close the popover and reset state
       setEditingStep(null);
       setReceiptAmount('');
+      setShowPreview(false);
     } catch (error: any) {
       console.error('Failed to send receipt:', error);
       toast.error(error.message || 'Failed to send receipt');
@@ -341,6 +509,11 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                       <div className="flex-1">
                         <h4 className="font-medium text-sm">
                           {step.order}. {step.title}
+                          {step.id === 'payment-arrival' && cycle.paymentArrivalExpectedDate && (
+                            <span className="ml-2 text-xs font-normal text-blue-700">
+                              ({formatDateTime(cycle.paymentArrivalExpectedDate)})
+                            </span>
+                          )}
                         </h4>
                         <p className={cn(
                           "text-xs mt-1",
@@ -357,10 +530,34 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                               }
                               return null; // Will show warning badge below instead
                             })()
+                          ) : step.id === 'payment-arrival' && cycle.paymentArrivalExpectedDate ? (
+                            `Expected: ${formatDateTime(cycle.paymentArrivalExpectedDate)}`
                           ) : (
                             step.description
                           )}
                         </p>
+                        {step.id === 'payment-arrival' && cycle.paymentArrivalExpectedDate && (() => {
+                          const countdown = calculateCountdown(cycle.paymentArrivalExpectedDate);
+                          if (!countdown) return null;
+                          
+                          const isUrgent = !countdown.isPast && countdown.days === 0;
+                          const isPast = countdown.isPast;
+                          
+                          return (
+                            <div className="mt-2">
+                              <Badge 
+                                variant={isPast ? "secondary" : isUrgent ? "destructive" : "default"}
+                                className={cn(
+                                  "flex items-center gap-1 text-xs font-semibold",
+                                  isUrgent && "animate-pulse"
+                                )}
+                              >
+                                <Clock className="w-3 h-3" />
+                                {countdown.displayText}
+                              </Badge>
+                            </div>
+                          );
+                        })()}
                         {isBlocked && step.dependsOn && (
                           <div className="mt-2">
                             <Badge variant="secondary" className="flex items-center gap-1 text-xs">
@@ -385,11 +582,18 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                         {isCompleted && currentDate && (
                           <div className="text-xs mt-2 space-y-1">
                             <p className="font-mono text-gray-800">
-                              Completed: {formatDate(currentDate)}
+                              {step.id === 'payment-arrival' 
+                                ? `Arrival: ${formatDate(currentDate)}`
+                                : `Completed: ${formatDate(currentDate)}`}
                             </p>
+                            {step.id === 'payment-arrival' && cycle.paymentArrivalExpectedDate && (
+                              <p className="font-mono text-blue-700">
+                                Expected: {formatDateTime(cycle.paymentArrivalExpectedDate)}
+                              </p>
+                            )}
                             {step.id === 'payoneer-account-funded' && cycle.payoneerFundingDate && (
                               <p className="font-mono text-blue-700">
-                                Funding: {formatDate(cycle.payoneerFundingDate)}
+                                Funding: {formatDateTime(cycle.payoneerFundingDate)}
                               </p>
                             )}
                           </div>
@@ -423,8 +627,41 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                       <PopoverContent className="w-96">
                         <div className="space-y-4">
                           <div>
-                            <h4 className="font-medium">{step.title}</h4>
-                            <p className="text-sm text-gray-600">{step.description}</p>
+                            <h4 className="font-medium">
+                              {step.title}
+                              {step.id === 'payment-arrival' && cycle.paymentArrivalExpectedDate && (
+                                <span className="ml-2 text-sm font-normal text-blue-700">
+                                  ({formatDateTime(cycle.paymentArrivalExpectedDate)})
+                                </span>
+                              )}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {step.id === 'payment-arrival' && cycle.paymentArrivalExpectedDate 
+                                ? `Expected: ${formatDateTime(cycle.paymentArrivalExpectedDate)}`
+                                : step.description}
+                            </p>
+                            {step.id === 'payment-arrival' && cycle.paymentArrivalExpectedDate && (() => {
+                              const countdown = calculateCountdown(cycle.paymentArrivalExpectedDate);
+                              if (!countdown) return null;
+                              
+                              const isUrgent = !countdown.isPast && countdown.days === 0;
+                              const isPast = countdown.isPast;
+                              
+                              return (
+                                <div className="mt-2">
+                                  <Badge 
+                                    variant={isPast ? "secondary" : isUrgent ? "destructive" : "default"}
+                                    className={cn(
+                                      "flex items-center gap-1 text-xs font-semibold",
+                                      isUrgent && "animate-pulse"
+                                    )}
+                                  >
+                                    <Clock className="w-3 h-3" />
+                                    {countdown.displayText}
+                                  </Badge>
+                                </div>
+                              );
+                            })()}
                             {showDeadlineAlert && deadlineAlert && (
                               <div className={cn(
                                 "mt-3 p-2 rounded-lg border",
@@ -469,7 +706,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                     {calculatePaymentMutation.isPending ? 'Calculating...' : 'Calculate Payment'}
                                   </Button>
                                   <p className="text-xs text-gray-500">
-                                    This will calculate amounts for Wells Fargo transfer and prepare Payoneer dispersal data.
+                                    This will calculate payment amounts and request funds from Payoneer to be debited from Wells Fargo account.
                                   </p>
                                   <div className="pt-2 border-t">
                                     <Button
@@ -526,8 +763,13 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                       )}
                                     </div>
                                   </div>
-                                  <div className="text-xs text-gray-600">
+                                  <div className="text-xs text-gray-600 space-y-1">
                                     <p>✓ {calculationResult.consultantPayments?.length} consultant payments calculated</p>
+                                    {calculationResult.paymentMonthLabel && calculationResult.paymentMonthWorkHours && (
+                                      <p className="text-blue-600 font-medium">
+                                        Using {calculationResult.paymentMonthWorkHours} hours from {calculationResult.paymentMonthLabel}
+                                      </p>
+                                    )}
                                     {calculationResult.anomalies?.length > 0 && (
                                       <p className="text-amber-600">⚠ {calculationResult.anomalies.length} anomalies detected</p>
                                     )}
@@ -598,14 +840,26 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                   Receipt will be sent to Omnigo's accounts payable email
                                 </p>
                               </div>
-                              <Button
-                                onClick={handleSendReceipt}
-                                disabled={sendingReceipt || !receiptAmount || parseFloat(receiptAmount) <= 0}
-                                className="w-full"
-                                size="sm"
-                              >
-                                {sendingReceipt ? 'Sending...' : 'Send Receipt'}
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={handlePreviewReceipt}
+                                  disabled={!receiptAmount || parseFloat(receiptAmount) <= 0}
+                                  variant="outline"
+                                  className="flex-1"
+                                  size="sm"
+                                >
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  Preview
+                                </Button>
+                                <Button
+                                  onClick={handleSendReceipt}
+                                  disabled={sendingReceipt || !receiptAmount || parseFloat(receiptAmount) <= 0}
+                                  className="flex-1"
+                                  size="sm"
+                                >
+                                  {sendingReceipt ? 'Sending...' : 'Send Receipt'}
+                                </Button>
+                              </div>
                               {isCompleted && cycle.receiptAmount && (
                                 <div className="pt-2 border-t">
                                   <p className="text-xs text-gray-600">
@@ -642,6 +896,40 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                 />
                                 <p className="text-xs text-gray-500">
                                   Expected date and time when the deposit will clear in Payoneer account
+                                </p>
+                              </div>
+                            </div>
+                          ) : step.id === 'payment-arrival' ? (
+                            /* Payment Arrival - Two Date Fields */
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="expectedArrivalDateTime" className="text-xs">
+                                  Expected Arrival Date & Time
+                                </Label>
+                                <Input
+                                  id="expectedArrivalDateTime"
+                                  type="datetime-local"
+                                  value={editFundingDate}
+                                  onChange={(e) => setEditFundingDate(e.target.value)}
+                                  className="text-sm"
+                                />
+                                <p className="text-xs text-gray-500">
+                                  Date and time when funds are expected to arrive in Payoneer account
+                                </p>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="completionDate" className="text-xs">
+                                  Completion Date
+                                </Label>
+                                <Input
+                                  id="completionDate"
+                                  type="date"
+                                  value={editDate}
+                                  onChange={(e) => setEditDate(e.target.value)}
+                                  className="text-sm"
+                                />
+                                <p className="text-xs text-gray-500">
+                                  Actual date when funds were confirmed to have arrived (date only, no time)
                                 </p>
                               </div>
                             </div>
@@ -683,6 +971,16 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                               >
                                 Cancel
                               </Button>
+                              {(step.id === 'payoneer-account-funded' || step.id === 'payment-arrival') && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={handleDateSave}
+                                  className="text-xs"
+                                >
+                                  Save Dates
+                                </Button>
+                              )}
                               {step.id !== 'calculate-payment' && step.id !== 'send-receipt' && (
                                 <Button 
                                   size="sm" 
@@ -726,6 +1024,42 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
           </div>
         )}
       </CardContent>
+
+      {/* Receipt Preview Dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Receipt Email Preview</DialogTitle>
+            <DialogDescription>
+              This is how the receipt email will appear when sent to apmailbox@omnigo.com
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 border rounded-lg overflow-hidden bg-gray-50">
+            <iframe
+              srcDoc={generateReceiptPreview()}
+              className="w-full h-[600px] border-0"
+              title="Receipt Email Preview"
+            />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview(false)}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setShowPreview(false);
+                handleSendReceipt();
+              }}
+              disabled={sendingReceipt || !receiptAmount || parseFloat(receiptAmount) <= 0}
+            >
+              {sendingReceipt ? 'Sending...' : 'Send Receipt'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

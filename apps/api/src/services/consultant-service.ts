@@ -68,7 +68,9 @@ export class ConsultantService {
       cpf: data.cpf || null,
       // Bonus
       yearlyBonus: data.yearlyBonus || null,
-      bonusMonth: data.bonusMonth || null
+      bonusMonth: data.bonusMonth || null,
+      // Number field
+      number: data.number || null
     }).returning();
 
     return consultant;
@@ -135,6 +137,9 @@ export class ConsultantService {
       }
       updateData.bonusMonth = data.bonusMonth;
     }
+    
+    // Number field
+    if (data.number !== undefined) updateData.number = data.number;
 
     const [consultant] = await db.update(consultants)
       .set(updateData)

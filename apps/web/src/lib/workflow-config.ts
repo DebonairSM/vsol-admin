@@ -113,8 +113,8 @@ export const workflowSteps: WorkflowStep[] = [
   },
   {
     id: 'calculate-payment',
-    title: 'Calculate Payment',
-    description: 'Calculate amounts and prepare payment data',
+    title: 'Calculate Payment and Fund Payoneer',
+    description: 'Calculate payment amounts and request funds from Payoneer to be debited from Wells Fargo account',
     fieldName: 'calculatedPaymentDate',
     icon: CalendarDays,
     color: {

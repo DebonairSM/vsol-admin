@@ -38,12 +38,24 @@ export class WorkHoursService {
   }
 
   static async getByYearMonth(year: number, monthNumber: number): Promise<WorkHoursReference | null> {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'work-hours-service.ts:40',message:'getByYearMonth entry',data:{year,monthNumber},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
     const result = await db.query.monthlyWorkHours.findFirst({
       where: (workHours, { and, eq }) => and(
         eq(workHours.year, year),
         eq(workHours.monthNumber, monthNumber)
       )
     });
+    
+    // Check what records exist in the database for this year for debugging
+    const allYearRecords = await db.query.monthlyWorkHours.findMany({
+      where: eq(monthlyWorkHours.year, year),
+      columns: { year: true, month: true, monthNumber: true, workHours: true }
+    });
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'work-hours-service.ts:50',message:'getByYearMonth result and database check',data:{year,monthNumber,result:result?{id:result.id,workHours:result.workHours,month:result.month}:null,allYearRecords:allYearRecords.map(r=>({month:r.month,monthNumber:r.monthNumber,workHours:r.workHours}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
     return result || null;
   }
 
