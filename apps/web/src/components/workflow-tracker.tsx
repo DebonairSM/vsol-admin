@@ -15,6 +15,7 @@ import { calculateDeadlineAlert, parseMonthLabel } from '@/lib/business-days';
 import { getWorkHoursForMonthByNumber, getMonthName } from '@/lib/work-hours';
 import { toast } from 'sonner';
 import type { PayrollCycle } from '@vsol-admin/shared';
+import { apiClient } from '@/lib/api-client';
 
 interface WorkflowTrackerProps {
   cycle: PayrollCycle;
@@ -27,6 +28,8 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const [editFundingDate, setEditFundingDate] = useState('');
   const [calculationResult, setCalculationResult] = useState<any>(null);
   const [noBonus, setNoBonus] = useState(false);
+  const [receiptAmount, setReceiptAmount] = useState<string>('');
+  const [sendingReceipt, setSendingReceipt] = useState(false);
   
   const calculatePaymentMutation = useCalculatePayment();
 
@@ -142,6 +145,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     setEditFundingDate('');
     setCalculationResult(null);
     setNoBonus(false);
+    setReceiptAmount('');
   };
 
   const handleMarkComplete = async (step: typeof workflowSteps[0]) => {
@@ -224,6 +228,34 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
       setCalculationResult(result);
     } catch (error) {
       console.error('Failed to calculate payment:', error);
+    }
+  };
+
+  const handleSendReceipt = async () => {
+    const amount = parseFloat(receiptAmount);
+    if (!amount || amount <= 0) {
+      toast.error('Please enter a valid receipt amount greater than zero');
+      return;
+    }
+
+    setSendingReceipt(true);
+    try {
+      await apiClient.sendReceipt(cycle.id, amount);
+      toast.success('Receipt sent successfully to apmailbox@omnigo.com');
+      
+      // Update the workflow date
+      const now = new Date();
+      const localNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+      await onUpdateWorkflowDate('sendReceiptDate', localNoon.toISOString());
+      
+      // Close the popover and reset state
+      setEditingStep(null);
+      setReceiptAmount('');
+    } catch (error: any) {
+      console.error('Failed to send receipt:', error);
+      toast.error(error.message || 'Failed to send receipt');
+    } finally {
+      setSendingReceipt(false);
     }
   };
 
@@ -380,6 +412,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                         setEditingStep(null);
                         setCalculationResult(null);
                         setNoBonus(false);
+                        setReceiptAmount('');
                       }
                     }}>
                       <PopoverTrigger asChild disabled={isBlocked}>
@@ -530,6 +563,57 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                 </div>
                               )}
                             </>
+                          ) : step.id === 'send-receipt' ? (
+                            /* Send Receipt - Receipt Amount Input */
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="receiptAmount" className="text-xs">
+                                  Receipt Amount (USD)
+                                </Label>
+                                <Input
+                                  id="receiptAmount"
+                                  type="number"
+                                  step="0.01"
+                                  min="0.01"
+                                  value={receiptAmount}
+                                  onChange={(e) => setReceiptAmount(e.target.value)}
+                                  placeholder="0.00"
+                                  className="text-sm"
+                                />
+                                <p className="text-xs text-gray-500">
+                                  Enter the invoice amount received from Omnigo
+                                </p>
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">
+                                  Recipient Email
+                                </Label>
+                                <Input
+                                  type="email"
+                                  value="apmailbox@omnigo.com"
+                                  disabled
+                                  className="text-sm bg-gray-50"
+                                />
+                                <p className="text-xs text-gray-500">
+                                  Receipt will be sent to Omnigo's accounts payable email
+                                </p>
+                              </div>
+                              <Button
+                                onClick={handleSendReceipt}
+                                disabled={sendingReceipt || !receiptAmount || parseFloat(receiptAmount) <= 0}
+                                className="w-full"
+                                size="sm"
+                              >
+                                {sendingReceipt ? 'Sending...' : 'Send Receipt'}
+                              </Button>
+                              {isCompleted && cycle.receiptAmount && (
+                                <div className="pt-2 border-t">
+                                  <p className="text-xs text-gray-600">
+                                    Last sent amount: <span className="font-mono">${cycle.receiptAmount.toFixed(2)}</span>
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           ) : step.id === 'payoneer-account-funded' ? (
                             /* Payoneer Account Funded - Two Date Fields */
                             <div className="space-y-4">
@@ -599,7 +683,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                               >
                                 Cancel
                               </Button>
-                              {step.id !== 'calculate-payment' && (
+                              {step.id !== 'calculate-payment' && step.id !== 'send-receipt' && (
                                 <Button 
                                   size="sm" 
                                   onClick={() => handleMarkComplete(step)}

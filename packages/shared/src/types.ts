@@ -80,6 +80,7 @@ export interface PayrollCycle {
   equipmentsUSD?: number | null;
   payoneerBalanceCarryover?: number | null;
   payoneerBalanceApplied?: number | null;
+  receiptAmount?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

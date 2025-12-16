@@ -437,6 +437,14 @@ class ApiClient {
     });
   }
 
+  // Receipt methods
+  async sendReceipt(cycleId: number, receiptAmount: number) {
+    return this.request<any>(`/cycles/${cycleId}/send-receipt`, {
+      method: 'POST',
+      body: JSON.stringify({ receiptAmount }),
+    });
+  }
+
   // Work hours methods
   async getWorkHours() {
     return this.request<any[]>('/work-hours');

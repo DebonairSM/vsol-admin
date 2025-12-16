@@ -22,6 +22,8 @@ pnpm dev
   - `PORT=2020`
   - `JWT_SECRET=change-me`
   - `DATABASE_URL=file:./dev.db`
+  - `RESEND_KEY` (required for email functionality) - Resend.com API key for sending receipt emails
+  - `RESEND_ADMIN_EMAIL` (optional) - Recipient email address for receipts. Defaults to `apmailbox@omnigo.com` if not set.
   - `BACKUP_DIRECTORY` (optional) - Directory path for database backups. If not set, automatically detects OneDrive Documents folder (e.g., `C:\Users\<username>\OneDrive\Documents\backups`). Falls back to `backups/` in project directory if OneDrive is not found.
   - `CORS_ORIGIN` (optional) - Comma-separated list of allowed origins for CORS. Supports exact URLs and wildcard patterns (e.g., `https://abc123.ngrok.io` or `*.ngrok.io`). If not set, defaults to `http://localhost:5173` in development mode.
 - `apps/web/.env`

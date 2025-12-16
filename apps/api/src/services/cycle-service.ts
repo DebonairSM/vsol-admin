@@ -183,6 +183,7 @@ export class CycleService {
     if (data.equipmentsUSD !== undefined) updateData.equipmentsUSD = validateNumber(data.equipmentsUSD, 'equipmentsUSD');
     if (data.payoneerBalanceCarryover !== undefined) updateData.payoneerBalanceCarryover = validateNumber(data.payoneerBalanceCarryover, 'payoneerBalanceCarryover');
     if (data.payoneerBalanceApplied !== undefined) updateData.payoneerBalanceApplied = validateNumber(data.payoneerBalanceApplied, 'payoneerBalanceApplied');
+    if (data.receiptAmount !== undefined) updateData.receiptAmount = validateNumber(data.receiptAmount, 'receiptAmount');
 
     await db.update(payrollCycles)
       .set(updateData)

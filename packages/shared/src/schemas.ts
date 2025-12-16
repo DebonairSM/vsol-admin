@@ -200,7 +200,8 @@ export const updateCycleSchema = z.object({
   pagamentoInter: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   equipmentsUSD: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   payoneerBalanceCarryover: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
-  payoneerBalanceApplied: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional()
+  payoneerBalanceApplied: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
+  receiptAmount: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional()
 });
 
 // Line item schemas
@@ -314,6 +315,11 @@ export const calculatePaymentSchema = z.object({
   noBonus: z.boolean().optional(), // If true, set omnigoBonus to 0 for this calculation
 });
 
+// Receipt schemas
+export const sendReceiptSchema = z.object({
+  receiptAmount: z.number().positive('Receipt amount must be greater than zero')
+});
+
 // Work hours schemas
 export const importWorkHoursSchema = z.object({
   jsonContent: z.string().min(1, 'JSON content is required')
@@ -329,6 +335,7 @@ export type UpdateEquipmentRequest = z.infer<typeof updateEquipmentSchema>;
 export type InitiateTerminationRequest = z.infer<typeof initiateTerminationSchema>;
 export type GenerateTerminationDocumentRequest = z.infer<typeof generateTerminationDocumentSchema>;
 export type CalculatePaymentRequest = z.infer<typeof calculatePaymentSchema>;
+export type SendReceiptRequest = z.infer<typeof sendReceiptSchema>;
 export type ImportWorkHoursRequest = z.infer<typeof importWorkHoursSchema>;
 export type WorkHoursYearRequest = z.infer<typeof workHoursYearSchema>;
 

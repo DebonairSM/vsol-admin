@@ -4,7 +4,8 @@ import { LineItemService } from '../services/line-item-service';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
-import { createCycleSchema, updateCycleSchema, updateLineItemSchema, calculatePaymentSchema } from '@vsol-admin/shared';
+import { createCycleSchema, updateCycleSchema, updateLineItemSchema, calculatePaymentSchema, sendReceiptSchema } from '@vsol-admin/shared';
+import { EmailService } from '../services/email-service';
 
 const router: Router = Router();
 
@@ -60,6 +61,40 @@ router.post('/:id/calculate-payment',
       const noBonus = req.body.noBonus || false;
       const paymentCalculation = await CycleService.calculatePayment(parseInt(req.params.id), noBonus);
       res.json(paymentCalculation);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /api/cycles/:id/send-receipt
+router.post('/:id/send-receipt',
+  validateBody(sendReceiptSchema),
+  auditMiddleware('SEND_RECEIPT', 'cycle'),
+  async (req, res, next) => {
+    try {
+      const cycleId = parseInt(req.params.id);
+      const { receiptAmount } = req.body;
+
+      // Send the receipt email
+      const emailResult = await EmailService.sendReceiptEmail({
+        cycleId,
+        receiptAmount
+      });
+
+      // Update cycle with receipt amount and send receipt date
+      const now = new Date();
+      await CycleService.update(cycleId, {
+        receiptAmount,
+        sendReceiptDate: now.toISOString()
+      });
+
+      res.json({
+        success: true,
+        messageId: emailResult.messageId,
+        receiptAmount,
+        sentAt: now.toISOString()
+      });
     } catch (error) {
       next(error);
     }
