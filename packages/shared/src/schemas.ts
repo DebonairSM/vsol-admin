@@ -110,7 +110,10 @@ export const createConsultantSchema = z.object({
       yearlyBonus: z.number().positive().optional(),
       bonusMonth: z.number().int().min(1).max(12).optional(),
       // Number field for custom assignment
-      number: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional()
+      number: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
+      // Invoice role for grouping
+      role: z.string().optional(),
+      serviceDescription: z.string().optional()
 });
 
 export const updateConsultantSchema = z.object({
@@ -173,7 +176,10 @@ export const updateConsultantSchema = z.object({
       yearlyBonus: z.number().positive().nullable().optional(),
       bonusMonth: z.number().int().min(1).max(12).nullable().optional(),
       // Number field for custom assignment
-      number: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional()
+      number: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
+      // Invoice role for grouping
+      role: z.string().nullable().optional(),
+      serviceDescription: z.string().nullable().optional()
 });
 
 // Cycle schemas
@@ -446,3 +452,116 @@ export const shippingAddressSchema = z.object({
 });
 
 export type ShippingAddress = z.infer<typeof shippingAddressSchema>;
+
+// Company schemas
+export const updateCompanySchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+  legalName: z.string().nullable().optional(),
+  address: z.string().min(1, 'Address is required').optional(),
+  city: z.string().min(1, 'City is required').optional(),
+  state: z.string().min(1, 'State is required').optional(),
+  zip: z.string().min(1, 'Zip is required').optional(),
+  country: z.string().min(1, 'Country is required').optional(),
+  phone: z.string().nullable().optional(),
+  website: z.string().nullable().optional(),
+  email: z.string().email('Invalid email format').nullable().optional(),
+  floridaTaxId: z.string().nullable().optional(),
+  federalTaxId: z.string().nullable().optional(),
+  logoPath: z.string().nullable().optional()
+});
+
+// Client schemas
+export const createClientSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  legalName: z.string().optional(),
+  contactName: z.string().optional(),
+  contactPhone: z.string().optional(),
+  contactEmail: z.string().email('Invalid email format').optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip: z.string().optional(),
+  country: z.string().optional(),
+  taxId: z.string().optional(),
+  paymentTerms: z.string().optional(),
+  paymentNotes: z.string().optional()
+});
+
+export const updateClientSchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+  legalName: z.string().nullable().optional(),
+  contactName: z.string().nullable().optional(),
+  contactPhone: z.string().nullable().optional(),
+  contactEmail: z.string().email('Invalid email format').nullable().optional(),
+  address: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  state: z.string().nullable().optional(),
+  zip: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  taxId: z.string().nullable().optional(),
+  paymentTerms: z.string().nullable().optional(),
+  paymentNotes: z.string().nullable().optional()
+});
+
+// Client invoice schemas
+export const clientInvoiceStatusSchema = z.enum(['DRAFT', 'SENT', 'APPROVED', 'OVERDUE', 'PAID', 'CANCELLED']);
+
+export const createClientInvoiceSchema = z.object({
+  cycleId: z.number().int().positive(),
+  clientId: z.number().int().positive(),
+  invoiceDate: z.string().datetime(),
+  dueDate: z.string().datetime(),
+  notes: z.string().optional(),
+  paymentTerms: z.string().optional()
+});
+
+export const updateClientInvoiceSchema = z.object({
+  invoiceDate: z.string().datetime().optional(),
+  dueDate: z.string().datetime().optional(),
+  status: clientInvoiceStatusSchema.optional(),
+  subtotal: z.number().optional(),
+  tax: z.number().optional(),
+  total: z.number().optional(),
+  amountDue: z.number().optional(),
+  notes: z.string().nullable().optional(),
+  paymentTerms: z.string().nullable().optional(),
+  sentDate: z.string().datetime().nullable().optional(),
+  approvedDate: z.string().datetime().nullable().optional(),
+  paidDate: z.string().datetime().nullable().optional()
+});
+
+export const updateClientInvoiceStatusSchema = z.object({
+  status: clientInvoiceStatusSchema
+});
+
+// Invoice line item schemas
+export const createInvoiceLineItemSchema = z.object({
+  invoiceId: z.number().int().positive(),
+  serviceName: z.string().min(1, 'Service name is required'),
+  description: z.string().min(1, 'Description is required'),
+  quantity: z.number().int().positive(),
+  rate: z.number().positive(),
+  amount: z.number().positive(),
+  consultantIds: z.array(z.number().int().positive()).optional(),
+  sortOrder: z.number().int().optional()
+});
+
+export const updateInvoiceLineItemSchema = z.object({
+  serviceName: z.string().min(1, 'Service name is required').optional(),
+  description: z.string().min(1, 'Description is required').optional(),
+  quantity: z.number().int().positive().optional(),
+  rate: z.number().positive().optional(),
+  amount: z.number().positive().optional(),
+  consultantIds: z.array(z.number().int().positive()).nullable().optional(),
+  sortOrder: z.number().int().optional()
+});
+
+// Export types
+export type UpdateCompanyRequest = z.infer<typeof updateCompanySchema>;
+export type CreateClientRequest = z.infer<typeof createClientSchema>;
+export type UpdateClientRequest = z.infer<typeof updateClientSchema>;
+export type CreateClientInvoiceRequest = z.infer<typeof createClientInvoiceSchema>;
+export type UpdateClientInvoiceRequest = z.infer<typeof updateClientInvoiceSchema>;
+export type UpdateClientInvoiceStatusRequest = z.infer<typeof updateClientInvoiceStatusSchema>;
+export type CreateInvoiceLineItemRequest = z.infer<typeof createInvoiceLineItemSchema>;
+export type UpdateInvoiceLineItemRequest = z.infer<typeof updateInvoiceLineItemSchema>;

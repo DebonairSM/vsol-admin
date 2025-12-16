@@ -17,6 +17,8 @@ import { getWorkHoursForMonthByNumber, getMonthName } from '@/lib/work-hours';
 import { toast } from 'sonner';
 import type { PayrollCycle } from '@vsol-admin/shared';
 import { apiClient } from '@/lib/api-client';
+import { useClientInvoiceByCycle, useCreateInvoiceFromCycle, useUpdateInvoiceStatus } from '@/hooks/use-client-invoices';
+import { useNavigate } from 'react-router-dom';
 
 interface WorkflowTrackerProps {
   cycle: PayrollCycle;
@@ -24,6 +26,7 @@ interface WorkflowTrackerProps {
 }
 
 export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: WorkflowTrackerProps) {
+  const navigate = useNavigate();
   const [editingStep, setEditingStep] = useState<string | null>(null);
   const [editDate, setEditDate] = useState('');
   const [editFundingDate, setEditFundingDate] = useState('');
@@ -33,8 +36,12 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const [sendingReceipt, setSendingReceipt] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   
   const calculatePaymentMutation = useCalculatePayment();
+  const { data: invoiceData, refetch: refetchInvoice } = useClientInvoiceByCycle(cycle.id);
+  const createInvoiceFromCycleMutation = useCreateInvoiceFromCycle();
+  const updateInvoiceStatusMutation = useUpdateInvoiceStatus();
 
   // Update current time for countdown - more frequently when showing hours
   useEffect(() => {
@@ -427,6 +434,46 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     }
   };
 
+  const handleCreateInvoiceFromCycle = async () => {
+    try {
+      await createInvoiceFromCycleMutation.mutateAsync(cycle.id);
+      toast.success('Invoice created successfully');
+      await refetchInvoice();
+    } catch (error: any) {
+      console.error('Failed to create invoice:', error);
+      toast.error(error.message || 'Failed to create invoice');
+    }
+  };
+
+  const handlePreviewInvoice = () => {
+    if (invoiceData) {
+      setShowInvoicePreview(true);
+    }
+  };
+
+  const handleMarkInvoiceAsSent = async () => {
+    if (!invoiceData) return;
+
+    try {
+      await updateInvoiceStatusMutation.mutateAsync({
+        id: invoiceData.id,
+        status: 'SENT'
+      });
+      
+      // Update cycle.sendInvoiceDate
+      const now = new Date();
+      const localNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+      await onUpdateWorkflowDate('sendInvoiceDate', localNoon.toISOString());
+      
+      toast.success('Invoice marked as sent');
+      await refetchInvoice();
+      setEditingStep(null);
+    } catch (error: any) {
+      console.error('Failed to mark invoice as sent:', error);
+      toast.error(error.message || 'Failed to mark invoice as sent');
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -805,6 +852,79 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                 </div>
                               )}
                             </>
+                          ) : step.id === 'send-invoice' ? (
+                            /* Send Invoice - Invoice Creation/Preview */
+                            <div className="space-y-4">
+                              {invoiceData ? (
+                                <>
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <p className="text-sm font-medium text-blue-900">
+                                          Invoice #{invoiceData.invoiceNumber}
+                                        </p>
+                                        <p className="text-xs text-blue-700 mt-1">
+                                          Status: <span className="font-semibold">{invoiceData.status}</span>
+                                        </p>
+                                        <p className="text-xs text-blue-700">
+                                          Amount Due: <span className="font-semibold">${invoiceData.amountDue.toFixed(2)}</span>
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      onClick={handlePreviewInvoice}
+                                      variant="outline"
+                                      className="flex-1"
+                                      size="sm"
+                                    >
+                                      <Eye className="w-4 h-4 mr-2" />
+                                      Preview Invoice
+                                    </Button>
+                                    {invoiceData.status === 'DRAFT' && (
+                                      <Button
+                                        onClick={handleMarkInvoiceAsSent}
+                                        disabled={updateInvoiceStatusMutation.isPending}
+                                        className="flex-1"
+                                        size="sm"
+                                      >
+                                        {updateInvoiceStatusMutation.isPending ? 'Sending...' : 'Mark as Sent'}
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <Button
+                                    onClick={() => navigate(`/client-invoices/${invoiceData.id}`)}
+                                    variant="outline"
+                                    className="w-full"
+                                    size="sm"
+                                  >
+                                    Edit Invoice
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-sm text-gray-600">
+                                    Create an invoice from this cycle's consultants and line items.
+                                  </p>
+                                  <Button
+                                    onClick={handleCreateInvoiceFromCycle}
+                                    disabled={createInvoiceFromCycleMutation.isPending}
+                                    className="w-full"
+                                    size="sm"
+                                  >
+                                    {createInvoiceFromCycleMutation.isPending ? 'Creating...' : 'Create Invoice from Cycle'}
+                                  </Button>
+                                </>
+                              )}
+                              {isCompleted && cycle.sendInvoiceDate && (
+                                <div className="pt-2 border-t">
+                                  <p className="text-xs text-gray-600">
+                                    Sent: <span className="font-mono">{formatDate(cycle.sendInvoiceDate)}</span>
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           ) : step.id === 'send-receipt' ? (
                             /* Send Receipt - Receipt Amount Input */
                             <div className="space-y-4">
@@ -981,7 +1101,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                   Save Dates
                                 </Button>
                               )}
-                              {step.id !== 'calculate-payment' && step.id !== 'send-receipt' && (
+                              {step.id !== 'calculate-payment' && step.id !== 'send-receipt' && step.id !== 'send-invoice' && (
                                 <Button 
                                   size="sm" 
                                   onClick={() => handleMarkComplete(step)}
@@ -989,6 +1109,27 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                 >
                                   Mark Complete
                                 </Button>
+                              )}
+                              {step.id === 'send-invoice' && invoiceData && invoiceData.status === 'SENT' && (
+                                <div className="space-y-2 pt-3 border-t">
+                                  <Label htmlFor="stepDate" className="text-xs">
+                                    Completion Date
+                                  </Label>
+                                  <Input
+                                    id="stepDate"
+                                    type="date"
+                                    value={editDate}
+                                    onChange={(e) => setEditDate(e.target.value)}
+                                    className="text-sm"
+                                  />
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleMarkComplete(step)}
+                                    className="w-full text-xs"
+                                  >
+                                    Mark Complete
+                                  </Button>
+                                </div>
                               )}
                               {step.id === 'calculate-payment' && (calculationResult || isCompleted) && (
                                 <Button 
@@ -1057,6 +1198,118 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
             >
               {sendingReceipt ? 'Sending...' : 'Send Receipt'}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice Preview Dialog */}
+      <Dialog open={showInvoicePreview} onOpenChange={setShowInvoicePreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Invoice Preview</DialogTitle>
+            <DialogDescription>
+              Invoice #{invoiceData?.invoiceNumber} - {invoiceData?.status}
+            </DialogDescription>
+          </DialogHeader>
+          {invoiceData && (
+            <div className="mt-4 space-y-4 overflow-y-auto max-h-[70vh]">
+              <div className="border rounded-lg p-6 bg-white">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">VSol Software</h3>
+                    <p className="text-sm text-gray-600">3111 N University Dr. Ste 105</p>
+                    <p className="text-sm text-gray-600">Coral Springs, Florida 33065</p>
+                  </div>
+                  <div className="text-right">
+                    <h3 className="font-semibold text-lg mb-2">Invoice #{invoiceData.invoiceNumber}</h3>
+                    <p className="text-sm text-gray-600">Date: {formatDate(invoiceData.invoiceDate)}</p>
+                    <p className="text-sm text-gray-600">Due: {formatDate(invoiceData.dueDate)}</p>
+                  </div>
+                </div>
+                <div className="border-t pt-4 mb-4">
+                  <p className="font-semibold mb-2">Bill To:</p>
+                  <p className="text-sm text-gray-600">{invoiceData.client?.name}</p>
+                </div>
+                <div className="border-t pt-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Service</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead className="text-right">Rate</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invoiceData.lineItems?.map((item: any) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">{item.serviceName}</TableCell>
+                          <TableCell className="text-sm text-gray-600">{item.description}</TableCell>
+                          <TableCell className="text-right">{item.quantity}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(item.rate)}</TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(item.amount)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex justify-end">
+                      <div className="w-64 space-y-2">
+                        <div className="flex justify-between">
+                          <span>Subtotal:</span>
+                          <span>{formatCurrency(invoiceData.subtotal)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Tax:</span>
+                          <span>{formatCurrency(invoiceData.tax)}</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                          <span>Total:</span>
+                          <span>{formatCurrency(invoiceData.total)}</span>
+                        </div>
+                        <div className="flex justify-between font-semibold pt-2">
+                          <span>Amount Due:</span>
+                          <span>{formatCurrency(invoiceData.amountDue)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowInvoicePreview(false)}
+            >
+              Close
+            </Button>
+            {invoiceData && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowInvoicePreview(false);
+                    navigate(`/client-invoices/${invoiceData.id}`);
+                  }}
+                >
+                  Edit Invoice
+                </Button>
+                {invoiceData.status === 'DRAFT' && (
+                  <Button
+                    onClick={() => {
+                      setShowInvoicePreview(false);
+                      handleMarkInvoiceAsSent();
+                    }}
+                    disabled={updateInvoiceStatusMutation.isPending}
+                  >
+                    {updateInvoiceStatusMutation.isPending ? 'Sending...' : 'Send Invoice'}
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>

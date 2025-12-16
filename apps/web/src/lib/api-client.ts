@@ -390,7 +390,7 @@ class ApiClient {
     });
   }
 
-  // Invoice methods
+  // Invoice methods (legacy - per consultant invoices)
   async getInvoices(cycleId?: number) {
     const query = cycleId ? `?cycleId=${cycleId}` : '';
     return this.request<any[]>(`/invoices${query}`);
@@ -407,6 +407,122 @@ class ApiClient {
     return this.request<any>(`/invoices/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  }
+
+  // Company methods
+  async getCompany() {
+    return this.request<any>('/companies');
+  }
+
+  async updateCompany(data: any) {
+    return this.request<any>('/companies', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Client methods
+  async getClients() {
+    return this.request<any[]>('/clients');
+  }
+
+  async getClient(id: number) {
+    return this.request<any>(`/clients/${id}`);
+  }
+
+  async createClient(data: any) {
+    return this.request<any>('/clients', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateClient(id: number, data: any) {
+    return this.request<any>(`/clients/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteClient(id: number) {
+    return this.request<any>(`/clients/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Client invoice methods
+  async getClientInvoices(cycleId?: number, status?: string) {
+    const params = new URLSearchParams();
+    if (cycleId) params.append('cycleId', cycleId.toString());
+    if (status) params.append('status', status);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<any[]>(`/client-invoices${query}`);
+  }
+
+  async getClientInvoice(id: number) {
+    return this.request<any>(`/client-invoices/${id}`);
+  }
+
+  async getClientInvoiceByCycle(cycleId: number) {
+    return this.request<any>(`/client-invoices/cycle/${cycleId}`);
+  }
+
+  async createClientInvoice(data: any) {
+    return this.request<any>('/client-invoices', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createClientInvoiceFromCycle(cycleId: number) {
+    return this.request<any>(`/client-invoices/from-cycle/${cycleId}`, {
+      method: 'POST',
+    });
+  }
+
+  async updateClientInvoice(id: number, data: any) {
+    return this.request<any>(`/client-invoices/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateClientInvoiceStatus(id: number, status: string) {
+    return this.request<any>(`/client-invoices/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async deleteClientInvoice(id: number) {
+    return this.request<any>(`/client-invoices/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Invoice line item methods
+  async getInvoiceLineItems(invoiceId: number) {
+    return this.request<any[]>(`/invoice-line-items/invoice/${invoiceId}`);
+  }
+
+  async createInvoiceLineItem(data: any) {
+    return this.request<any>('/invoice-line-items', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateInvoiceLineItem(id: number, data: any) {
+    return this.request<any>(`/invoice-line-items/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteInvoiceLineItem(id: number) {
+    return this.request<any>(`/invoice-line-items/${id}`, {
+      method: 'DELETE',
     });
   }
 

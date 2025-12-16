@@ -176,6 +176,13 @@
       "when": 1765898473973,
       "tag": "0024_gigantic_apocalypse",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1765906956117,
+      "tag": "0025_exotic_blacklash",
+      "breakpoints": true
     }
   ]
 }

@@ -58,6 +58,9 @@ export const consultants = sqliteTable('consultants', {
   bonusMonth: integer('bonus_month'), // 1-12, month when consultant receives yearly bonus
   // Number field for custom assignment
   number: real('number'),
+  // Invoice role for grouping
+  role: text('role'), // e.g., "Senior Software Developer I", "QA Tester"
+  serviceDescription: text('service_description'), // Optional custom description
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
@@ -228,6 +231,90 @@ export const refreshTokens = sqliteTable('refresh_tokens', {
   userAgent: text('user_agent')
 });
 
+// Companies table - VSol Software information
+export const companies = sqliteTable('companies', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(), // "VSol Software"
+  legalName: text('legal_name'), // "Visual Solutions Software"
+  address: text('address').notNull(),
+  city: text('city').notNull(),
+  state: text('state').notNull(),
+  zip: text('zip').notNull(),
+  country: text('country').notNull(),
+  phone: text('phone'),
+  website: text('website'),
+  email: text('email'),
+  floridaTaxId: text('florida_tax_id'), // "L16000173993"
+  federalTaxId: text('federal_tax_id'), // "81-3904929"
+  logoPath: text('logo_path'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
+// Clients table - Omnigo Software information
+export const clients = sqliteTable('clients', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(), // "Omnigo Software"
+  legalName: text('legal_name'),
+  contactName: text('contact_name'), // "Dawn Echard"
+  contactPhone: text('contact_phone'), // "1.866.421.2374 x5578"
+  contactEmail: text('contact_email'), // "apmailbox@omnigo.com"
+  address: text('address'),
+  city: text('city'),
+  state: text('state'),
+  zip: text('zip'),
+  country: text('country'),
+  taxId: text('tax_id'),
+  paymentTerms: text('payment_terms'), // Wells Fargo routing/account info
+  paymentNotes: text('payment_notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
+// Client invoices table - Main invoice documents
+export const clientInvoices = sqliteTable('client_invoices', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  invoiceNumber: integer('invoice_number').notNull().unique(), // Sequential number
+  cycleId: integer('cycle_id').notNull().references(() => payrollCycles.id),
+  clientId: integer('client_id').notNull().references(() => clients.id),
+  invoiceDate: integer('invoice_date', { mode: 'timestamp' }).notNull(),
+  dueDate: integer('due_date', { mode: 'timestamp' }).notNull(),
+  status: text('status', { enum: ['DRAFT', 'SENT', 'APPROVED', 'OVERDUE', 'PAID', 'CANCELLED'] }).notNull().default('DRAFT'),
+  subtotal: real('subtotal').notNull().default(0),
+  tax: real('tax').notNull().default(0),
+  total: real('total').notNull().default(0),
+  amountDue: real('amount_due').notNull().default(0),
+  notes: text('notes'),
+  paymentTerms: text('payment_terms'),
+  sentDate: integer('sent_date', { mode: 'timestamp' }),
+  approvedDate: integer('approved_date', { mode: 'timestamp' }),
+  paidDate: integer('paid_date', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
+// Invoice line items table - Service line items on invoices
+export const invoiceLineItems = sqliteTable('invoice_line_items', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  invoiceId: integer('invoice_id').notNull().references(() => clientInvoices.id),
+  serviceName: text('service_name').notNull(), // e.g., "Senior Software Developer I"
+  description: text('description').notNull(), // e.g., "Senior Software Developer monthly service fee (Fabiano Louback, Lucas Martins)"
+  quantity: integer('quantity').notNull().default(1),
+  rate: real('rate').notNull(),
+  amount: real('amount').notNull(),
+  consultantIds: text('consultant_ids'), // JSON array of consultant IDs
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
+// Invoice number sequence table - Track next invoice number
+export const invoiceNumberSequence = sqliteTable('invoice_number_sequence', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  nextNumber: integer('next_number').notNull().default(199), // Start at 199 (Wave's last was 198)
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   auditLogs: many(auditLogs),
@@ -245,6 +332,7 @@ export const consultantsRelations = relations(consultants, ({ many }) => ({
 export const payrollCyclesRelations = relations(payrollCycles, ({ many, one }) => ({
   lines: many(cycleLineItems),
   invoices: many(invoices),
+  clientInvoices: many(clientInvoices),
   payments: many(payments),
   auditLogs: many(auditLogs),
   bonusWorkflow: one(bonusWorkflows)
@@ -327,3 +415,31 @@ export const settingsRelations = relations(settings, ({ one }) => ({
     references: [users.id]
   })
 }));
+
+// Relations for new tables
+export const companiesRelations = relations(companies, ({}) => ({}));
+
+export const clientsRelations = relations(clients, ({ many }) => ({
+  invoices: many(clientInvoices)
+}));
+
+export const clientInvoicesRelations = relations(clientInvoices, ({ one, many }) => ({
+  cycle: one(payrollCycles, {
+    fields: [clientInvoices.cycleId],
+    references: [payrollCycles.id]
+  }),
+  client: one(clients, {
+    fields: [clientInvoices.clientId],
+    references: [clients.id]
+  }),
+  lineItems: many(invoiceLineItems)
+}));
+
+export const invoiceLineItemsRelations = relations(invoiceLineItems, ({ one }) => ({
+  invoice: one(clientInvoices, {
+    fields: [invoiceLineItems.invoiceId],
+    references: [clientInvoices.id]
+  })
+}));
+
+export const invoiceNumberSequenceRelations = relations(invoiceNumberSequence, ({}) => ({}));

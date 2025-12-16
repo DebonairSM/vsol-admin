@@ -22,6 +22,10 @@ import settingsRoutes from './routes/settings';
 import payoneerRoutes from './routes/payoneer';
 import backupRoutes from './routes/backups';
 import systemRoutes from './routes/system';
+import companyRoutes from './routes/companies';
+import clientRoutes from './routes/clients';
+import clientInvoiceRoutes from './routes/client-invoices';
+import invoiceLineItemRoutes from './routes/invoice-line-items';
 
 const app = express();
 const PORT = process.env.PORT || 2020;
@@ -225,6 +229,10 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/payoneer', payoneerRoutes);
 app.use('/api/backups', backupRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/companies', companyRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/client-invoices', clientInvoiceRoutes);
+app.use('/api/invoice-line-items', invoiceLineItemRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

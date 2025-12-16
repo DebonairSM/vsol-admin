@@ -13,6 +13,8 @@ export interface Consultant {
   startDate: Date;
   terminationDate?: Date | null;
   evaluationNotes?: string | null;
+  role?: string | null; // For invoice grouping
+  serviceDescription?: string | null; // Optional custom description
   // Personal Data
   email?: string | null;
   address?: string | null;
@@ -339,4 +341,93 @@ export interface TimeDoctorActivityParams {
   from: string;
   to: string;
   userId?: string;
+}
+
+// Invoice system types
+export interface Company {
+  id: number;
+  name: string;
+  legalName?: string | null;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  phone?: string | null;
+  website?: string | null;
+  email?: string | null;
+  floridaTaxId?: string | null;
+  federalTaxId?: string | null;
+  logoPath?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Client {
+  id: number;
+  name: string;
+  legalName?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  country?: string | null;
+  taxId?: string | null;
+  paymentTerms?: string | null;
+  paymentNotes?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export enum ClientInvoiceStatus {
+  DRAFT = 'DRAFT',
+  SENT = 'SENT',
+  APPROVED = 'APPROVED',
+  OVERDUE = 'OVERDUE',
+  PAID = 'PAID',
+  CANCELLED = 'CANCELLED'
+}
+
+export interface ClientInvoice {
+  id: number;
+  invoiceNumber: number;
+  cycleId: number;
+  clientId: number;
+  invoiceDate: Date;
+  dueDate: Date;
+  status: ClientInvoiceStatus;
+  subtotal: number;
+  tax: number;
+  total: number;
+  amountDue: number;
+  notes?: string | null;
+  paymentTerms?: string | null;
+  sentDate?: Date | null;
+  approvedDate?: Date | null;
+  paidDate?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InvoiceLineItem {
+  id: number;
+  invoiceId: number;
+  serviceName: string;
+  description: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+  consultantIds?: number[] | null; // JSON array parsed
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ClientInvoiceWithDetails extends ClientInvoice {
+  client: Client;
+  cycle: PayrollCycle;
+  lineItems: InvoiceLineItem[];
 }
