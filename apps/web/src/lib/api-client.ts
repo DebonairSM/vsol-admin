@@ -554,10 +554,10 @@ class ApiClient {
   }
 
   // Receipt methods
-  async sendReceipt(cycleId: number, receiptAmount: number, recipientEmail?: string) {
+  async sendReceipt(cycleId: number, receiptAmount: number, recipientEmail?: string, invoiceNumber?: number) {
     return this.request<any>(`/cycles/${cycleId}/send-receipt`, {
       method: 'POST',
-      body: JSON.stringify({ receiptAmount, recipientEmail }),
+      body: JSON.stringify({ receiptAmount, recipientEmail, invoiceNumber }),
     });
   }
 

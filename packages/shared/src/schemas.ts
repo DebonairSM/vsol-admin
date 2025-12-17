@@ -329,7 +329,8 @@ export const calculatePaymentSchema = z.object({
 // Receipt schemas
 export const sendReceiptSchema = z.object({
   receiptAmount: z.number().positive('Receipt amount must be greater than zero'),
-  recipientEmail: z.string().email('Invalid email address').optional()
+  recipientEmail: z.string().email('Invalid email address').optional(),
+  invoiceNumber: z.number().optional()
 });
 
 // Work hours schemas

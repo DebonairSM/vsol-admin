@@ -74,13 +74,14 @@ router.post('/:id/send-receipt',
   async (req, res, next) => {
     try {
       const cycleId = parseInt(req.params.id);
-      const { receiptAmount, recipientEmail } = req.body;
+      const { receiptAmount, recipientEmail, invoiceNumber } = req.body;
 
       // Send the receipt email
       const emailResult = await EmailService.sendReceiptEmail({
         cycleId,
         receiptAmount,
-        recipientEmail
+        recipientEmail,
+        invoiceNumber
       });
 
       // Update cycle with receipt amount and send receipt date

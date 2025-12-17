@@ -14,6 +14,7 @@ export interface ReceiptEmailData {
   cycleId: number;
   receiptAmount: number;
   recipientEmail?: string;
+  invoiceNumber?: number;
 }
 
 /**
@@ -85,7 +86,9 @@ export class EmailService {
     const workPeriodText = workPeriod || 'the upcoming period';
 
     // Generate email subject
-    const subject = `Payment Receipt - ${cycle.monthLabel} - VSol Admin`;
+    const subject = data.invoiceNumber 
+      ? `Payment Receipt - Invoice #${data.invoiceNumber} - ${cycle.monthLabel} - VSol Admin`
+      : `Payment Receipt - ${cycle.monthLabel} - VSol Admin`;
 
     // Generate HTML email body
     const htmlBody = `
@@ -103,6 +106,7 @@ export class EmailService {
     <p>This email confirms receipt of payment for consultant services to be performed in ${workPeriodText}.</p>
     
     <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #3498db;">
+      ${data.invoiceNumber ? `<p style="margin: 5px 0;"><strong>Invoice Number:</strong> #${data.invoiceNumber}</p>` : ''}
       <p style="margin: 5px 0;"><strong>Receipt Amount:</strong> ${formattedAmount}</p>
       <p style="margin: 5px 0;"><strong>Payment Date:</strong> ${formattedDate}</p>
     </div>
@@ -128,7 +132,7 @@ Dear Omnigo Accounts Payable Team,
 
 This email confirms receipt of payment for consultant services to be performed in ${workPeriodText}.
 
-Receipt Amount: ${formattedAmount}
+${data.invoiceNumber ? `Invoice Number: #${data.invoiceNumber}\n` : ''}Receipt Amount: ${formattedAmount}
 Payment Date: ${formattedDate}
 
 Thank you for your prompt payment. We appreciate your business.

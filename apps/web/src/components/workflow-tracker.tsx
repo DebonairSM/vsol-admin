@@ -53,6 +53,13 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     return () => clearInterval(interval);
   }, []);
 
+  // Auto-fill receipt amount from invoice when invoice data is available
+  useEffect(() => {
+    if (invoiceData?.total && !receiptAmount) {
+      setReceiptAmount(invoiceData.total.toString());
+    }
+  }, [invoiceData, receiptAmount]);
+
   // Helper function to get next month's work hours data
   const getNextMonthInfo = () => {
     const parsed = parseMonthLabel(cycle.monthLabel);
@@ -397,6 +404,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     <p>This email confirms receipt of payment for consultant services to be performed in ${workPeriodText}.</p>
     
     <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #3498db;">
+      ${invoiceData?.invoiceNumber ? `<p style="margin: 5px 0;"><strong>Invoice Number:</strong> #${invoiceData.invoiceNumber}</p>` : ''}
       <p style="margin: 5px 0;"><strong>Receipt Amount:</strong> ${formattedAmount}</p>
       <p style="margin: 5px 0;"><strong>Payment Date:</strong> ${formattedDate}</p>
     </div>
@@ -433,7 +441,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
 
     setSendingReceipt(true);
     try {
-      await apiClient.sendReceipt(cycle.id, amount, recipientEmail);
+      await apiClient.sendReceipt(cycle.id, amount, recipientEmail, invoiceData?.invoiceNumber);
       toast.success(`Receipt sent successfully to ${recipientEmail}`);
       
       // Update the workflow date
@@ -949,6 +957,20 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                           ) : step.id === 'send-receipt' ? (
                             /* Send Receipt - Receipt Amount Input */
                             <div className="space-y-4">
+                              {invoiceData?.invoiceNumber && (
+                                <div className="space-y-2">
+                                  <Label htmlFor="invoiceNumber" className="text-xs">
+                                    Invoice Number
+                                  </Label>
+                                  <Input
+                                    id="invoiceNumber"
+                                    type="text"
+                                    value={`#${invoiceData.invoiceNumber}`}
+                                    readOnly
+                                    className="text-sm bg-gray-50"
+                                  />
+                                </div>
+                              )}
                               <div className="space-y-2">
                                 <Label htmlFor="receiptAmount" className="text-xs">
                                   Receipt Amount (USD)
@@ -964,7 +986,9 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                   className="text-sm"
                                 />
                                 <p className="text-xs text-gray-500">
-                                  Enter the invoice amount received from Omnigo
+                                  {invoiceData?.total 
+                                    ? `Auto-filled from invoice total. Enter the invoice amount received from Omnigo`
+                                    : 'Enter the invoice amount received from Omnigo'}
                                 </p>
                               </div>
                               <div className="space-y-2">
