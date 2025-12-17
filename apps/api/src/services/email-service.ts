@@ -16,6 +16,39 @@ export interface ReceiptEmailData {
   recipientEmail?: string;
 }
 
+/**
+ * Calculate the work period (next month) from a cycle month label
+ * Example: "November 2025" -> "December 2025"
+ */
+function getWorkPeriodFromCycle(monthLabel: string): string | null {
+  const match = monthLabel.match(/^(\w+)\s+(\d{4})$/);
+  if (!match) {
+    return null;
+  }
+  
+  const [, monthName, yearStr] = match;
+  const year = parseInt(yearStr, 10);
+  
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  
+  const month = monthNames.indexOf(monthName) + 1;
+  if (month === 0) {
+    return null;
+  }
+  
+  let nextMonth = month + 1;
+  let nextYear = year;
+  if (nextMonth > 12) {
+    nextMonth = 1;
+    nextYear++;
+  }
+  
+  return `${monthNames[nextMonth - 1]} ${nextYear}`;
+}
+
 export class EmailService {
   /**
    * Sends a receipt email for a payment received from Omnigo
@@ -47,6 +80,10 @@ export class EmailService {
       day: 'numeric'
     });
 
+    // Calculate work period (next month after cycle month)
+    const workPeriod = getWorkPeriodFromCycle(cycle.monthLabel);
+    const workPeriodText = workPeriod || 'the upcoming period';
+
     // Generate email subject
     const subject = `Payment Receipt - ${cycle.monthLabel} - VSol Admin`;
 
@@ -63,10 +100,9 @@ export class EmailService {
   <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
     <h2 style="color: #2c3e50; margin-top: 0;">Payment Receipt</h2>
     <p>Dear Omnigo Accounts Payable Team,</p>
-    <p>This email confirms receipt of payment for the following invoice:</p>
+    <p>This email confirms receipt of payment for consultant services to be performed in ${workPeriodText}.</p>
     
     <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #3498db;">
-      <p style="margin: 5px 0;"><strong>Cycle Period:</strong> ${cycle.monthLabel}</p>
       <p style="margin: 5px 0;"><strong>Receipt Amount:</strong> ${formattedAmount}</p>
       <p style="margin: 5px 0;"><strong>Payment Date:</strong> ${formattedDate}</p>
     </div>
@@ -90,9 +126,8 @@ Payment Receipt
 
 Dear Omnigo Accounts Payable Team,
 
-This email confirms receipt of payment for the following invoice:
+This email confirms receipt of payment for consultant services to be performed in ${workPeriodText}.
 
-Cycle Period: ${cycle.monthLabel}
 Receipt Amount: ${formattedAmount}
 Payment Date: ${formattedDate}
 

@@ -50,29 +50,45 @@ export class ClientInvoiceService {
   }
 
   static async getByCycleId(cycleId: number) {
-    const invoice = await db.query.clientInvoices.findFirst({
-      where: eq(clientInvoices.cycleId, cycleId),
-      with: {
-        client: true,
-        cycle: true,
-        lineItems: true
+    try {
+      const invoice = await db.query.clientInvoices.findFirst({
+        where: eq(clientInvoices.cycleId, cycleId),
+        with: {
+          client: true,
+          cycle: true,
+          lineItems: true
+        }
+      });
+
+      if (!invoice) {
+        return null;
       }
-    });
 
-    if (!invoice) {
-      return null;
+      // Parse consultantIds for line items
+      const lineItemsWithParsedIds = (invoice.lineItems || []).map(item => {
+        let consultantIds = null;
+        if (item.consultantIds) {
+          try {
+            consultantIds = JSON.parse(item.consultantIds);
+          } catch (error) {
+            console.error(`Failed to parse consultantIds for line item ${item.id}:`, error);
+            consultantIds = null;
+          }
+        }
+        return {
+          ...item,
+          consultantIds
+        };
+      });
+
+      return {
+        ...invoice,
+        lineItems: lineItemsWithParsedIds
+      };
+    } catch (error) {
+      console.error(`Error fetching invoice for cycle ${cycleId}:`, error);
+      throw error;
     }
-
-    // Parse consultantIds for line items
-    const lineItemsWithParsedIds = invoice.lineItems.map(item => ({
-      ...item,
-      consultantIds: item.consultantIds ? JSON.parse(item.consultantIds) : null
-    }));
-
-    return {
-      ...invoice,
-      lineItems: lineItemsWithParsedIds
-    };
   }
 
   static async getNextInvoiceNumber(): Promise<number> {

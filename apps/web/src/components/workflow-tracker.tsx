@@ -33,6 +33,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const [calculationResult, setCalculationResult] = useState<any>(null);
   const [noBonus, setNoBonus] = useState(false);
   const [receiptAmount, setReceiptAmount] = useState<string>('');
+  const [recipientEmail, setRecipientEmail] = useState<string>('apmailbox@omnigo.com');
   const [sendingReceipt, setSendingReceipt] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -231,6 +232,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     setCalculationResult(null);
     setNoBonus(false);
     setReceiptAmount('');
+    setRecipientEmail('apmailbox@omnigo.com');
   };
 
   const handleMarkComplete = async (step: typeof workflowSteps[0]) => {
@@ -355,12 +357,30 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
       currency: 'USD'
     }).format(amount);
 
-    const paymentDate = cycle.sendReceiptDate || new Date();
+    const paymentDate = cycle.sendReceiptDate 
+      ? (typeof cycle.sendReceiptDate === 'string' ? new Date(cycle.sendReceiptDate) : cycle.sendReceiptDate)
+      : new Date();
     const formattedDate = paymentDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
+
+    // Calculate work period (next month after cycle month)
+    const parsed = parseMonthLabel(cycle.monthLabel);
+    let workPeriodText = 'the upcoming period';
+    if (parsed) {
+      let nextMonth = parsed.month + 1;
+      let nextYear = parsed.year;
+      if (nextMonth > 12) {
+        nextMonth = 1;
+        nextYear++;
+      }
+      const monthName = getMonthName(nextMonth);
+      if (monthName) {
+        workPeriodText = `${monthName} ${nextYear}`;
+      }
+    }
 
     return `
 <!DOCTYPE html>
@@ -374,10 +394,9 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
     <h2 style="color: #2c3e50; margin-top: 0;">Payment Receipt</h2>
     <p>Dear Omnigo Accounts Payable Team,</p>
-    <p>This email confirms receipt of payment for the following invoice:</p>
+    <p>This email confirms receipt of payment for consultant services to be performed in ${workPeriodText}.</p>
     
     <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #3498db;">
-      <p style="margin: 5px 0;"><strong>Cycle Period:</strong> ${cycle.monthLabel}</p>
       <p style="margin: 5px 0;"><strong>Receipt Amount:</strong> ${formattedAmount}</p>
       <p style="margin: 5px 0;"><strong>Payment Date:</strong> ${formattedDate}</p>
     </div>
@@ -414,8 +433,8 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
 
     setSendingReceipt(true);
     try {
-      await apiClient.sendReceipt(cycle.id, amount);
-      toast.success('Receipt sent successfully to apmailbox@omnigo.com');
+      await apiClient.sendReceipt(cycle.id, amount, recipientEmail);
+      toast.success(`Receipt sent successfully to ${recipientEmail}`);
       
       // Update the workflow date
       const now = new Date();
@@ -425,6 +444,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
       // Close the popover and reset state
       setEditingStep(null);
       setReceiptAmount('');
+      setRecipientEmail('apmailbox@omnigo.com');
       setShowPreview(false);
     } catch (error: any) {
       console.error('Failed to send receipt:', error);
@@ -664,6 +684,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                         setCalculationResult(null);
                         setNoBonus(false);
                         setReceiptAmount('');
+                        setRecipientEmail('apmailbox@omnigo.com');
                       }
                     }}>
                       <PopoverTrigger asChild disabled={isBlocked}>
@@ -947,17 +968,19 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                 </p>
                               </div>
                               <div className="space-y-2">
-                                <Label className="text-xs">
+                                <Label htmlFor="recipientEmail" className="text-xs">
                                   Recipient Email
                                 </Label>
                                 <Input
+                                  id="recipientEmail"
                                   type="email"
-                                  value="apmailbox@omnigo.com"
-                                  disabled
-                                  className="text-sm bg-gray-50"
+                                  value={recipientEmail}
+                                  onChange={(e) => setRecipientEmail(e.target.value)}
+                                  placeholder="apmailbox@omnigo.com"
+                                  className="text-sm"
                                 />
                                 <p className="text-xs text-gray-500">
-                                  Receipt will be sent to Omnigo's accounts payable email
+                                  Receipt will be sent to this email address
                                 </p>
                               </div>
                               <div className="flex gap-2">

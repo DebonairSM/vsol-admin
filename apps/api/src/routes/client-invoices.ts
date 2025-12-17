@@ -43,7 +43,11 @@ router.get('/:id', async (req, res, next) => {
 // GET /api/client-invoices/cycle/:cycleId
 router.get('/cycle/:cycleId', async (req, res, next) => {
   try {
-    const invoice = await ClientInvoiceService.getByCycleId(parseInt(req.params.cycleId));
+    const cycleId = parseInt(req.params.cycleId);
+    if (isNaN(cycleId)) {
+      return res.status(400).json({ error: 'Invalid cycle ID' });
+    }
+    const invoice = await ClientInvoiceService.getByCycleId(cycleId);
     res.json(invoice);
   } catch (error) {
     next(error);
