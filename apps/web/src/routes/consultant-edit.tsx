@@ -76,6 +76,12 @@ export default function ConsultantEditPage() {
         cpf: consultant.cpf,
         // Bonus
         bonusMonth: consultant.bonusMonth,
+        // Invoice fields
+        role: consultant.role,
+        serviceDescription: consultant.serviceDescription,
+        clientInvoiceServiceName: consultant.clientInvoiceServiceName,
+        clientInvoiceUnitPrice: consultant.clientInvoiceUnitPrice,
+        clientInvoiceServiceDescription: consultant.clientInvoiceServiceDescription,
       });
     }
   }, [consultant]);
@@ -217,6 +223,19 @@ export default function ConsultantEditPage() {
       
       // Bonus
       if (formState.bonusMonth !== undefined) dataToUpdate.bonusMonth = formState.bonusMonth || null;
+      
+      // Invoice fields
+      if (formState.role !== undefined) dataToUpdate.role = toNullIfEmpty(formState.role);
+      if (formState.serviceDescription !== undefined) dataToUpdate.serviceDescription = toNullIfEmpty(formState.serviceDescription);
+      if (formState.clientInvoiceServiceName !== undefined) {
+        dataToUpdate.clientInvoiceServiceName = toNullIfEmpty(formState.clientInvoiceServiceName);
+      }
+      if (formState.clientInvoiceUnitPrice !== undefined) {
+        dataToUpdate.clientInvoiceUnitPrice = formState.clientInvoiceUnitPrice;
+      }
+      if (formState.clientInvoiceServiceDescription !== undefined) {
+        dataToUpdate.clientInvoiceServiceDescription = toNullIfEmpty(formState.clientInvoiceServiceDescription);
+      }
       
       await updateProfile.mutateAsync({ id: consultantId, data: dataToUpdate });
       setHasChanges(false);
@@ -412,6 +431,68 @@ export default function ConsultantEditPage() {
                     </Button>
                   )}
                 </div>
+              </div>
+              <div>
+                <Label htmlFor="role">Invoice Role</Label>
+                <Input
+                  id="role"
+                  value={formState.role || ''}
+                  onChange={(e) => handleInputChange('role', e.target.value)}
+                  placeholder="e.g., Senior Software Developer I"
+                />
+                <p className="text-xs text-gray-500 mt-1">Used as service name on invoices</p>
+              </div>
+              <div>
+                <Label htmlFor="clientInvoiceServiceName">Client Invoice Service Name</Label>
+                <Input
+                  id="clientInvoiceServiceName"
+                  value={formState.clientInvoiceServiceName || ''}
+                  onChange={(e) => handleInputChange('clientInvoiceServiceName', e.target.value)}
+                  placeholder="Defaults to Invoice Role if empty"
+                />
+                <p className="text-xs text-gray-500 mt-1">Overrides service name used on client invoices</p>
+              </div>
+              <div>
+                <Label htmlFor="clientInvoiceUnitPrice">Client Invoice Unit Price (USD)</Label>
+                <Input
+                  id="clientInvoiceUnitPrice"
+                  type="number"
+                  step="0.01"
+                  value={formState.clientInvoiceUnitPrice ?? ''}
+                  onChange={(e) =>
+                    handleInputChange(
+                      'clientInvoiceUnitPrice',
+                      e.target.value === '' ? null : (parseFloat(e.target.value) || 0)
+                    )
+                  }
+                  placeholder="e.g., 5410.77"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Monthly unit price billed to the client (used for invoice totals)
+                </p>
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="serviceDescription">Service Description</Label>
+                <Textarea
+                  id="serviceDescription"
+                  value={formState.serviceDescription || ''}
+                  onChange={(e) => handleInputChange('serviceDescription', e.target.value)}
+                  placeholder="Description of services provided (used in invoice line items)"
+                  rows={3}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="clientInvoiceServiceDescription">Client Invoice Description (Base)</Label>
+                <Textarea
+                  id="clientInvoiceServiceDescription"
+                  value={formState.clientInvoiceServiceDescription || ''}
+                  onChange={(e) => handleInputChange('clientInvoiceServiceDescription', e.target.value)}
+                  placeholder="Base description used on client invoice line items (consultant names are appended automatically)"
+                  rows={3}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Use this to match the exact Omnigo invoice wording for this consultant's billed role
+                </p>
               </div>
             </div>
           </CardContent>

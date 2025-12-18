@@ -113,7 +113,11 @@ export const createConsultantSchema = z.object({
       number: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
       // Invoice role for grouping
       role: z.string().optional(),
-      serviceDescription: z.string().optional()
+      serviceDescription: z.string().optional(),
+      // Client invoice (billing) fields - independent from consultant payouts
+      clientInvoiceServiceName: z.string().optional(),
+      clientInvoiceUnitPrice: z.number().positive().optional(),
+      clientInvoiceServiceDescription: z.string().optional()
 });
 
 export const updateConsultantSchema = z.object({
@@ -179,14 +183,19 @@ export const updateConsultantSchema = z.object({
       number: z.number().refine(val => val === null || isFinite(val), 'Must be a finite number').nullable().optional(),
       // Invoice role for grouping
       role: z.string().nullable().optional(),
-      serviceDescription: z.string().nullable().optional()
+      serviceDescription: z.string().nullable().optional(),
+      // Client invoice (billing) fields - independent from consultant payouts
+      clientInvoiceServiceName: z.string().nullable().optional(),
+      clientInvoiceUnitPrice: z.number().positive().nullable().optional(),
+      clientInvoiceServiceDescription: z.string().nullable().optional()
 });
 
 // Cycle schemas
 export const createCycleSchema = z.object({
   monthLabel: z.string().min(1, 'Month label is required'),
   globalWorkHours: z.number().int().positive().optional(),
-  omnigoBonus: z.number().optional()
+  omnigoBonus: z.number().optional(),
+  invoiceBonus: z.number().optional()
 });
 
 export const updateCycleSchema = z.object({
@@ -207,6 +216,7 @@ export const updateCycleSchema = z.object({
   timeDoctorMarkedPaidDate: z.string().datetime().nullable().optional(),
   globalWorkHours: z.number().int().positive().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   omnigoBonus: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
+  invoiceBonus: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   pagamentoPIX: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   pagamentoInter: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),
   equipmentsUSD: z.number().refine(val => isFinite(val), 'Must be a finite number').nullable().optional(),

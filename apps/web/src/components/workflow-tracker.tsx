@@ -8,7 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { formatDate, formatDateTime, cn, calculateCountdown } from '@/lib/utils';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { formatDate, formatDateTime, formatCurrency, cn, calculateCountdown } from '@/lib/utils';
 import { workflowSteps, calculateWorkflowProgress, isStepCompleted, canCompleteStep } from '@/lib/workflow-config';
 import { Check, Calendar, Clock, Calculator, DollarSign, AlertTriangle, Lock, ExternalLink, Eye } from 'lucide-react';
 import { useCalculatePayment } from '@/hooks/use-cycles';
@@ -40,7 +41,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   
   const calculatePaymentMutation = useCalculatePayment();
-  const { data: invoiceData, refetch: refetchInvoice } = useClientInvoiceByCycle(cycle.id);
+  const { data: invoiceData, refetch: refetchInvoice, isLoading: isLoadingInvoice } = useClientInvoiceByCycle(cycle.id);
   const createInvoiceFromCycleMutation = useCreateInvoiceFromCycle();
   const updateInvoiceStatusMutation = useUpdateInvoiceStatus();
 
@@ -468,8 +469,17 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
       toast.success('Invoice created successfully');
       await refetchInvoice();
     } catch (error: any) {
-      console.error('Failed to create invoice:', error);
-      toast.error(error.message || 'Failed to create invoice');
+      const errorMessage = error.message || 'Failed to create invoice';
+      
+      // If invoice already exists, refetch to get the existing invoice and show helpful message
+      if (errorMessage.includes('Invoice already exists')) {
+        await refetchInvoice();
+        toast.error('An invoice already exists for this cycle. Please edit the existing invoice instead.');
+      } else {
+        // Only log unexpected errors to console
+        console.error('Failed to create invoice:', error);
+        toast.error(errorMessage);
+      }
     }
   };
 
@@ -938,11 +948,11 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                   </p>
                                   <Button
                                     onClick={handleCreateInvoiceFromCycle}
-                                    disabled={createInvoiceFromCycleMutation.isPending}
+                                    disabled={createInvoiceFromCycleMutation.isPending || isLoadingInvoice || !!invoiceData}
                                     className="w-full"
                                     size="sm"
                                   >
-                                    {createInvoiceFromCycleMutation.isPending ? 'Creating...' : 'Create Invoice from Cycle'}
+                                    {createInvoiceFromCycleMutation.isPending ? 'Creating...' : isLoadingInvoice ? 'Loading...' : 'Create Invoice from Cycle'}
                                   </Button>
                                 </>
                               )}

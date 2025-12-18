@@ -15,6 +15,10 @@ export interface Consultant {
   evaluationNotes?: string | null;
   role?: string | null; // For invoice grouping
   serviceDescription?: string | null; // Optional custom description
+  // Client invoice (billing) fields - used for Omnigo invoice generation (not consultant payouts)
+  clientInvoiceServiceName?: string | null;
+  clientInvoiceUnitPrice?: number | null;
+  clientInvoiceServiceDescription?: string | null;
   // Personal Data
   email?: string | null;
   address?: string | null;
@@ -80,6 +84,7 @@ export interface PayrollCycle {
   // Footer values
   globalWorkHours?: number | null;
   omnigoBonus?: number | null;
+  invoiceBonus?: number | null;
   pagamentoPIX?: number | null;
   pagamentoInter?: number | null;
   equipmentsUSD?: number | null;

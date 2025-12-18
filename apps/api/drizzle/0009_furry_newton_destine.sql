@@ -1,4 +1,4 @@
-ALTER TABLE bonus_workflows ADD `bonus_recipient_consultant_id` integer REFERENCES consultants(id);--> statement-breakpoint
+ALTER TABLE bonus_workflows ADD `bonus_recipient_consultant_id` integer REFERENCES consultants(id);
 /*
  SQLite does not support "Creating foreign key on existing column" out of the box, we do not generate automatic migration for that, so it has to be done manually
  Please refer to: https://www.techonthenet.com/sqlite/tables/alter_table.php

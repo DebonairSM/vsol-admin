@@ -1,10 +1,15 @@
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { db, clientInvoices, invoiceLineItems, invoiceNumberSequence, payrollCycles, cycleLineItems, clients } from '../db';
 import { CreateClientInvoiceRequest, UpdateClientInvoiceRequest, UpdateClientInvoiceStatusRequest, ClientInvoiceStatus } from '@vsol-admin/shared';
 import { NotFoundError, ValidationError } from '../middleware/errors';
 import { InvoiceLineItemService } from './invoice-line-item-service';
 
 export class ClientInvoiceService {
+  private static readonly CONSULTANT_BONUS_SERVICE_NAME = 'Consultant Bonus';
+  private static readonly CONSULTANT_BONUS_DESCRIPTION = "Omnigo contribution to consultants' annual performance bonus.";
+  // Default "Consultant Bonus" amount (matches Wave Apps)
+  private static readonly DEFAULT_INVOICE_BONUS = 751.96;
+
   static async getAll(cycleId?: number, status?: ClientInvoiceStatus) {
     const conditions = [];
     if (cycleId) conditions.push(eq(clientInvoices.cycleId, cycleId));
@@ -38,10 +43,22 @@ export class ClientInvoiceService {
     }
 
     // Parse consultantIds for line items
-    const lineItemsWithParsedIds = invoice.lineItems.map(item => ({
-      ...item,
-      consultantIds: item.consultantIds ? JSON.parse(item.consultantIds) : null
-    }));
+    const lineItemsWithParsedIds = invoice.lineItems.map(item => {
+      let parsedIds = null;
+      if (item.consultantIds) {
+        try {
+          parsedIds = JSON.parse(item.consultantIds);
+        } catch (e) {
+          // If JSON parsing fails, log but don't fail the request
+          console.warn(`Failed to parse consultantIds for line item ${item.id}:`, e);
+          parsedIds = null;
+        }
+      }
+      return {
+        ...item,
+        consultantIds: parsedIds
+      };
+    });
 
     return {
       ...invoice,
@@ -98,7 +115,7 @@ export class ClientInvoiceService {
     if (!sequence) {
       // Create initial sequence
       const [newSequence] = await db.insert(invoiceNumberSequence).values({
-        nextNumber: 199
+        nextNumber: 198
       }).returning();
       sequence = newSequence;
     }
@@ -112,6 +129,63 @@ export class ClientInvoiceService {
         updatedAt: new Date()
       })
       .where(eq(invoiceNumberSequence.id, sequence.id));
+
+    return invoiceNumber;
+  }
+
+  /**
+   * Get next invoice number within a transaction
+   * This ensures the invoice number is generated atomically with the invoice creation
+   * Note: In better-sqlite3, all operations are synchronous
+   */
+  private static getNextInvoiceNumberInTransaction(tx: any): number {
+    // Get or create the sequence row (singleton)
+    // Query within transaction using Drizzle's select API
+    // Note: tx.query doesn't exist in better-sqlite3 transactions, use tx.select() instead
+    const sequences = tx
+      .select({
+        id: invoiceNumberSequence.id,
+        nextNumber: invoiceNumberSequence.nextNumber
+      })
+      .from(invoiceNumberSequence)
+      .limit(1)
+      .all() as Array<{ id: number; nextNumber: number }>;
+    
+    let sequence = sequences.length > 0 ? sequences[0] : null;
+
+    if (!sequence) {
+      // Create initial sequence
+      // Insert operations in better-sqlite3 are synchronous, but Drizzle queries are lazy.
+      // Use .run() and lastInsertRowid to get the inserted row id.
+      const insertResult = tx
+        .insert(invoiceNumberSequence)
+        .values({ nextNumber: 198 })
+        .run() as { lastInsertRowid: number | bigint };
+
+      const insertedId = Number(insertResult.lastInsertRowid);
+      if (!Number.isFinite(insertedId) || insertedId <= 0) {
+        throw new Error('Failed to create invoice number sequence (missing lastInsertRowid)');
+      }
+
+      sequence = { id: insertedId, nextNumber: 198 };
+    }
+
+    if (!sequence || sequence.nextNumber === undefined) {
+      throw new Error('Invoice number sequence is invalid');
+    }
+
+    const invoiceNumber = sequence.nextNumber;
+
+    // Increment for next time
+    // Update operations in better-sqlite3 are synchronous
+    tx
+      .update(invoiceNumberSequence)
+      .set({
+        nextNumber: invoiceNumber + 1,
+        updatedAt: new Date()
+      })
+      .where(eq(invoiceNumberSequence.id, sequence.id))
+      .run();
 
     return invoiceNumber;
   }
@@ -145,9 +219,6 @@ export class ClientInvoiceService {
       throw new NotFoundError('No client found. Please seed client data.');
     }
 
-    // Get invoice number
-    const invoiceNumber = await this.getNextInvoiceNumber();
-
     // Calculate invoice date (use cycle creation date or current date)
     const invoiceDate = cycle.createdAt || new Date();
     
@@ -155,20 +226,14 @@ export class ClientInvoiceService {
     const dueDate = new Date(invoiceDate);
     dueDate.setDate(dueDate.getDate() + 30);
 
-    // Group consultants by role and create line items
-    const roleGroups = new Map<string, Array<{ consultant: any; lineItem: any }>>();
+    const roundToCents = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 
-    for (const line of cycle.lines) {
-      const consultant = line.consultant;
-      const role = consultant.role || 'Uncategorized';
-      
-      if (!roleGroups.has(role)) {
-        roleGroups.set(role, []);
-      }
-      roleGroups.get(role)!.push({ consultant, lineItem: line });
-    }
-
-    // Create line items array
+    /**
+     * Generate invoice line items based on client billing fields (monthly service fees),
+     * not on consultant payouts (hourlyRate/ratePerHour).
+     *
+     * This matches the real Omnigo invoice format: service name, quantity, unit price, amount.
+     */
     const lineItemsToCreate: Array<{
       serviceName: string;
       description: string;
@@ -181,95 +246,165 @@ export class ClientInvoiceService {
 
     let sortOrder = 0;
 
-    // Process each role group
-    for (const [role, items] of roleGroups.entries()) {
-      const consultantIds = items.map(item => item.consultant.id);
-      const consultantNames = items.map(item => item.consultant.name).join(', ');
-      
-      // Calculate rate per consultant (average of their rates)
-      // For invoice purposes, we want: (workHours * ratePerHour) per consultant
-      // Then sum them up for the line item total
-      let lineItemTotal = 0;
-      
-      for (const { consultant, lineItem } of items) {
-        const workHours = lineItem.workHours ?? cycle.globalWorkHours ?? 0;
-        const ratePerHour = lineItem.ratePerHour;
-        lineItemTotal += workHours * ratePerHour;
+    // Group consultants into invoice line items by (serviceName + unitPrice + baseDescription)
+    // This supports cases where the same serviceName/unitPrice appears multiple times with different descriptions.
+    type BillingGroupKey = string;
+    const billingGroups = new Map<
+      BillingGroupKey,
+      {
+        serviceName: string;
+        unitPrice: number;
+        baseDescription: string;
+        consultantIds: number[];
+        consultantNames: string[];
+      }
+    >();
+
+    const missingBilling: Array<{ id: number; name: string }> = [];
+
+    for (const line of cycle.lines) {
+      const consultant = line.consultant;
+
+      const serviceName =
+        consultant.clientInvoiceServiceName ||
+        consultant.role ||
+        'Uncategorized';
+
+      const unitPrice = consultant.clientInvoiceUnitPrice;
+      if (unitPrice === null || unitPrice === undefined) {
+        missingBilling.push({ id: consultant.id, name: consultant.name });
+        continue;
       }
 
-      // Rate is the total divided by quantity (per consultant rate)
-      const quantity = items.length;
-      const rate = quantity > 0 ? lineItemTotal / quantity : 0;
+      const baseDescription =
+        consultant.clientInvoiceServiceDescription ||
+        consultant.serviceDescription ||
+        serviceName;
 
-      // Service description - use consultant's serviceDescription if available, otherwise use role
-      const firstConsultant = items[0]?.consultant;
-      const serviceDescription = firstConsultant?.serviceDescription || role;
-      const description = consultantNames 
-        ? `${serviceDescription} (${consultantNames}).`
-        : serviceDescription;
+      const key = `${serviceName}||${unitPrice}||${baseDescription}`;
+      const existing = billingGroups.get(key);
+      if (existing) {
+        existing.consultantIds.push(consultant.id);
+        existing.consultantNames.push(consultant.name);
+      } else {
+        billingGroups.set(key, {
+          serviceName,
+          unitPrice,
+          baseDescription,
+          consultantIds: [consultant.id],
+          consultantNames: [consultant.name]
+        });
+      }
+    }
+
+    if (missingBilling.length > 0) {
+      const names = missingBilling.map((c) => `${c.name} (id=${c.id})`).join(', ');
+      throw new ValidationError(
+        `Missing client invoice unit price for ${missingBilling.length} consultant(s): ${names}. ` +
+          `Set Consultant.clientInvoiceUnitPrice (and optionally service name/description) before creating a client invoice from cycle.`
+      );
+    }
+
+    // Deterministic ordering
+    const sortedGroups = Array.from(billingGroups.values()).sort((a, b) => {
+      if (a.serviceName !== b.serviceName) return a.serviceName.localeCompare(b.serviceName);
+      if (a.unitPrice !== b.unitPrice) return a.unitPrice - b.unitPrice;
+      return a.baseDescription.localeCompare(b.baseDescription);
+    });
+
+    for (const group of sortedGroups) {
+      const quantity = group.consultantIds.length;
+      const amount = roundToCents(quantity * group.unitPrice);
+      const names = group.consultantNames.join(', ');
+      const description = `${group.baseDescription} (${names}).`;
 
       lineItemsToCreate.push({
-        serviceName: role,
+        serviceName: group.serviceName,
         description,
         quantity,
-        rate,
-        amount: lineItemTotal,
-        consultantIds,
+        rate: roundToCents(group.unitPrice),
+        amount,
+        consultantIds: group.consultantIds,
         sortOrder: sortOrder++
       });
     }
 
-    // Add bonus line item if omnigoBonus > 0
-    if (cycle.omnigoBonus && cycle.omnigoBonus > 0) {
-      lineItemsToCreate.push({
-        serviceName: 'Consultant Bonus',
-        description: "Omnigo contribution to consultants' annual performance bonus.",
-        quantity: 1,
-        rate: cycle.omnigoBonus,
-        amount: cycle.omnigoBonus,
-        consultantIds: [],
-        sortOrder: sortOrder++
-      });
-    }
+    // Add invoice bonus line item (matches Wave Apps "Consultant Bonus")
+    // If cycle.invoiceBonus is unset, fall back to the Wave default.
+    const invoiceBonus = cycle.invoiceBonus ?? ClientInvoiceService.DEFAULT_INVOICE_BONUS;
+    lineItemsToCreate.push({
+      serviceName: ClientInvoiceService.CONSULTANT_BONUS_SERVICE_NAME,
+      description: ClientInvoiceService.CONSULTANT_BONUS_DESCRIPTION,
+      quantity: 1,
+      rate: invoiceBonus,
+      amount: invoiceBonus,
+      consultantIds: [],
+      sortOrder: sortOrder++
+    });
 
     // Calculate totals
-    const subtotal = lineItemsToCreate.reduce((sum, item) => sum + item.amount, 0);
+    const subtotal = roundToCents(lineItemsToCreate.reduce((sum, item) => sum + item.amount, 0));
     const tax = 0; // No tax for now
-    const total = subtotal + tax;
+    const total = roundToCents(subtotal + tax);
     const amountDue = total;
 
     // Create invoice and line items in transaction
-    const result = await db.transaction(async (tx) => {
-      // Create invoice
-      const [invoice] = await tx.insert(clientInvoices).values({
-        invoiceNumber,
-        cycleId: cycle.id,
-        clientId: client.id,
-        invoiceDate,
-        dueDate,
-        status: 'DRAFT' as ClientInvoiceStatus,
-        subtotal,
-        tax,
-        total,
-        amountDue,
-        paymentTerms: client.paymentTerms || null
-      }).returning();
+    // Note: better-sqlite3 transactions are synchronous, so the callback must not be async
+    const result = db.transaction((tx) => {
+      // Get invoice number within transaction for atomicity
+      const invoiceNumber = this.getNextInvoiceNumberInTransaction(tx);
 
-      // Create line items
-      for (const itemData of lineItemsToCreate) {
-        await tx.insert(invoiceLineItems).values({
-          invoiceId: invoice.id,
-          serviceName: itemData.serviceName,
-          description: itemData.description,
-          quantity: itemData.quantity,
-          rate: itemData.rate,
-          amount: itemData.amount,
-          consultantIds: JSON.stringify(itemData.consultantIds),
-          sortOrder: itemData.sortOrder
-        });
+      // Create invoice
+      // Drizzle query builders are lazy in better-sqlite3; call .run() to execute and get lastInsertRowid.
+      let invoiceId: number;
+      try {
+        const insertResult = tx
+          .insert(clientInvoices)
+          .values({
+            invoiceNumber,
+            cycleId: cycle.id,
+            clientId: client.id,
+            invoiceDate,
+            dueDate,
+            status: 'DRAFT' as ClientInvoiceStatus,
+            subtotal,
+            tax,
+            total,
+            amountDue,
+            paymentTerms: client.paymentTerms || null
+          })
+          .run() as { lastInsertRowid: number | bigint };
+
+        invoiceId = Number(insertResult.lastInsertRowid);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        throw new Error(
+          `Failed to insert client invoice: ${errorMsg}. Invoice number: ${invoiceNumber}, Cycle ID: ${cycle.id}`
+        );
       }
 
-      return invoice.id;
+      if (!Number.isFinite(invoiceId) || invoiceId <= 0) {
+        throw new Error(`Failed to insert client invoice: invalid lastInsertRowid (${invoiceId}). Invoice number: ${invoiceNumber}`);
+      }
+
+      // Create line items
+      // Batch insert line items; also requires .run() to execute.
+      tx.insert(invoiceLineItems)
+        .values(
+          lineItemsToCreate.map((itemData) => ({
+            invoiceId,
+            serviceName: itemData.serviceName,
+            description: itemData.description,
+            quantity: itemData.quantity,
+            rate: itemData.rate,
+            amount: itemData.amount,
+            consultantIds: JSON.stringify(itemData.consultantIds),
+            sortOrder: itemData.sortOrder
+          }))
+        )
+        .run();
+
+      return invoiceId;
     });
 
     return this.getById(result);
@@ -362,17 +497,127 @@ export class ClientInvoiceService {
   }
 
   static async delete(id: number) {
-    const existing = await this.getById(id);
+    // Check if invoice exists first (will throw NotFoundError if not found)
+    await this.getById(id);
     
-    // Delete in transaction (line items will be cascade deleted if foreign key constraint is set)
-    await db.transaction(async (tx) => {
-      // Delete line items first
-      await tx.delete(invoiceLineItems).where(eq(invoiceLineItems.invoiceId, id));
-      // Delete invoice
-      await tx.delete(clientInvoices).where(eq(clientInvoices.id, id));
-    });
+    // Delete in transaction (line items must be deleted first due to foreign key constraint)
+    // Note: better-sqlite3 transactions are synchronous, so the callback must not be async
+    try {
+      db.transaction((tx) => {
+        // Delete line items first to avoid foreign key constraint violation
+        tx.delete(invoiceLineItems).where(eq(invoiceLineItems.invoiceId, id)).run();
+        // Delete invoice
+        tx.delete(clientInvoices).where(eq(clientInvoices.id, id)).run();
+      });
+    } catch (error) {
+      // Re-throw NotFoundError as-is, wrap other errors
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      // Log database errors for debugging
+      console.error('Error deleting client invoice:', error);
+      
+      // Check for SQLite foreign key constraint violations
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('FOREIGN KEY constraint') || errorMessage.includes('foreign key constraint')) {
+        throw new ValidationError('Cannot delete invoice: it is still referenced by other records');
+      }
+      
+      // Check for other SQLite constraint violations
+      if (errorMessage.includes('constraint') || errorMessage.includes('SQLITE_CONSTRAINT')) {
+        throw new ValidationError('Cannot delete invoice due to database constraint');
+      }
+      
+      throw new Error(`Failed to delete invoice: ${errorMessage}`);
+    }
 
     return { success: true };
+  }
+
+  /**
+   * Sync the "Consultant Bonus" invoice line item from the associated cycle's invoiceBonus.
+   * Intended for correcting existing invoices created before invoiceBonus was respected.
+   */
+  static async syncInvoiceBonusFromCycle(invoiceId: number) {
+    const invoice = await db.query.clientInvoices.findFirst({
+      where: eq(clientInvoices.id, invoiceId),
+      with: {
+        cycle: true,
+        lineItems: true
+      }
+    });
+
+    if (!invoice) {
+      throw new NotFoundError('Invoice not found');
+    }
+
+    if (!invoice.cycle) {
+      throw new ValidationError('Invoice has no associated cycle');
+    }
+
+    const targetBonus = invoice.cycle.invoiceBonus ?? ClientInvoiceService.DEFAULT_INVOICE_BONUS;
+    const existingBonusItem = (invoice.lineItems || []).find(
+      (item) => item.serviceName === ClientInvoiceService.CONSULTANT_BONUS_SERVICE_NAME
+    );
+
+    const tax = invoice.tax || 0;
+
+    db.transaction((tx) => {
+      // Upsert the bonus line item to match the cycle (or default if unset).
+      if (existingBonusItem) {
+        tx.update(invoiceLineItems)
+          .set({
+            description: ClientInvoiceService.CONSULTANT_BONUS_DESCRIPTION,
+            quantity: 1,
+            rate: targetBonus,
+            amount: targetBonus,
+            consultantIds: JSON.stringify([]),
+            updatedAt: new Date()
+          })
+          .where(eq(invoiceLineItems.id, existingBonusItem.id))
+          .run();
+      } else {
+        const maxSortOrder = (invoice.lineItems || []).reduce((max, item) => {
+          const v = item.sortOrder ?? 0;
+          return v > max ? v : max;
+        }, 0);
+
+        tx.insert(invoiceLineItems)
+          .values({
+            invoiceId: invoice.id,
+            serviceName: ClientInvoiceService.CONSULTANT_BONUS_SERVICE_NAME,
+            description: ClientInvoiceService.CONSULTANT_BONUS_DESCRIPTION,
+            quantity: 1,
+            rate: targetBonus,
+            amount: targetBonus,
+            consultantIds: JSON.stringify([]),
+            sortOrder: maxSortOrder + 1
+          })
+          .run();
+      }
+
+      // Recalculate totals based on line items currently stored.
+      const amounts = tx
+        .select({ amount: invoiceLineItems.amount })
+        .from(invoiceLineItems)
+        .where(eq(invoiceLineItems.invoiceId, invoice.id))
+        .all() as Array<{ amount: number | null }>;
+
+      const subtotal = amounts.reduce((sum, row) => sum + (row.amount || 0), 0);
+      const total = subtotal + tax;
+
+      tx.update(clientInvoices)
+        .set({
+          subtotal,
+          total,
+          amountDue: total,
+          updatedAt: new Date()
+        })
+        .where(eq(clientInvoices.id, invoice.id))
+        .run();
+    });
+
+    return this.getById(invoiceId);
   }
 }
 

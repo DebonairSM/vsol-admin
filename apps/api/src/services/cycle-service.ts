@@ -93,6 +93,7 @@ export class CycleService {
         monthLabel: data.monthLabel,
         globalWorkHours: data.globalWorkHours || null,
         omnigoBonus: data.omnigoBonus || null,
+        invoiceBonus: data.invoiceBonus || null,
         payoneerBalanceCarryover: newCarryover !== null ? newCarryover : null,
         payoneerBalanceApplied: null
       }).returning();
@@ -188,6 +189,7 @@ export class CycleService {
     }
     if (data.globalWorkHours !== undefined) updateData.globalWorkHours = validateNumber(data.globalWorkHours, 'globalWorkHours');
     if (data.omnigoBonus !== undefined) updateData.omnigoBonus = validateNumber(data.omnigoBonus, 'omnigoBonus');
+    if (data.invoiceBonus !== undefined) updateData.invoiceBonus = validateNumber(data.invoiceBonus, 'invoiceBonus');
     if (data.pagamentoPIX !== undefined) updateData.pagamentoPIX = validateNumber(data.pagamentoPIX, 'pagamentoPIX');
     if (data.pagamentoInter !== undefined) updateData.pagamentoInter = validateNumber(data.pagamentoInter, 'pagamentoInter');
     if (data.equipmentsUSD !== undefined) updateData.equipmentsUSD = validateNumber(data.equipmentsUSD, 'equipmentsUSD');

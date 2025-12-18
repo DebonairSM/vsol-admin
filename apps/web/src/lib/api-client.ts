@@ -396,6 +396,10 @@ class ApiClient {
     return this.request<any[]>(`/invoices${query}`);
   }
 
+  async getInvoice(id: number) {
+    return this.request<any>(`/invoices/${id}`);
+  }
+
   async createInvoice(data: any) {
     return this.request<any>('/invoices', {
       method: 'POST',
@@ -407,6 +411,12 @@ class ApiClient {
     return this.request<any>(`/invoices/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  }
+
+  async deleteInvoice(id: number) {
+    return this.request<any>(`/invoices/${id}`, {
+      method: 'DELETE',
     });
   }
 

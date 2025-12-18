@@ -61,6 +61,11 @@ export const consultants = sqliteTable('consultants', {
   // Invoice role for grouping
   role: text('role'), // e.g., "Senior Software Developer I", "QA Tester"
   serviceDescription: text('service_description'), // Optional custom description
+  // Client invoice (billing) fields - independent from consultant payout rates
+  // Used to generate Omnigo invoice line items (monthly service fees, quantities, etc.)
+  clientInvoiceServiceName: text('client_invoice_service_name'), // e.g., "Senior Software Developer I"
+  clientInvoiceUnitPrice: real('client_invoice_unit_price'), // monthly unit price billed to client
+  clientInvoiceServiceDescription: text('client_invoice_service_description'), // base description (names are appended at invoice generation)
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
@@ -87,6 +92,7 @@ export const payrollCycles = sqliteTable('payroll_cycles', {
   // Footer values
   globalWorkHours: integer('global_work_hours'),
   omnigoBonus: real('omnigo_bonus'),
+  invoiceBonus: real('invoice_bonus'),
   pagamentoPIX: real('pagamento_pix'),
   pagamentoInter: real('pagamento_inter'),
   equipmentsUSD: real('equipments_usd'),
@@ -311,7 +317,7 @@ export const invoiceLineItems = sqliteTable('invoice_line_items', {
 // Invoice number sequence table - Track next invoice number
 export const invoiceNumberSequence = sqliteTable('invoice_number_sequence', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  nextNumber: integer('next_number').notNull().default(199), // Start at 199 (Wave's last was 198)
+  nextNumber: integer('next_number').notNull().default(198), // Start at 198
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
 

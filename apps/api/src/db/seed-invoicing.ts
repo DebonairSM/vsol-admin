@@ -52,9 +52,9 @@ export async function seedInvoicing() {
     const existingSequence = await db.query.invoiceNumberSequence.findFirst();
     
     if (!existingSequence) {
-      console.log('  Creating invoice number sequence (starting at 199)...');
+      console.log('  Creating invoice number sequence (starting at 198)...');
       await db.insert(invoiceNumberSequence).values({
-        nextNumber: 199 // Wave's last invoice was #198, so start at 199
+        nextNumber: 198
       });
       console.log('  ✓ Invoice number sequence created');
     } else {

@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { db, invoices } from '../db';
 import { CreateInvoiceRequest, UpdateInvoiceRequest } from '@vsol-admin/shared';
 import { NotFoundError } from '../middleware/errors';
@@ -13,7 +13,7 @@ export class InvoiceService {
         consultant: true,
         cycle: true
       },
-      orderBy: (invoices, { desc }) => [desc(invoices.id)]
+      orderBy: [desc(invoices.id)]
     });
   }
 

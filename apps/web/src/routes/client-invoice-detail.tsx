@@ -1,11 +1,12 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { useClientInvoice, useUpdateInvoiceStatus } from '@/hooks/use-client-invoices';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useClientInvoice, useUpdateInvoiceStatus, useDeleteClientInvoice } from '@/hooks/use-client-invoices';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 function getStatusColor(status: string) {
@@ -29,9 +30,11 @@ function getStatusColor(status: string) {
 
 export default function ClientInvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const invoiceId = id ? parseInt(id) : 0;
   const { data: invoice, isLoading } = useClientInvoice(invoiceId);
   const updateStatusMutation = useUpdateInvoiceStatus();
+  const deleteInvoiceMutation = useDeleteClientInvoice();
 
   const handleMarkAsSent = async () => {
     if (!invoice) return;
@@ -43,6 +46,17 @@ export default function ClientInvoiceDetailPage() {
       toast.success('Invoice marked as sent');
     } catch (error: any) {
       toast.error(error.message || 'Failed to update invoice status');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!invoice) return;
+    try {
+      await deleteInvoiceMutation.mutateAsync(invoice.id);
+      toast.success('Invoice deleted successfully');
+      navigate('/client-invoices');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete invoice');
     }
   };
 
@@ -174,6 +188,35 @@ export default function ClientInvoiceDetailPage() {
                   View Cycle
                 </Button>
               </Link>
+              {invoice.status === 'DRAFT' && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Invoice
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Invoice #{invoice.invoiceNumber}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this invoice? This action cannot be undone.
+                        You can recreate the invoice from the cycle page if needed.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={deleteInvoiceMutation.isPending}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        {deleteInvoiceMutation.isPending ? 'Deleting...' : 'Delete'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </CardContent>
           </Card>
         </div>

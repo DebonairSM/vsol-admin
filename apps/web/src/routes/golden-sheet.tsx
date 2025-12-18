@@ -700,6 +700,34 @@ export default function GoldenSheetPage() {
               )}
             </div>
             <div className="flex justify-between items-center">
+              <span>Invoice Bonus:</span>
+              {editingCycleField === 'invoiceBonus' ? (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="w-24 h-8 text-right font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCycleFieldSave();
+                      if (e.key === 'Escape') handleCycleFieldCancel();
+                    }}
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={handleCycleFieldSave}>Save</Button>
+                  <Button size="sm" variant="ghost" onClick={handleCycleFieldCancel}>Cancel</Button>
+                </div>
+              ) : (
+                <span 
+                  className="font-mono cursor-pointer hover:bg-gray-100 p-1 rounded"
+                  onClick={() => handleCycleFieldEdit('invoiceBonus', cycle.invoiceBonus)}
+                >
+                  <BlurredValue>{formatCurrency(cycle.invoiceBonus || 0)}</BlurredValue>
+                </span>
+              )}
+            </div>
+            <div className="flex justify-between items-center">
               <span>Pagamento PIX:</span>
               {editingCycleField === 'pagamentoPIX' ? (
                 <div className="flex gap-2 items-center">

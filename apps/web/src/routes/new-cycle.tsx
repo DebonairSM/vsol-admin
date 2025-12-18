@@ -39,7 +39,8 @@ export default function NewCyclePage() {
   const [formData, setFormData] = useState({
     monthLabel: '',
     globalWorkHours: latestCycle?.globalWorkHours || 168,
-    omnigoBonus: settings?.defaultOmnigoBonus || 0
+    omnigoBonus: settings?.defaultOmnigoBonus || 0,
+    invoiceBonus: undefined as number | undefined
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -118,7 +119,8 @@ export default function NewCyclePage() {
       const cycle = await createCycle.mutateAsync({
         monthLabel: formData.monthLabel.trim(),
         globalWorkHours: formData.globalWorkHours || undefined,
-        omnigoBonus: formData.omnigoBonus || undefined
+        omnigoBonus: formData.omnigoBonus || undefined,
+        invoiceBonus: formData.invoiceBonus || undefined
       });
 
       // Redirect to the new cycle's Golden Sheet
@@ -271,6 +273,25 @@ export default function NewCyclePage() {
               />
               <p className="text-xs text-gray-500">
                 Optional bonus amount to be included in the cycle calculations.
+              </p>
+            </div>
+
+            {/* Invoice Bonus */}
+            <div className="space-y-2">
+              <label htmlFor="invoiceBonus" className="text-sm font-medium">
+                Invoice Bonus ($)
+              </label>
+              <Input
+                id="invoiceBonus"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.invoiceBonus ?? ''}
+                onChange={(e) => handleInputChange('invoiceBonus', e.target.value === '' ? undefined : parseFloat(e.target.value) || 0)}
+                placeholder="0.00"
+              />
+              <p className="text-xs text-gray-500">
+                Optional bonus amount to charge on invoices sent to Omnigo (independent from Omnigo Bonus paid to consultants).
               </p>
             </div>
 

@@ -183,6 +183,20 @@
       "when": 1765906956117,
       "tag": "0025_exotic_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1766009307990,
+      "tag": "0026_optimal_legion",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1766032944735,
+      "tag": "0027_light_venom",
+      "breakpoints": true
     }
   ]
 }

@@ -70,7 +70,13 @@ export class ConsultantService {
       yearlyBonus: data.yearlyBonus || null,
       bonusMonth: data.bonusMonth || null,
       // Number field
-      number: data.number || null
+      number: data.number || null,
+      // Invoice fields (client billing)
+      role: data.role || null,
+      serviceDescription: data.serviceDescription || null,
+      clientInvoiceServiceName: data.clientInvoiceServiceName || null,
+      clientInvoiceUnitPrice: data.clientInvoiceUnitPrice ?? null,
+      clientInvoiceServiceDescription: data.clientInvoiceServiceDescription || null
     }).returning();
 
     return consultant;
@@ -140,6 +146,15 @@ export class ConsultantService {
     
     // Number field
     if (data.number !== undefined) updateData.number = data.number;
+
+    // Invoice fields (client billing)
+    if (data.role !== undefined) updateData.role = data.role;
+    if (data.serviceDescription !== undefined) updateData.serviceDescription = data.serviceDescription;
+    if (data.clientInvoiceServiceName !== undefined) updateData.clientInvoiceServiceName = data.clientInvoiceServiceName;
+    if (data.clientInvoiceUnitPrice !== undefined) updateData.clientInvoiceUnitPrice = data.clientInvoiceUnitPrice;
+    if (data.clientInvoiceServiceDescription !== undefined) {
+      updateData.clientInvoiceServiceDescription = data.clientInvoiceServiceDescription;
+    }
 
     const [consultant] = await db.update(consultants)
       .set(updateData)
