@@ -74,3 +74,4 @@ Write-Host "🚀 You can now run: pnpm dev" -ForegroundColor Cyan
 
 
 
+

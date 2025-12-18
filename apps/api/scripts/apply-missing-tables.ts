@@ -190,3 +190,4 @@ console.log(`✅ Applied missing tables: ${created} created, ${skipped} skipped`
 sqlite.close();
 process.exit(0);
 
+
