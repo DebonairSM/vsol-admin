@@ -11,7 +11,6 @@ import ConsultantEditPage from './routes/consultant-edit';
 import ConsultantShippingLabelPage from './routes/consultant-shipping-label';
 import EquipmentPage from './routes/equipment';
 import NewEquipmentPage from './routes/equipment-new';
-import InvoicesPage from './routes/invoices';
 import ClientInvoicesPage from './routes/client-invoices';
 import ClientInvoiceDetailPage from './routes/client-invoice-detail';
 import PaymentsPage from './routes/payments';
@@ -74,7 +73,6 @@ function App() {
                   <Route path="/consultants/:id/edit" element={<ConsultantEditPage />} />
                   <Route path="/equipment" element={<EquipmentPage />} />
                   <Route path="/equipment/new" element={<NewEquipmentPage />} />
-                  <Route path="/invoices" element={<InvoicesPage />} />
                   <Route path="/client-invoices" element={<ClientInvoicesPage />} />
                   <Route path="/client-invoices/:id" element={<ClientInvoiceDetailPage />} />
                   <Route path="/payments" element={<PaymentsPage />} />

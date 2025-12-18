@@ -390,36 +390,6 @@ class ApiClient {
     });
   }
 
-  // Invoice methods (legacy - per consultant invoices)
-  async getInvoices(cycleId?: number) {
-    const query = cycleId ? `?cycleId=${cycleId}` : '';
-    return this.request<any[]>(`/invoices${query}`);
-  }
-
-  async getInvoice(id: number) {
-    return this.request<any>(`/invoices/${id}`);
-  }
-
-  async createInvoice(data: any) {
-    return this.request<any>('/invoices', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateInvoice(id: number, data: any) {
-    return this.request<any>(`/invoices/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteInvoice(id: number) {
-    return this.request<any>(`/invoices/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
   // Company methods
   async getCompany() {
     return this.request<any>('/companies');

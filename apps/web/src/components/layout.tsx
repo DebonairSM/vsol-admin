@@ -31,7 +31,7 @@ const navigation = [
   { name: 'Consultants', href: '/consultants', icon: Users },
   { name: 'Equipment', href: '/equipment', icon: Laptop },
   { name: 'Work Hours', href: '/work-hours', icon: Clock },
-  { name: 'Invoices', href: '/invoices', icon: FileText },
+  { name: 'Invoices', href: '/client-invoices', icon: FileText },
   { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Audit Log', href: '/audit', icon: History },
   { name: 'Settings', href: '/settings', icon: Settings },

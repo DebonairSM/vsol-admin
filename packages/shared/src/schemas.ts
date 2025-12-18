@@ -240,25 +240,6 @@ export const updateLineItemSchema = z.object({
   comments: z.string().nullable().optional()
 });
 
-// Invoice schemas
-export const createInvoiceSchema = z.object({
-  cycleId: z.number().int().positive(),
-  consultantId: z.number().int().positive(),
-  hours: z.number().positive().optional(),
-  rate: z.number().positive().optional(),
-  amount: z.number().positive().optional()
-});
-
-export const updateInvoiceSchema = z.object({
-  hours: z.number().positive().nullable().optional(),
-  rate: z.number().positive().nullable().optional(),
-  amount: z.number().positive().nullable().optional(),
-  sent: z.boolean().nullable().optional(),
-  approved: z.boolean().nullable().optional(),
-  sentDate: z.string().datetime().nullable().optional(),
-  approvedDate: z.string().datetime().nullable().optional()
-});
-
 // Payment schemas
 export const paymentKindSchema = z.enum(['REGULAR', 'BONUS', 'ADVANCE', 'ADJUSTMENT']);
 
@@ -278,8 +259,6 @@ export type UpdateConsultantRequest = z.infer<typeof updateConsultantSchema>;
 export type CreateCycleRequest = z.infer<typeof createCycleSchema>;
 export type UpdateCycleRequest = z.infer<typeof updateCycleSchema>;
 export type UpdateLineItemRequest = z.infer<typeof updateLineItemSchema>;
-export type CreateInvoiceRequest = z.infer<typeof createInvoiceSchema>;
-export type UpdateInvoiceRequest = z.infer<typeof updateInvoiceSchema>;
 export type CreatePaymentRequest = z.infer<typeof createPaymentSchema>;
 
 // File upload schemas

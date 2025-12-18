@@ -11,7 +11,6 @@ import { generalRateLimiter, authRateLimiter, writeRateLimiter } from './middlew
 import authRoutes from './routes/auth';
 import consultantRoutes from './routes/consultants';
 import cycleRoutes from './routes/cycles';
-import invoiceRoutes from './routes/invoices';
 import paymentRoutes from './routes/payments';
 import auditRoutes from './routes/audit';
 import equipmentRoutes from './routes/equipment';
@@ -218,7 +217,6 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/consultants', consultantRoutes);
 app.use('/api/cycles', cycleRoutes);
-app.use('/api/invoices', invoiceRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/equipment', equipmentRoutes);
