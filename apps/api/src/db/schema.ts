@@ -338,6 +338,38 @@ export const vacationDays = sqliteTable('vacation_days', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
 
+// Sprint ceremonies table
+export const sprintCeremonies = sqliteTable('sprint_ceremonies', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  ceremonyType: text('ceremony_type', { enum: ['STANDUP', 'SPRINT_PLANNING', 'SPRINT_REVIEW', 'RETROSPECTIVE', 'OTHER'] }).notNull(),
+  startDate: integer('start_date', { mode: 'timestamp' }).notNull(),
+  startTime: text('start_time'), // HH:mm format
+  durationMinutes: integer('duration_minutes'),
+  isRecurring: integer('is_recurring', { mode: 'boolean' }).notNull().default(false),
+  recurrenceRule: text('recurrence_rule'), // JSON string
+  location: text('location'),
+  notes: text('notes'),
+  createdBy: integer('created_by').notNull().references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
+// Holidays table
+export const holidays = sqliteTable('holidays', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  date: integer('date', { mode: 'timestamp' }).notNull(),
+  year: integer('year').notNull(),
+  isRecurring: integer('is_recurring', { mode: 'boolean' }).notNull().default(true),
+  holidayType: text('holiday_type', { enum: ['GOOD_FRIDAY', 'CHRISTMAS_EVE', 'CHRISTMAS_DAY', 'NEW_YEARS_DAY'] }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+}, (table) => ({
+  // Unique constraint on year + holidayType
+  uniqueYearHolidayType: unique().on(table.year, table.holidayType)
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   consultant: one(consultants, {
@@ -347,7 +379,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   auditLogs: many(auditLogs),
   refreshTokens: many(refreshTokens),
   settingsUpdates: many(settings),
-  uploadedInvoices: many(invoices)
+  uploadedInvoices: many(invoices),
+  sprintCeremonies: many(sprintCeremonies)
 }));
 
 export const consultantsRelations = relations(consultants, ({ one, many }) => ({
@@ -491,3 +524,12 @@ export const vacationDaysRelations = relations(vacationDays, ({ one }) => ({
     references: [users.id]
   })
 }));
+
+export const sprintCeremoniesRelations = relations(sprintCeremonies, ({ one }) => ({
+  creator: one(users, {
+    fields: [sprintCeremonies.createdBy],
+    references: [users.id]
+  })
+}));
+
+export const holidaysRelations = relations(holidays, ({}) => ({}));

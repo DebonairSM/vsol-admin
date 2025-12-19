@@ -3,13 +3,16 @@ import { authenticateOwnConsultant } from '../middleware/consultant-auth';
 import { ConsultantInvoiceService } from '../services/consultant-invoice-service';
 import { ConsultantService } from '../services/consultant-service';
 import { EquipmentService } from '../services/equipment-service';
+import { VacationService } from '../services/vacation-service';
 import { uploadInvoice } from '../middleware/upload';
 import { validateFileContent } from '../middleware/upload';
-import { ValidationError } from '../middleware/errors';
+import { ValidationError, ForbiddenError } from '../middleware/errors';
 import { validateBody } from '../middleware/validate';
 import { z } from 'zod';
-import { updateEquipmentSchema, createConsultantEquipmentSchema, updateConsultantProfileSchema } from '@vsol-admin/shared';
+import { updateEquipmentSchema, createConsultantEquipmentSchema, updateConsultantProfileSchema, createConsultantVacationDaySchema, createConsultantVacationRangeSchema, updateVacationDaySchema } from '@vsol-admin/shared';
 import { auditMiddleware } from '../middleware/audit';
+import { eq } from 'drizzle-orm';
+import { db, vacationDays } from '../db';
 
 const router: Router = Router();
 
@@ -214,6 +217,157 @@ router.put('/equipment/:id', validateBody(updateEquipmentSchema), async (req, re
     next(error);
   }
 });
+
+// Vacation routes for consultants
+
+// GET /api/consultant/vacations - Get consultant's own vacations
+router.get('/vacations', async (req, res, next) => {
+  try {
+    const consultantId = (req as any).consultantId;
+    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+    
+    const vacations = await VacationService.getByConsultantId(consultantId, startDate, endDate);
+    res.json(vacations);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/consultant/vacations/balance - Get consultant's own vacation balance
+router.get('/vacations/balance', async (req, res, next) => {
+  try {
+    const consultantId = (req as any).consultantId;
+    const referenceDate = req.query.referenceDate ? new Date(req.query.referenceDate as string) : new Date();
+    
+    const balance = await VacationService.getBalance(consultantId, referenceDate);
+    res.json(balance);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/consultant/vacations/calendar - Get consultant's own vacations for calendar view
+router.get('/vacations/calendar', async (req, res, next) => {
+  try {
+    if (!req.query.startDate || !req.query.endDate) {
+      throw new ValidationError('startDate and endDate query parameters are required');
+    }
+    
+    const consultantId = (req as any).consultantId;
+    const startDate = new Date(req.query.startDate as string);
+    const endDate = new Date(req.query.endDate as string);
+    
+    const vacations = await VacationService.getByConsultantId(consultantId, startDate, endDate);
+    const events = vacations.map(v => ({
+      date: v.vacationDate.toISOString().split('T')[0],
+      consultantId: v.consultantId,
+      consultantName: 'Me',
+      notes: v.notes
+    }));
+    
+    res.json(events);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/consultant/vacations - Create single vacation day (automatically uses consultant's ID)
+router.post('/vacations',
+  validateBody(createConsultantVacationDaySchema),
+  auditMiddleware('CREATE_VACATION_DAY', 'vacation_day'),
+  async (req, res, next) => {
+    try {
+      const consultantId = (req as any).consultantId;
+      const userId = req.user!.userId;
+      
+      // Add consultantId to the request body (schema doesn't include it)
+      const vacationData = {
+        ...req.body,
+        consultantId
+      };
+      
+      const vacation = await VacationService.createDay(vacationData, userId);
+      res.status(201).json(vacation);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// POST /api/consultant/vacations/range - Create vacation range (automatically uses consultant's ID)
+router.post('/vacations/range',
+  validateBody(createConsultantVacationRangeSchema),
+  auditMiddleware('CREATE_VACATION_RANGE', 'vacation_day'),
+  async (req, res, next) => {
+    try {
+      const consultantId = (req as any).consultantId;
+      const userId = req.user!.userId;
+      
+      // Add consultantId to the request body (schema doesn't include it)
+      const rangeData = {
+        ...req.body,
+        consultantId
+      };
+      
+      const vacations = await VacationService.createRange(rangeData, userId);
+      res.status(201).json(vacations);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// PUT /api/consultant/vacations/:id - Update vacation day (only if it belongs to consultant)
+router.put('/vacations/:id',
+  validateBody(updateVacationDaySchema),
+  auditMiddleware('UPDATE_VACATION_DAY', 'vacation_day'),
+  async (req, res, next) => {
+    try {
+      const consultantId = (req as any).consultantId;
+      const id = parseInt(req.params.id);
+      
+      // Verify vacation belongs to consultant
+      const vacation = await db.query.vacationDays.findFirst({
+        where: eq(vacationDays.id, id)
+      });
+      
+      if (!vacation || vacation.consultantId !== consultantId) {
+        throw new ForbiddenError('You can only update your own vacations');
+      }
+      
+      const updated = await VacationService.updateDay(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// DELETE /api/consultant/vacations/:id - Delete vacation day (only if it belongs to consultant)
+router.delete('/vacations/:id',
+  auditMiddleware('DELETE_VACATION_DAY', 'vacation_day'),
+  async (req, res, next) => {
+    try {
+      const consultantId = (req as any).consultantId;
+      const id = parseInt(req.params.id);
+      
+      // Verify vacation belongs to consultant
+      const vacation = await db.query.vacationDays.findFirst({
+        where: eq(vacationDays.id, id)
+      });
+      
+      if (!vacation || vacation.consultantId !== consultantId) {
+        throw new ForbiddenError('You can only delete your own vacations');
+      }
+      
+      const result = await VacationService.deleteDay(id);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default router;
 

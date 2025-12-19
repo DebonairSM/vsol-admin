@@ -471,3 +471,53 @@ export interface VacationCalendarEvent {
   consultantName: string;
   notes?: string | null;
 }
+
+// Sprint ceremony types
+export type CeremonyType = 'STANDUP' | 'SPRINT_PLANNING' | 'SPRINT_REVIEW' | 'RETROSPECTIVE' | 'OTHER';
+export type RecurrenceFrequency = 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
+export type HolidayType = 'GOOD_FRIDAY' | 'CHRISTMAS_EVE' | 'CHRISTMAS_DAY' | 'NEW_YEARS_DAY';
+
+export interface RecurrenceRule {
+  frequency: RecurrenceFrequency;
+  interval: number;
+  endDate?: Date | null;
+  daysOfWeek?: number[]; // 0=Sunday, 6=Saturday
+}
+
+export interface SprintCeremony {
+  id: number;
+  title: string;
+  ceremonyType: CeremonyType;
+  startDate: Date;
+  startTime?: string | null;
+  durationMinutes?: number | null;
+  isRecurring: boolean;
+  recurrenceRule?: RecurrenceRule | null;
+  location?: string | null;
+  notes?: string | null;
+  createdBy: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Holiday {
+  id: number;
+  name: string;
+  date: Date;
+  year: number;
+  isRecurring: boolean;
+  holidayType: HolidayType;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CalendarEventOccurrence {
+  id: string; // "ceremony-{id}-{date}" or "vacation-{id}" or "holiday-{id}"
+  type: 'ceremony' | 'vacation' | 'holiday';
+  title: string;
+  date: Date;
+  startTime?: string;
+  durationMinutes?: number;
+  color: string;
+  metadata: SprintCeremony | VacationCalendarEvent | Holiday;
+}

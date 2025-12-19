@@ -653,6 +653,64 @@ export const updateVacationDaySchema = z.object({
   notes: z.string().optional()
 });
 
+// Consultant-specific schemas (consultantId is omitted, will be set automatically)
+export const createConsultantVacationDaySchema = z.object({
+  vacationDate: z.string().datetime(),
+  notes: z.string().optional()
+});
+
+export const createConsultantVacationRangeSchema = z.object({
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  notes: z.string().optional()
+});
+
 export type CreateVacationDayRequest = z.infer<typeof createVacationDaySchema>;
 export type CreateVacationRangeRequest = z.infer<typeof createVacationRangeSchema>;
 export type UpdateVacationDayRequest = z.infer<typeof updateVacationDaySchema>;
+export type CreateConsultantVacationDayRequest = z.infer<typeof createConsultantVacationDaySchema>;
+export type CreateConsultantVacationRangeRequest = z.infer<typeof createConsultantVacationRangeSchema>;
+
+// Sprint ceremony schemas
+export const recurrenceRuleSchema = z.object({
+  frequency: z.enum(['DAILY', 'WEEKLY', 'BIWEEKLY', 'MONTHLY']),
+  interval: z.number().int().positive().default(1),
+  endDate: z.string().datetime().nullable().optional(),
+  daysOfWeek: z.array(z.number().int().min(0).max(6)).optional() // 0=Sunday, 6=Saturday
+});
+
+export const createSprintCeremonySchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  ceremonyType: z.enum(['STANDUP', 'SPRINT_PLANNING', 'SPRINT_REVIEW', 'RETROSPECTIVE', 'OTHER']),
+  startDate: z.string().datetime(),
+  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
+  durationMinutes: z.number().int().positive().nullable().optional(),
+  isRecurring: z.boolean(),
+  recurrenceRule: recurrenceRuleSchema.nullable().optional(),
+  location: z.string().nullable().optional(),
+  notes: z.string().nullable().optional()
+});
+
+export const updateSprintCeremonySchema = z.object({
+  title: z.string().min(1).optional(),
+  ceremonyType: z.enum(['STANDUP', 'SPRINT_PLANNING', 'SPRINT_REVIEW', 'RETROSPECTIVE', 'OTHER']).optional(),
+  startDate: z.string().datetime().optional(),
+  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
+  durationMinutes: z.number().int().positive().nullable().optional(),
+  isRecurring: z.boolean().optional(),
+  recurrenceRule: recurrenceRuleSchema.nullable().optional(),
+  location: z.string().nullable().optional(),
+  notes: z.string().nullable().optional()
+});
+
+// Holiday schemas
+export const updateHolidaySchema = z.object({
+  name: z.string().min(1).optional(),
+  date: z.string().datetime().optional(),
+  year: z.number().int().positive().optional(),
+  isRecurring: z.boolean().optional()
+});
+
+export type CreateSprintCeremonyRequest = z.infer<typeof createSprintCeremonySchema>;
+export type UpdateSprintCeremonyRequest = z.infer<typeof updateSprintCeremonySchema>;
+export type UpdateHolidayRequest = z.infer<typeof updateHolidaySchema>;

@@ -12,7 +12,8 @@ import {
   User,
   Laptop,
   LogOut,
-  Menu
+  Menu,
+  Plane
 } from 'lucide-react';
 
 const consultantNavigation = [
@@ -20,6 +21,7 @@ const consultantNavigation = [
   { name: 'Upload Invoice', href: '/consultant/invoices', icon: FileText },
   { name: 'My Profile', href: '/consultant/profile', icon: User },
   { name: 'My Equipment', href: '/consultant/equipment', icon: Laptop },
+  { name: 'My Vacations', href: '/consultant/vacations', icon: Plane },
 ];
 
 function ConsultantSidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {

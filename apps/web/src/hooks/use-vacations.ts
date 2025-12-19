@@ -87,3 +87,81 @@ export function useDeleteVacationDay() {
   });
 }
 
+// Consultant-specific hooks
+export function useConsultantVacations(startDate?: string, endDate?: string) {
+  return useQuery({
+    queryKey: ['consultant', 'vacations', startDate, endDate],
+    queryFn: () => apiClient.getConsultantVacations(startDate, endDate),
+  });
+}
+
+export function useConsultantVacationBalance(referenceDate?: string) {
+  return useQuery({
+    queryKey: ['consultant', 'vacations', 'balance', referenceDate],
+    queryFn: () => apiClient.getConsultantVacationBalance(referenceDate),
+  });
+}
+
+export function useConsultantVacationCalendar(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: ['consultant', 'vacations', 'calendar', startDate, endDate],
+    queryFn: () => apiClient.getConsultantVacationCalendar(startDate, endDate),
+    enabled: !!startDate && !!endDate,
+  });
+}
+
+export function useCreateConsultantVacationDay() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: Omit<CreateVacationDayRequest, 'consultantId'>) => 
+      apiClient.createConsultantVacationDay(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations'] });
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations', 'balance'] });
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations', 'calendar'] });
+    },
+  });
+}
+
+export function useCreateConsultantVacationRange() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: Omit<CreateVacationRangeRequest, 'consultantId'>) => 
+      apiClient.createConsultantVacationRange(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations'] });
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations', 'balance'] });
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations', 'calendar'] });
+    },
+  });
+}
+
+export function useUpdateConsultantVacationDay() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateVacationDayRequest }) => 
+      apiClient.updateConsultantVacationDay(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations'] });
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations', 'balance'] });
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations', 'calendar'] });
+    },
+  });
+}
+
+export function useDeleteConsultantVacationDay() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: number) => apiClient.deleteConsultantVacationDay(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations'] });
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations', 'balance'] });
+      queryClient.invalidateQueries({ queryKey: ['consultant', 'vacations', 'calendar'] });
+    },
+  });
+}
+

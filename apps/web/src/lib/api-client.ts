@@ -1014,6 +1014,50 @@ class ApiClient {
     });
   }
 
+  // Consultant vacation methods (auto-uses consultant's ID)
+  async getConsultantVacations(startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    return this.request(`/consultant/vacations${params.toString() ? `?${params.toString()}` : ''}`);
+  }
+
+  async getConsultantVacationBalance(referenceDate?: string) {
+    const params = referenceDate ? `?referenceDate=${referenceDate}` : '';
+    return this.request(`/consultant/vacations/balance${params}`);
+  }
+
+  async getConsultantVacationCalendar(startDate: string, endDate: string) {
+    return this.request(`/consultant/vacations/calendar?startDate=${startDate}&endDate=${endDate}`);
+  }
+
+  async createConsultantVacationDay(data: Omit<any, 'consultantId'>) {
+    return this.request('/consultant/vacations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createConsultantVacationRange(data: Omit<any, 'consultantId'>) {
+    return this.request('/consultant/vacations/range', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateConsultantVacationDay(id: number, data: any) {
+    return this.request(`/consultant/vacations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteConsultantVacationDay(id: number) {
+    return this.request(`/consultant/vacations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // User management methods (admin only)
   async getConsultantUsers() {
     return this.request('/users/consultants');

@@ -25,6 +25,7 @@ import ConsultantPortalPage from './routes/consultant-portal';
 import ConsultantInvoicesPage from './routes/consultant-invoices';
 import ConsultantMyProfilePage from './routes/consultant-my-profile';
 import ConsultantEquipmentPage from './routes/consultant-equipment';
+import ConsultantVacationsPage from './routes/consultant-vacations';
 import UsersPage from './routes/users';
 import Layout from './components/layout';
 import ConsultantLayout from './components/consultant-layout';
@@ -115,6 +116,7 @@ function App() {
                     <Route path="invoices" element={<ConsultantInvoicesPage />} />
                     <Route path="profile" element={<ConsultantMyProfilePage />} />
                     <Route path="equipment" element={<ConsultantEquipmentPage />} />
+                    <Route path="vacations" element={<ConsultantVacationsPage />} />
                   </Routes>
                 </ConsultantLayout>
               </ConsultantRoute>
