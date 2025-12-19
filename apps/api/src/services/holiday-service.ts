@@ -115,7 +115,7 @@ export class HolidayService {
 
   /**
    * Get holidays for a given year
-   * Auto-generates if they don't exist
+   * Auto-generates missing holidays if they don't exist
    */
   static async getHolidaysForYear(year: number): Promise<Holiday[]> {
     let existingHolidays = await db.query.holidays.findMany({
@@ -123,8 +123,13 @@ export class HolidayService {
       orderBy: (holidays, { asc }) => [asc(holidays.date)]
     });
 
-    // If no holidays exist for this year, generate them
-    if (existingHolidays.length === 0) {
+    // Expected holiday types
+    const expectedTypes: HolidayType[] = ['GOOD_FRIDAY', 'CHRISTMAS_EVE', 'CHRISTMAS_DAY', 'NEW_YEARS_DAY'];
+    const existingTypes = new Set(existingHolidays.map(h => h.holidayType));
+
+    // If any holidays are missing, generate them (idempotent - won't duplicate existing ones)
+    const missingTypes = expectedTypes.filter(type => !existingTypes.has(type));
+    if (missingTypes.length > 0 || existingHolidays.length === 0) {
       existingHolidays = await this.generateHolidaysForYear(year);
     }
 

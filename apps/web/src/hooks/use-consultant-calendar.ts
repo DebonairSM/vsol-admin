@@ -15,25 +15,27 @@ export function useConsultantCalendarEvents(month: Date) {
   const monthEndStr = monthEnd.toISOString().split('T')[0];
 
   // Fetch consultant's vacations
-  const { data: vacationEvents } = useConsultantVacationCalendar(monthStartStr, monthEndStr);
+  const { data: vacationEvents, isLoading: vacationsLoading } = useConsultantVacationCalendar(monthStartStr, monthEndStr);
   
   // Fetch all ceremony occurrences (read-only for consultants)
-  const { data: ceremonyOccurrences } = useQuery({
+  const { data: ceremonyOccurrences, isLoading: ceremoniesLoading } = useQuery({
     queryKey: ['consultant', 'ceremony-occurrences', monthStartStr, monthEndStr],
     queryFn: () => apiClient.getConsultantCeremonyOccurrences(monthStartStr, monthEndStr),
   });
 
   // Fetch all holidays (read-only for consultants)
-  const { data: holidays } = useQuery({
+  const { data: holidays, isLoading: holidaysLoading } = useQuery({
     queryKey: ['consultant', 'holidays', year],
     queryFn: () => apiClient.getConsultantHolidays(year),
   });
+
+  const isLoading = vacationsLoading || ceremoniesLoading || holidaysLoading;
 
   // Combine and transform into unified calendar events
   const events: CalendarEventOccurrence[] = [];
 
   // Add vacation events
-  if (vacationEvents) {
+  if (Array.isArray(vacationEvents)) {
     vacationEvents.forEach((event: VacationCalendarEvent) => {
       events.push({
         id: `vacation-${event.date}`,
@@ -47,7 +49,7 @@ export function useConsultantCalendarEvents(month: Date) {
   }
 
   // Add ceremony occurrences (already expanded from API)
-  if (ceremonyOccurrences) {
+  if (Array.isArray(ceremonyOccurrences)) {
     ceremonyOccurrences.forEach((occurrence: any) => {
       const occurrenceDate = occurrence.date instanceof Date 
         ? occurrence.date
@@ -67,16 +69,22 @@ export function useConsultantCalendarEvents(month: Date) {
   }
 
   // Add holidays
-  if (holidays) {
+  if (Array.isArray(holidays)) {
     holidays.forEach((holiday: Holiday) => {
       const holidayDate = new Date(holiday.date);
+      // Use UTC methods to avoid timezone shifts
+      const holidayYear = holidayDate.getUTCFullYear();
+      const holidayMonth = holidayDate.getUTCMonth();
+      const holidayDay = holidayDate.getUTCDate();
+      // Create normalized date in local timezone
+      const normalizedDate = new Date(holidayYear, holidayMonth, holidayDay);
       // Only include holidays in the current month
-      if (holidayDate.getMonth() === monthNum && holidayDate.getFullYear() === year) {
+      if (holidayMonth === monthNum && holidayYear === year) {
         events.push({
           id: `holiday-${holiday.id}`,
           type: 'holiday',
           title: holiday.name,
-          date: holidayDate,
+          date: normalizedDate,
           color: 'red',
           metadata: holiday,
         });
@@ -89,7 +97,7 @@ export function useConsultantCalendarEvents(month: Date) {
 
   return {
     data: events,
-    isLoading: false, // We'll handle loading states in the component
+    isLoading,
   };
 }
 

@@ -66,7 +66,7 @@ export default function LoginPage() {
             <img src="/vsol-logo-25-c.png" alt="VSol Logo" className="h-12 w-auto" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Company Portal
+            Portal
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Golden Sheet Management System

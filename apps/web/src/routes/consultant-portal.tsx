@@ -50,10 +50,10 @@ export default function ConsultantPortalPage() {
   
   // Group calendar events by date
   const eventsByDate = useMemo(() => {
-    if (!calendarEvents) return new Map<string, CalendarEventOccurrence[]>();
+    if (!calendarEvents?.data) return new Map<string, CalendarEventOccurrence[]>();
     
     const map = new Map<string, CalendarEventOccurrence[]>();
-    calendarEvents.forEach((event: CalendarEventOccurrence) => {
+    calendarEvents.data.forEach((event: CalendarEventOccurrence) => {
       const dateStr = event.date.toISOString().split('T')[0];
       const existing = map.get(dateStr) || [];
       map.set(dateStr, [...existing, event]);
@@ -63,8 +63,8 @@ export default function ConsultantPortalPage() {
   
   // Get dates with events for calendar modifiers
   const vacationDates = useMemo(() => {
-    if (!calendarEvents) return [];
-    return calendarEvents
+    if (!calendarEvents?.data) return [];
+    return calendarEvents.data
       .filter(e => e.type === 'vacation')
       .map(e => {
         const d = new Date(e.date);
@@ -73,8 +73,8 @@ export default function ConsultantPortalPage() {
   }, [calendarEvents]);
 
   const ceremonyDates = useMemo(() => {
-    if (!calendarEvents) return [];
-    return calendarEvents
+    if (!calendarEvents?.data) return [];
+    return calendarEvents.data
       .filter(e => e.type === 'ceremony')
       .map(e => {
         const d = new Date(e.date);
@@ -83,8 +83,8 @@ export default function ConsultantPortalPage() {
   }, [calendarEvents]);
 
   const holidayDates = useMemo(() => {
-    if (!calendarEvents) return [];
-    return calendarEvents
+    if (!calendarEvents?.data) return [];
+    return calendarEvents.data
       .filter(e => e.type === 'holiday')
       .map(e => {
         const d = new Date(e.date);

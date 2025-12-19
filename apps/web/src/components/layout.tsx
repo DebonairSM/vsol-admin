@@ -49,7 +49,7 @@ function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
       <div className="flex h-16 items-center px-6 border-b">
         <img src="/vsol-logo-25-c.png" alt="VSol Logo" className="h-8 w-auto" />
         <span className="ml-2 text-xl font-semibold text-gray-900">
-          Company Portal
+          Portal
         </span>
       </div>
 

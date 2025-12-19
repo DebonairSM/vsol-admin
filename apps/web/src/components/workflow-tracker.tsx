@@ -413,7 +413,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     <p>Thank you for your prompt payment. We appreciate your business.</p>
     
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-      <p style="margin: 5px 0;"><strong>Company Portal</strong></p>
+      <p style="margin: 5px 0;"><strong>Portal</strong></p>
       <p style="margin: 5px 0;">Phone: (407) 409-0874</p>
       <p style="margin: 5px 0;">Email: admin@vsol.software</p>
       <p style="margin: 5px 0;">Website: www.vsol.software</p>

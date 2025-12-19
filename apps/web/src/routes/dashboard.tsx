@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { useCycles } from '@/hooks/use-cycles';
 import { useVacationCalendar, useVacationBalances } from '@/hooks/use-vacations';
 import { useCalendarEvents } from '@/hooks/use-calendar-events';
+import { useCeremonyOccurrences } from '@/hooks/use-sprint-ceremonies';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +11,7 @@ import { BlurredValue } from '@/components/ui/blurred-value';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Plus, Calendar as CalendarIcon, DollarSign, Users, FileText, CalendarCheck, Sparkles, Plane } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, DollarSign, Users, FileText, CalendarCheck, Sparkles, Plane, Clock } from 'lucide-react';
 import type { VacationCalendarEvent, CalendarEventOccurrence } from '@vsol-admin/shared';
 import { CreateCeremonyDialog } from '@/components/calendar/create-ceremony-dialog';
 
@@ -33,12 +34,29 @@ export default function DashboardPage() {
   const { data: vacationBalances } = useVacationBalances();
   const { data: calendarEvents } = useCalendarEvents(selectedMonth);
   
+  // Get upcoming ceremonies (next 30 days)
+  const upcomingCeremoniesStart = useMemo(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  }, []);
+  
+  const upcomingCeremoniesEnd = useMemo(() => {
+    const today = new Date();
+    const future = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days ahead
+    return future.toISOString().split('T')[0];
+  }, []);
+  
+  const { data: upcomingCeremonyOccurrences } = useCeremonyOccurrences(
+    upcomingCeremoniesStart,
+    upcomingCeremoniesEnd
+  );
+  
   // Group all calendar events by date and type
   const eventsByDate = useMemo(() => {
-    if (!calendarEvents) return new Map<string, CalendarEventOccurrence[]>();
+    if (!calendarEvents?.data) return new Map<string, CalendarEventOccurrence[]>();
     
     const map = new Map<string, CalendarEventOccurrence[]>();
-    calendarEvents.forEach((event: CalendarEventOccurrence) => {
+    calendarEvents.data.forEach((event: CalendarEventOccurrence) => {
       const dateStr = event.date.toISOString().split('T')[0];
       const existing = map.get(dateStr) || [];
       map.set(dateStr, [...existing, event]);
@@ -48,8 +66,8 @@ export default function DashboardPage() {
   
   // Get dates with events for calendar modifiers
   const vacationDates = useMemo(() => {
-    if (!calendarEvents) return [];
-    return calendarEvents
+    if (!calendarEvents?.data) return [];
+    return calendarEvents.data
       .filter(e => e.type === 'vacation')
       .map(e => {
         const d = new Date(e.date);
@@ -58,8 +76,8 @@ export default function DashboardPage() {
   }, [calendarEvents]);
 
   const ceremonyDates = useMemo(() => {
-    if (!calendarEvents) return [];
-    return calendarEvents
+    if (!calendarEvents?.data) return [];
+    return calendarEvents.data
       .filter(e => e.type === 'ceremony')
       .map(e => {
         const d = new Date(e.date);
@@ -68,8 +86,8 @@ export default function DashboardPage() {
   }, [calendarEvents]);
 
   const holidayDates = useMemo(() => {
-    if (!calendarEvents) return [];
-    return calendarEvents
+    if (!calendarEvents?.data) return [];
+    return calendarEvents.data
       .filter(e => e.type === 'holiday')
       .map(e => {
         const d = new Date(e.date);
@@ -154,7 +172,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm sm:text-base text-gray-600">Company Portal - Golden Sheet Management</p>
+          <p className="text-sm sm:text-base text-gray-600">Portal - Golden Sheet Management</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Button variant="outline" asChild className="w-full sm:w-auto">
@@ -445,6 +463,60 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-center py-4 text-gray-500 text-sm">
                   No upcoming vacations
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Upcoming Ceremonies */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming Ceremonies</CardTitle>
+              <CardDescription>Next 30 days</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {upcomingCeremonyOccurrences && Array.isArray(upcomingCeremonyOccurrences) && upcomingCeremonyOccurrences.length > 0 ? (
+                <div className="space-y-2">
+                  {upcomingCeremonyOccurrences
+                    .sort((a: any, b: any) => {
+                      const dateA = a.date instanceof Date ? a.date : new Date(a.date);
+                      const dateB = b.date instanceof Date ? b.date : new Date(b.date);
+                      return dateA.getTime() - dateB.getTime();
+                    })
+                    .slice(0, 10)
+                    .map((occurrence: any, idx: number) => {
+                      const occurrenceDate = occurrence.date instanceof Date 
+                        ? occurrence.date
+                        : new Date(occurrence.date);
+                      const ceremony = occurrence.ceremony || {};
+                      return (
+                        <div key={`ceremony-${occurrence.ceremonyId}-${idx}`} className="flex items-start justify-between p-2 border rounded">
+                          <div className="flex-1">
+                            <div className="font-medium text-sm text-green-900">{ceremony.title || 'Ceremony'}</div>
+                            <div className="text-xs text-gray-600 mt-1">{formatDate(occurrenceDate)}</div>
+                            {ceremony.startTime && (
+                              <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {ceremony.startTime}
+                                {ceremony.durationMinutes && ` (${ceremony.durationMinutes} min)`}
+                              </div>
+                            )}
+                            {ceremony.location && (
+                              <div className="text-xs text-gray-500 mt-1">{ceremony.location}</div>
+                            )}
+                          </div>
+                          {ceremony.ceremonyType && (
+                            <Badge variant="outline" className="ml-2">
+                              {ceremony.ceremonyType}
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500 text-sm">
+                  No upcoming ceremonies
                 </div>
               )}
             </CardContent>

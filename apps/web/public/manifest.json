@@ -1,6 +1,6 @@
 {
-  "name": "Company Portal - Golden Sheet",
-  "short_name": "Company Portal",
+  "name": "Portal - Golden Sheet",
+  "short_name": "Portal",
   "description": "Local-first payroll cycle management system",
   "start_url": "/",
   "display": "standalone",

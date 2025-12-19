@@ -1,18 +1,20 @@
 import { useState, useMemo } from 'react';
 import { useConsultantVacations, useConsultantVacationBalance, useConsultantVacationCalendar, useCreateConsultantVacationDay, useCreateConsultantVacationRange, useDeleteConsultantVacationDay } from '@/hooks/use-vacations';
+import { useConsultantCalendarEvents } from '@/hooks/use-consultant-calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { formatDate } from '@/lib/utils';
 import { Plus, Calendar as CalendarIcon, Trash2, Plane } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { VacationDay, VacationBalance } from '@vsol-admin/shared';
+import type { VacationDay, VacationBalance, CalendarEventOccurrence } from '@vsol-admin/shared';
 
 export default function ConsultantVacationsPage() {
   const { toast } = useToast();
@@ -58,17 +60,52 @@ export default function ConsultantVacationsPage() {
     return date.toISOString().split('T')[0];
   }, [selectedMonth]);
   
-  const { data: calendarEvents } = useConsultantVacationCalendar(monthStart, monthEnd);
+  const { data: calendarEvents } = useConsultantCalendarEvents(selectedMonth);
   
-  // Get dates with vacations for calendar modifiers
-  const vacationDates = useMemo(() => {
-    if (!calendarEvents) return [];
-    return calendarEvents.map(event => {
-      const [year, month, day] = event.date.split('-').map(Number);
-      return new Date(year, month - 1, day);
+  // Group calendar events by date
+  const eventsByDate = useMemo(() => {
+    if (!calendarEvents) return new Map<string, CalendarEventOccurrence[]>();
+    
+    const map = new Map<string, CalendarEventOccurrence[]>();
+    calendarEvents.forEach((event: CalendarEventOccurrence) => {
+      const dateStr = event.date.toISOString().split('T')[0];
+      const existing = map.get(dateStr) || [];
+      map.set(dateStr, [...existing, event]);
     });
+    return map;
   }, [calendarEvents]);
   
+  // Get dates with events for calendar modifiers
+  const vacationDates = useMemo(() => {
+    if (!calendarEvents) return [];
+    return calendarEvents
+      .filter(e => e.type === 'vacation')
+      .map(e => {
+        const d = new Date(e.date);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      });
+  }, [calendarEvents]);
+
+  const ceremonyDates = useMemo(() => {
+    if (!calendarEvents) return [];
+    return calendarEvents
+      .filter(e => e.type === 'ceremony')
+      .map(e => {
+        const d = new Date(e.date);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      });
+  }, [calendarEvents]);
+
+  const holidayDates = useMemo(() => {
+    if (!calendarEvents) return [];
+    return calendarEvents
+      .filter(e => e.type === 'holiday')
+      .map(e => {
+        const d = new Date(e.date);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      });
+  }, [calendarEvents]);
+
   // Get upcoming vacations (next 30 days)
   const upcomingVacations = useMemo(() => {
     if (!vacations) return [];
@@ -316,27 +353,99 @@ export default function ConsultantVacationsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Calendar</CardTitle>
-            <CardDescription>Your vacation days</CardDescription>
+            <CardDescription>Your vacations, ceremonies, and holidays</CardDescription>
           </CardHeader>
           <CardContent>
-            <Calendar
-              mode="single"
-              month={selectedMonth}
-              onMonthChange={setSelectedMonth}
-              modifiers={{
-                vacation: vacationDates
-              }}
-              modifiersClassNames={{
-                vacation: "bg-blue-100 text-blue-900 font-semibold hover:bg-blue-200"
-              }}
-              className="rounded-md border"
-            />
-            {vacationDates.length > 0 && (
-              <div className="mt-4 text-xs text-gray-600">
-                <span className="inline-block w-3 h-3 bg-blue-100 rounded mr-1"></span>
-                Days with vacations
-              </div>
-            )}
+            <div className="space-y-4">
+              <Calendar
+                mode="single"
+                month={selectedMonth}
+                onMonthChange={setSelectedMonth}
+                modifiers={{
+                  vacation: vacationDates,
+                  ceremony: ceremonyDates,
+                  holiday: holidayDates
+                }}
+                modifiersClassNames={{
+                  vacation: "bg-blue-100 text-blue-900 font-semibold hover:bg-blue-200",
+                  ceremony: "bg-green-100 text-green-900 font-semibold hover:bg-green-200",
+                  holiday: "bg-red-100 text-red-900 font-semibold hover:bg-red-200"
+                }}
+                className="rounded-md border"
+              />
+              {(vacationDates.length > 0 || ceremonyDates.length > 0 || holidayDates.length > 0) && (
+                <div className="text-xs text-gray-600 space-y-1">
+                  {vacationDates.length > 0 && (
+                    <div>
+                      <span className="inline-block w-3 h-3 bg-blue-100 rounded mr-1"></span>
+                      My vacations
+                    </div>
+                  )}
+                  {ceremonyDates.length > 0 && (
+                    <div>
+                      <span className="inline-block w-3 h-3 bg-green-100 rounded mr-1"></span>
+                      Ceremonies
+                    </div>
+                  )}
+                  {holidayDates.length > 0 && (
+                    <div>
+                      <span className="inline-block w-3 h-3 bg-red-100 rounded mr-1"></span>
+                      Company holidays
+                    </div>
+                  )}
+                </div>
+              )}
+              {eventsByDate.size > 0 && (
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {Array.from(eventsByDate.entries())
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .slice(0, 5)
+                    .map(([dateStr, events]) => (
+                      <Popover key={dateStr}>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" className="w-full justify-start text-xs h-auto py-1">
+                            <span className="font-medium">{formatDate(new Date(dateStr))}:</span>
+                            <span className="ml-2">{events.length} event{events.length !== 1 ? 's' : ''}</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm">
+                              {formatDate(new Date(dateStr))}
+                            </h4>
+                            <div className="space-y-2">
+                              {events.filter(e => e.type === 'vacation').map((event, idx) => (
+                                <div key={`vacation-${idx}`} className="text-sm p-2 bg-blue-50 rounded">
+                                  <div className="font-medium text-blue-900">My Vacation</div>
+                                  {typeof event.metadata === 'object' && 'notes' in event.metadata && event.metadata.notes && (
+                                    <div className="text-xs text-blue-700">{event.metadata.notes}</div>
+                                  )}
+                                </div>
+                              ))}
+                              {events.filter(e => e.type === 'ceremony').map((event, idx) => (
+                                <div key={`ceremony-${idx}`} className="text-sm p-2 bg-green-50 rounded">
+                                  <div className="font-medium text-green-900">{event.title}</div>
+                                  {event.startTime && (
+                                    <div className="text-xs text-green-700">Time: {event.startTime}</div>
+                                  )}
+                                  {typeof event.metadata === 'object' && 'location' in event.metadata && event.metadata.location && (
+                                    <div className="text-xs text-green-700">Location: {event.metadata.location}</div>
+                                  )}
+                                </div>
+                              ))}
+                              {events.filter(e => e.type === 'holiday').map((event, idx) => (
+                                <div key={`holiday-${idx}`} className="text-sm p-2 bg-red-50 rounded">
+                                  <div className="font-medium text-red-900">{event.title}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ))}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
         

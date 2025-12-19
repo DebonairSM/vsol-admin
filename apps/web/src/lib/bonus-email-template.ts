@@ -27,7 +27,7 @@ export function generateBonusEmailTemplate(data: BonusEmailTemplate): string {
 
   emailContent += `These bonuses will be processed on ${formattedDate}.\n\n`;
   emailContent += `Thank you for your continued dedication and hard work.\n\n`;
-  emailContent += `Best regards,\nCompany Portal`;
+  emailContent += `Best regards,\nPortal`;
 
   return emailContent;
 }

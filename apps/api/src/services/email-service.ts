@@ -95,8 +95,8 @@ export class EmailService {
 
     // Generate email subject
     const subject = data.invoiceNumber 
-      ? `Payment Receipt - Invoice #${data.invoiceNumber} - ${cycle.monthLabel} - Company Portal`
-      : `Payment Receipt - ${cycle.monthLabel} - Company Portal`;
+      ? `Payment Receipt - Invoice #${data.invoiceNumber} - ${cycle.monthLabel} - Portal`
+      : `Payment Receipt - ${cycle.monthLabel} - Portal`;
 
     // Generate HTML email body
     const htmlBody = `
@@ -122,7 +122,7 @@ export class EmailService {
     <p>Thank you for your prompt payment. We appreciate your business.</p>
     
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-      <p style="margin: 5px 0;"><strong>Company Portal</strong></p>
+      <p style="margin: 5px 0;"><strong>Portal</strong></p>
       <p style="margin: 5px 0;">Phone: (407) 409-0874</p>
       <p style="margin: 5px 0;">Email: admin@vsol.software</p>
       <p style="margin: 5px 0;">Website: www.vsol.software</p>
@@ -145,7 +145,7 @@ Payment Date: ${formattedDate}
 
 Thank you for your prompt payment. We appreciate your business.
 
-Company Portal
+Portal
 Phone: (407) 409-0874
 Email: admin@vsol.software
 Website: www.vsol.software
@@ -153,7 +153,7 @@ Website: www.vsol.software
 
     try {
       const result = await resend.emails.send({
-        from: 'Company Portal <noreply@notifications.vsol.software>',
+        from: 'Portal <noreply@notifications.vsol.software>',
         to: recipientEmail,
         subject: subject,
         html: htmlBody,
@@ -188,7 +188,7 @@ Website: www.vsol.software
     }
 
     // Generate email subject
-    const subject = `Your Company Portal Account - ${data.consultantName}`;
+    const subject = `Your Portal Account - ${data.consultantName}`;
 
     // Generate HTML email body
     const htmlBody = `
@@ -197,13 +197,13 @@ Website: www.vsol.software
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Company Portal Account</title>
+  <title>Your Portal Account</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
-    <h2 style="color: #2c3e50; margin-top: 0;">Welcome to Company Portal</h2>
+    <h2 style="color: #2c3e50; margin-top: 0;">Welcome to Portal</h2>
     <p>Dear ${data.consultantName},</p>
-    <p>Your account has been created for the Company Portal. You can now log in to upload invoices and manage your profile information.</p>
+    <p>Your account has been created for the Portal. You can now log in to upload invoices and manage your profile information.</p>
     
     <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #3498db;">
       <p style="margin: 5px 0;"><strong>Username:</strong> ${data.username}</p>
@@ -226,7 +226,7 @@ Website: www.vsol.software
     </ul>
     
     <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-      <p style="margin: 5px 0;"><strong>Company Portal</strong></p>
+      <p style="margin: 5px 0;"><strong>Portal</strong></p>
       <p style="margin: 5px 0;">Phone: (407) 409-0874</p>
       <p style="margin: 5px 0;">Email: admin@vsol.software</p>
       <p style="margin: 5px 0;">Website: www.vsol.software</p>
@@ -238,11 +238,11 @@ Website: www.vsol.software
 
     // Plain text version for email clients that don't support HTML
     const textBody = `
-Welcome to Company Portal
+Welcome to Portal
 
 Dear ${data.consultantName},
 
-Your account has been created for the Company Portal. You can now log in to upload invoices and manage your profile information.
+Your account has been created for the Portal. You can now log in to upload invoices and manage your profile information.
 
 Username: ${data.username}
 Password: ${data.password}
@@ -256,7 +256,7 @@ Once logged in, you can:
 - View and update your profile information
 - Manage your equipment records
 
-Company Portal
+Portal
 Phone: (407) 409-0874
 Email: admin@vsol.software
 Website: www.vsol.software
@@ -264,7 +264,7 @@ Website: www.vsol.software
 
     try {
       const result = await resend.emails.send({
-        from: 'Company Portal <noreply@notifications.vsol.software>',
+        from: 'Portal <noreply@notifications.vsol.software>',
         to: data.email,
         subject: subject,
         html: htmlBody,

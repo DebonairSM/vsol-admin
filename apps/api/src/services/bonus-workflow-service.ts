@@ -381,7 +381,7 @@ export class BonusWorkflowService {
     emailContent += `This bonus will be processed on ${formattedDate}.\n\n`;
     emailContent += `Thank you for your continued dedication and hard work.\n\n`;
     emailContent += `Best regards,\n\n \n\n`;
-    emailContent += `Company Portal\n\n`;
+    emailContent += `Portal\n\n`;
     emailContent += `(407) 409-0874\n\n`;
     emailContent += `admin@vsol.software\n\n`;
     emailContent += `www.vsol.software`;
