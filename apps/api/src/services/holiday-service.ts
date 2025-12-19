@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gte, lte } from 'drizzle-orm';
 import { db, holidays } from '../db';
 import { Holiday, HolidayType } from '@vsol-admin/shared';
 import { NotFoundError, ValidationError } from '../middleware/errors';
@@ -172,8 +172,8 @@ export class HolidayService {
   static async getHolidaysForDateRange(startDate: Date, endDate: Date): Promise<Holiday[]> {
     return db.query.holidays.findMany({
       where: and(
-        // Date comparison: extract date part (ignore time)
-        // We need to compare dates properly
+        gte(holidays.date, startDate),
+        lte(holidays.date, endDate)
       ),
       orderBy: (holidays, { asc }) => [asc(holidays.date)]
     }) as Promise<Holiday[]>;

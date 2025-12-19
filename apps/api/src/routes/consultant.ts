@@ -4,6 +4,8 @@ import { ConsultantInvoiceService } from '../services/consultant-invoice-service
 import { ConsultantService } from '../services/consultant-service';
 import { EquipmentService } from '../services/equipment-service';
 import { VacationService } from '../services/vacation-service';
+import { SprintCeremonyService } from '../services/sprint-ceremony-service';
+import { HolidayService } from '../services/holiday-service';
 import { uploadInvoice } from '../middleware/upload';
 import { validateFileContent } from '../middleware/upload';
 import { ValidationError, ForbiddenError } from '../middleware/errors';
@@ -347,6 +349,7 @@ router.put('/vacations/:id',
 // DELETE /api/consultant/vacations/:id - Delete vacation day (only if it belongs to consultant)
 router.delete('/vacations/:id',
   auditMiddleware('DELETE_VACATION_DAY', 'vacation_day'),
+  auditMiddleware('DELETE_VACATION_DAY', 'vacation_day'),
   async (req, res, next) => {
     try {
       const consultantId = (req as any).consultantId;
@@ -368,6 +371,65 @@ router.delete('/vacations/:id',
     }
   }
 );
+
+// Ceremony routes for consultants (read-only)
+
+// GET /api/consultant/ceremonies - Get ceremonies for consultant calendar view (read-only)
+router.get('/ceremonies', async (req, res, next) => {
+  try {
+    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'startDate and endDate query parameters are required' });
+    }
+
+    const ceremonies = await SprintCeremonyService.getCeremoniesForDateRange(startDate, endDate);
+    res.json(ceremonies);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/consultant/ceremonies/occurrences - Get expanded ceremony occurrences for consultant calendar view (read-only)
+router.get('/ceremonies/occurrences', async (req, res, next) => {
+  try {
+    const startDateStr = req.query.startDate as string;
+    const endDateStr = req.query.endDate as string;
+
+    if (!startDateStr || !endDateStr) {
+      return res.status(400).json({ error: 'startDate and endDate query parameters are required' });
+    }
+
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+
+    const occurrences = await SprintCeremonyService.expandRecurringOccurrences(startDate, endDate);
+    res.json(occurrences);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Holiday routes for consultants (read-only)
+
+// GET /api/consultant/holidays - Get holidays for consultant calendar view (read-only)
+router.get('/holidays', async (req, res, next) => {
+  try {
+    const year = req.query.year 
+      ? parseInt(req.query.year as string)
+      : new Date().getFullYear();
+
+    if (isNaN(year)) {
+      return res.status(400).json({ error: 'Invalid year' });
+    }
+
+    const holidays = await HolidayService.getHolidaysForYear(year);
+    res.json(holidays);
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;
 

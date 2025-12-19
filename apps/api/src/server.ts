@@ -27,6 +27,8 @@ import clientRoutes from './routes/clients';
 import clientInvoiceRoutes from './routes/client-invoices';
 import invoiceLineItemRoutes from './routes/invoice-line-items';
 import userRoutes from './routes/users';
+import sprintCeremonyRoutes from './routes/sprint-ceremonies';
+import holidayRoutes from './routes/holidays';
 import vacationRoutes from './routes/vacations';
 
 const app = express();
@@ -236,6 +238,8 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/client-invoices', clientInvoiceRoutes);
 app.use('/api/invoice-line-items', invoiceLineItemRoutes);
+app.use('/api/sprint-ceremonies', sprintCeremonyRoutes);
+app.use('/api/holidays', holidayRoutes);
 app.use('/api/vacations', vacationRoutes);
 
 // Error handling middleware (must be last)

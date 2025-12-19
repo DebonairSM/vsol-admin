@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import { useCycles } from '@/hooks/use-cycles';
 import { useVacationCalendar, useVacationBalances } from '@/hooks/use-vacations';
+import { useCalendarEvents } from '@/hooks/use-calendar-events';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +11,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Plus, Calendar as CalendarIcon, DollarSign, Users, FileText, CalendarCheck, Sparkles, Plane } from 'lucide-react';
-import type { VacationCalendarEvent } from '@vsol-admin/shared';
+import type { VacationCalendarEvent, CalendarEventOccurrence } from '@vsol-admin/shared';
+import { CreateCeremonyDialog } from '@/components/calendar/create-ceremony-dialog';
 
 export default function DashboardPage() {
   const { data: cycles, isLoading } = useCycles();
@@ -29,8 +31,53 @@ export default function DashboardPage() {
   
   const { data: vacationEvents } = useVacationCalendar(monthStart, monthEnd);
   const { data: vacationBalances } = useVacationBalances();
+  const { data: calendarEvents } = useCalendarEvents(selectedMonth);
   
-  // Group vacation events by date
+  // Group all calendar events by date and type
+  const eventsByDate = useMemo(() => {
+    if (!calendarEvents) return new Map<string, CalendarEventOccurrence[]>();
+    
+    const map = new Map<string, CalendarEventOccurrence[]>();
+    calendarEvents.forEach((event: CalendarEventOccurrence) => {
+      const dateStr = event.date.toISOString().split('T')[0];
+      const existing = map.get(dateStr) || [];
+      map.set(dateStr, [...existing, event]);
+    });
+    return map;
+  }, [calendarEvents]);
+  
+  // Get dates with events for calendar modifiers
+  const vacationDates = useMemo(() => {
+    if (!calendarEvents) return [];
+    return calendarEvents
+      .filter(e => e.type === 'vacation')
+      .map(e => {
+        const d = new Date(e.date);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      });
+  }, [calendarEvents]);
+
+  const ceremonyDates = useMemo(() => {
+    if (!calendarEvents) return [];
+    return calendarEvents
+      .filter(e => e.type === 'ceremony')
+      .map(e => {
+        const d = new Date(e.date);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      });
+  }, [calendarEvents]);
+
+  const holidayDates = useMemo(() => {
+    if (!calendarEvents) return [];
+    return calendarEvents
+      .filter(e => e.type === 'holiday')
+      .map(e => {
+        const d = new Date(e.date);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      });
+  }, [calendarEvents]);
+
+  // Group vacation events by date (for existing popover functionality)
   const vacationsByDate = useMemo(() => {
     if (!vacationEvents) return new Map<string, VacationCalendarEvent[]>();
     
@@ -41,14 +88,6 @@ export default function DashboardPage() {
     });
     return map;
   }, [vacationEvents]);
-  
-  // Get dates with vacations for calendar modifiers
-  const vacationDates = useMemo(() => {
-    return Array.from(vacationsByDate.keys()).map(dateStr => {
-      const [year, month, day] = dateStr.split('-').map(Number);
-      return new Date(year, month - 1, day);
-    });
-  }, [vacationsByDate]);
   
   // Get upcoming vacations (next 30 days)
   const upcomingVacations = useMemo(() => {
@@ -264,17 +303,27 @@ export default function DashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Vacation Calendar</CardTitle>
+                <CardTitle>Calendar</CardTitle>
                 <CardDescription>
-                  View all consultant vacations
+                  View vacations, ceremonies, and holidays
                 </CardDescription>
               </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/vacations">
-                  <Plane className="mr-2 h-4 w-4" />
-                  Manage
-                </Link>
-              </Button>
+              <div className="flex gap-2">
+                <CreateCeremonyDialog
+                  trigger={
+                    <Button variant="outline" size="sm">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Ceremony
+                    </Button>
+                  }
+                />
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/vacations">
+                    <Plane className="mr-2 h-4 w-4" />
+                    Vacations
+                  </Link>
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -284,22 +333,42 @@ export default function DashboardPage() {
                 month={selectedMonth}
                 onMonthChange={setSelectedMonth}
                 modifiers={{
-                  vacation: vacationDates
+                  vacation: vacationDates,
+                  ceremony: ceremonyDates,
+                  holiday: holidayDates
                 }}
                 modifiersClassNames={{
-                  vacation: "bg-blue-100 text-blue-900 font-semibold hover:bg-blue-200"
+                  vacation: "bg-blue-100 text-blue-900 font-semibold hover:bg-blue-200",
+                  ceremony: "bg-green-100 text-green-900 font-semibold hover:bg-green-200",
+                  holiday: "bg-red-100 text-red-900 font-semibold hover:bg-red-200"
                 }}
                 className="rounded-md border"
               />
-              {vacationDates.length > 0 && (
-                <div className="text-xs text-gray-600">
-                  <span className="inline-block w-3 h-3 bg-blue-100 rounded mr-1"></span>
-                  Days with vacations
+              {(vacationDates.length > 0 || ceremonyDates.length > 0 || holidayDates.length > 0) && (
+                <div className="text-xs text-gray-600 space-y-1">
+                  {vacationDates.length > 0 && (
+                    <div>
+                      <span className="inline-block w-3 h-3 bg-blue-100 rounded mr-1"></span>
+                      Days with vacations
+                    </div>
+                  )}
+                  {ceremonyDates.length > 0 && (
+                    <div>
+                      <span className="inline-block w-3 h-3 bg-green-100 rounded mr-1"></span>
+                      Days with ceremonies
+                    </div>
+                  )}
+                  {holidayDates.length > 0 && (
+                    <div>
+                      <span className="inline-block w-3 h-3 bg-red-100 rounded mr-1"></span>
+                      Holidays
+                    </div>
+                  )}
                 </div>
               )}
-              {vacationDates.length > 0 && (
+              {eventsByDate.size > 0 && (
                 <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {Array.from(vacationsByDate.entries())
+                  {Array.from(eventsByDate.entries())
                     .sort(([a], [b]) => a.localeCompare(b))
                     .slice(0, 5)
                     .map(([dateStr, events]) => (
@@ -307,7 +376,7 @@ export default function DashboardPage() {
                         <PopoverTrigger asChild>
                           <Button variant="ghost" className="w-full justify-start text-xs h-auto py-1">
                             <span className="font-medium">{formatDate(new Date(dateStr))}:</span>
-                            <span className="ml-2">{events.length} vacation{events.length !== 1 ? 's' : ''}</span>
+                            <span className="ml-2">{events.length} event{events.length !== 1 ? 's' : ''}</span>
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80">
@@ -315,13 +384,29 @@ export default function DashboardPage() {
                             <h4 className="font-medium text-sm">
                               {formatDate(new Date(dateStr))}
                             </h4>
-                            <div className="space-y-1">
-                              {events.map((event: VacationCalendarEvent, idx: number) => (
-                                <div key={idx} className="text-sm">
-                                  <div className="font-medium">{event.consultantName}</div>
-                                  {event.notes && (
-                                    <div className="text-xs text-gray-600">{event.notes}</div>
+                            <div className="space-y-2">
+                              {events.filter(e => e.type === 'vacation').map((event, idx) => (
+                                <div key={`vacation-${idx}`} className="text-sm p-2 bg-blue-50 rounded">
+                                  <div className="font-medium text-blue-900">Vacation: {typeof event.metadata === 'object' && 'consultantName' in event.metadata ? event.metadata.consultantName : 'Unknown'}</div>
+                                  {typeof event.metadata === 'object' && 'notes' in event.metadata && event.metadata.notes && (
+                                    <div className="text-xs text-blue-700">{event.metadata.notes}</div>
                                   )}
+                                </div>
+                              ))}
+                              {events.filter(e => e.type === 'ceremony').map((event, idx) => (
+                                <div key={`ceremony-${idx}`} className="text-sm p-2 bg-green-50 rounded">
+                                  <div className="font-medium text-green-900">{event.title}</div>
+                                  {event.startTime && (
+                                    <div className="text-xs text-green-700">Time: {event.startTime}</div>
+                                  )}
+                                  {typeof event.metadata === 'object' && 'location' in event.metadata && event.metadata.location && (
+                                    <div className="text-xs text-green-700">Location: {event.metadata.location}</div>
+                                  )}
+                                </div>
+                              ))}
+                              {events.filter(e => e.type === 'holiday').map((event, idx) => (
+                                <div key={`holiday-${idx}`} className="text-sm p-2 bg-red-50 rounded">
+                                  <div className="font-medium text-red-900">{event.title}</div>
                                 </div>
                               ))}
                             </div>

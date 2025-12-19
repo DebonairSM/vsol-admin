@@ -1058,6 +1058,75 @@ class ApiClient {
     });
   }
 
+  // Sprint ceremony methods
+  async getSprintCeremonies(startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    return this.request(`/sprint-ceremonies${params.toString() ? `?${params.toString()}` : ''}`);
+  }
+
+  async getCeremonyOccurrences(startDate: string, endDate: string) {
+    return this.request(`/sprint-ceremonies/occurrences?startDate=${startDate}&endDate=${endDate}`);
+  }
+
+  async getSprintCeremony(id: number) {
+    return this.request(`/sprint-ceremonies/${id}`);
+  }
+
+  async createSprintCeremony(data: any) {
+    return this.request('/sprint-ceremonies', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateSprintCeremony(id: number, data: any) {
+    return this.request(`/sprint-ceremonies/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSprintCeremony(id: number) {
+    return this.request(`/sprint-ceremonies/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Holiday methods
+  async getHolidays(year?: number) {
+    const params = year ? `?year=${year}` : '';
+    return this.request(`/holidays${params}`);
+  }
+
+  async generateHolidays(year: number) {
+    return this.request(`/holidays/generate?year=${year}`, {
+      method: 'POST',
+    });
+  }
+
+  async updateHoliday(id: number, data: any) {
+    return this.request(`/holidays/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Consultant calendar methods (read-only)
+  async getConsultantCeremonies(startDate: string, endDate: string) {
+    return this.request(`/consultant/ceremonies?startDate=${startDate}&endDate=${endDate}`);
+  }
+
+  async getConsultantCeremonyOccurrences(startDate: string, endDate: string) {
+    return this.request(`/consultant/ceremonies/occurrences?startDate=${startDate}&endDate=${endDate}`);
+  }
+
+  async getConsultantHolidays(year?: number) {
+    const params = year ? `?year=${year}` : '';
+    return this.request(`/consultant/holidays${params}`);
+  }
+
   // User management methods (admin only)
   async getConsultantUsers() {
     return this.request('/users/consultants');
