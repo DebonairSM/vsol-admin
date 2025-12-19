@@ -192,6 +192,15 @@ temp/
 .node_repl_history
 
 # =============================================================================
+# Cloudflare Tunnel
+# =============================================================================
+# Cloudflare Tunnel credentials and config (contains sensitive tunnel IDs)
+.cloudflared/*.json
+.cloudflared/config.yml
+# Keep the template file
+!.cloudflared/config.yml.example
+
+# =============================================================================
 # Miscellaneous
 # =============================================================================
 # Note: apps/web/public/ should be tracked (contains static assets)

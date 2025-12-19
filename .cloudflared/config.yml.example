@@ -1,0 +1,33 @@
+# Cloudflare Tunnel Configuration Template
+# 
+# This is a template for the Cloudflare Tunnel configuration.
+# 
+# Instructions:
+# 1. Copy this file to your user profile directory:
+#    Windows: %USERPROFILE%\.cloudflared\config.yml
+#    macOS/Linux: ~/.cloudflared/config.yml
+# 
+# 2. Replace <tunnel-id> with your actual tunnel ID (found after running: cloudflared tunnel create portal-vsol)
+# 
+# 3. The credentials-file path should match where your tunnel credentials JSON file is located
+#    (typically %USERPROFILE%\.cloudflared\<tunnel-id>.json on Windows)
+#
+# 4. Update hostnames if using different domain names
+#
+# 5. Do NOT commit your actual config.yml file to version control (it contains sensitive tunnel IDs)
+
+tunnel: <tunnel-id>
+credentials-file: %USERPROFILE%\.cloudflared\<tunnel-id>.json
+
+ingress:
+  # Main application (frontend)
+  - hostname: portal.vsol.software
+    service: http://localhost:5173
+  
+  # API endpoint (backend)
+  - hostname: api.portal.vsol.software
+    service: http://localhost:2020
+  
+  # Catch-all rule (must be last)
+  - service: http_status:404
+

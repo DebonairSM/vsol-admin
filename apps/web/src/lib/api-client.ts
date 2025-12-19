@@ -12,16 +12,25 @@ if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' |
 
 // If VITE_API_URL is not set, try to auto-detect from current location
 // This handles remote browser access where localhost won't work
+// Note: For HTTPS domains (e.g., Cloudflare Tunnel), VITE_API_URL must be set explicitly
 if (!API_BASE_URL || API_BASE_URL === '/api') {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    // If accessing from a remote IP (not localhost/127.0.0.1), use that IP for API
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
-      // Remote IP access - construct API URL using same hostname
+    const protocol = window.location.protocol;
+    
+    // Never auto-detect for HTTPS domains - require explicit VITE_API_URL configuration
+    // This ensures Cloudflare Tunnel and other HTTPS setups work correctly
+    if (protocol === 'https:') {
+      if (!import.meta.env.VITE_API_URL) {
+        console.warn(`[API Client] HTTPS domain detected (${hostname}) but VITE_API_URL is not set. Defaulting to /api proxy, which may not work. Please set VITE_API_URL environment variable.`);
+      }
+      API_BASE_URL = '/api';
+    } else if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+      // Remote IP access (HTTP only) - construct API URL using same hostname
       API_BASE_URL = `http://${hostname}:2020/api`;
-      console.log(`[API Client] Detected remote access from ${hostname}, using API URL: ${API_BASE_URL}`);
+      console.log(`[API Client] Detected remote IP access from ${hostname}, using API URL: ${API_BASE_URL}`);
     } else if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      // Hostname-based access (e.g., vsol-aurora.home) - construct API URL
+      // Hostname-based access (HTTP only, e.g., vsol-aurora.home) - construct API URL
       API_BASE_URL = `http://${hostname}:2020/api`;
       console.log(`[API Client] Detected hostname access from ${hostname}, using API URL: ${API_BASE_URL}`);
     } else {
