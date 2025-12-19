@@ -1,14 +1,82 @@
 import { Link } from 'react-router-dom';
+import { useState, useMemo } from 'react';
 import { useCycles } from '@/hooks/use-cycles';
+import { useVacationCalendar, useVacationBalances } from '@/hooks/use-vacations';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BlurredValue } from '@/components/ui/blurred-value';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Plus, Calendar, DollarSign, Users, FileText, CalendarCheck, Sparkles } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, DollarSign, Users, FileText, CalendarCheck, Sparkles, Plane } from 'lucide-react';
+import type { VacationCalendarEvent } from '@vsol-admin/shared';
 
 export default function DashboardPage() {
   const { data: cycles, isLoading } = useCycles();
+  
+  // Vacation calendar state
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const monthStart = useMemo(() => {
+    const date = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+    return date.toISOString().split('T')[0];
+  }, [selectedMonth]);
+  
+  const monthEnd = useMemo(() => {
+    const date = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+    return date.toISOString().split('T')[0];
+  }, [selectedMonth]);
+  
+  const { data: vacationEvents } = useVacationCalendar(monthStart, monthEnd);
+  const { data: vacationBalances } = useVacationBalances();
+  
+  // Group vacation events by date
+  const vacationsByDate = useMemo(() => {
+    if (!vacationEvents) return new Map<string, VacationCalendarEvent[]>();
+    
+    const map = new Map<string, VacationCalendarEvent[]>();
+    vacationEvents.forEach((event: VacationCalendarEvent) => {
+      const existing = map.get(event.date) || [];
+      map.set(event.date, [...existing, event]);
+    });
+    return map;
+  }, [vacationEvents]);
+  
+  // Get dates with vacations for calendar modifiers
+  const vacationDates = useMemo(() => {
+    return Array.from(vacationsByDate.keys()).map(dateStr => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    });
+  }, [vacationsByDate]);
+  
+  // Get upcoming vacations (next 30 days)
+  const upcomingVacations = useMemo(() => {
+    if (!vacationEvents) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const thirtyDaysLater = new Date(today);
+    thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+    
+    return vacationEvents
+      .filter((event: VacationCalendarEvent) => {
+        const eventDate = new Date(event.date);
+        return eventDate >= today && eventDate <= thirtyDaysLater;
+      })
+      .sort((a: VacationCalendarEvent, b: VacationCalendarEvent) => 
+        a.date.localeCompare(b.date)
+      )
+      .slice(0, 10);
+  }, [vacationEvents]);
+  
+  // Get consultants with low vacation balance
+  const lowBalanceConsultants = useMemo(() => {
+    if (!vacationBalances) return [];
+    return vacationBalances
+      .filter((balance: any) => balance.daysRemaining < 5 && balance.daysRemaining > 0)
+      .sort((a: any, b: any) => a.daysRemaining - b.daysRemaining)
+      .slice(0, 5);
+  }, [vacationBalances]);
 
   if (isLoading) {
     return (
@@ -189,6 +257,142 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+      
+      {/* Vacation Calendar */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Vacation Calendar</CardTitle>
+                <CardDescription>
+                  View all consultant vacations
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/vacations">
+                  <Plane className="mr-2 h-4 w-4" />
+                  Manage
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Calendar
+                mode="single"
+                month={selectedMonth}
+                onMonthChange={setSelectedMonth}
+                modifiers={{
+                  vacation: vacationDates
+                }}
+                modifiersClassNames={{
+                  vacation: "bg-blue-100 text-blue-900 font-semibold hover:bg-blue-200"
+                }}
+                className="rounded-md border"
+              />
+              {vacationDates.length > 0 && (
+                <div className="text-xs text-gray-600">
+                  <span className="inline-block w-3 h-3 bg-blue-100 rounded mr-1"></span>
+                  Days with vacations
+                </div>
+              )}
+              {vacationDates.length > 0 && (
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {Array.from(vacationsByDate.entries())
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .slice(0, 5)
+                    .map(([dateStr, events]) => (
+                      <Popover key={dateStr}>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" className="w-full justify-start text-xs h-auto py-1">
+                            <span className="font-medium">{formatDate(new Date(dateStr))}:</span>
+                            <span className="ml-2">{events.length} vacation{events.length !== 1 ? 's' : ''}</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm">
+                              {formatDate(new Date(dateStr))}
+                            </h4>
+                            <div className="space-y-1">
+                              {events.map((event: VacationCalendarEvent, idx: number) => (
+                                <div key={idx} className="text-sm">
+                                  <div className="font-medium">{event.consultantName}</div>
+                                  {event.notes && (
+                                    <div className="text-xs text-gray-600">{event.notes}</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <div className="space-y-6">
+          {/* Upcoming Vacations */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming Vacations</CardTitle>
+              <CardDescription>Next 30 days</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {upcomingVacations && upcomingVacations.length > 0 ? (
+                <div className="space-y-2">
+                  {upcomingVacations.map((event: VacationCalendarEvent, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-2 border rounded">
+                      <div>
+                        <div className="font-medium text-sm">{event.consultantName}</div>
+                        <div className="text-xs text-gray-600">{formatDate(new Date(event.date))}</div>
+                      </div>
+                      {event.notes && (
+                        <div className="text-xs text-gray-500 max-w-xs truncate">{event.notes}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500 text-sm">
+                  No upcoming vacations
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Low Balance Alert */}
+          {lowBalanceConsultants && lowBalanceConsultants.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Low Vacation Balance</CardTitle>
+                <CardDescription>Consultants with less than 5 days remaining</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {lowBalanceConsultants.map((balance: any) => (
+                    <div key={balance.consultantId} className="flex items-center justify-between p-2 border rounded">
+                      <Link
+                        to={`/consultants/${balance.consultantId}`}
+                        className="font-medium text-sm text-blue-600 hover:underline"
+                      >
+                        {balance.consultantName}
+                      </Link>
+                      <Badge variant="destructive">
+                        {balance.daysRemaining} remaining
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

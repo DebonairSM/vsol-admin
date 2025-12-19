@@ -633,3 +633,26 @@ export const uploadInvoiceSchema = z.object({
 });
 
 export type UploadInvoiceRequest = z.infer<typeof uploadInvoiceSchema>;
+
+// Vacation schemas
+export const createVacationDaySchema = z.object({
+  consultantId: z.number().int().positive(),
+  vacationDate: z.string().datetime(),
+  notes: z.string().optional()
+});
+
+export const createVacationRangeSchema = z.object({
+  consultantId: z.number().int().positive(),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  notes: z.string().optional()
+});
+
+export const updateVacationDaySchema = z.object({
+  vacationDate: z.string().datetime().optional(),
+  notes: z.string().optional()
+});
+
+export type CreateVacationDayRequest = z.infer<typeof createVacationDaySchema>;
+export type CreateVacationRangeRequest = z.infer<typeof createVacationRangeSchema>;
+export type UpdateVacationDayRequest = z.infer<typeof updateVacationDaySchema>;

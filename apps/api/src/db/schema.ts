@@ -327,6 +327,17 @@ export const invoiceNumberSequence = sqliteTable('invoice_number_sequence', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
 
+// Vacation days table
+export const vacationDays = sqliteTable('vacation_days', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  consultantId: integer('consultant_id').notNull().references(() => consultants.id),
+  vacationDate: integer('vacation_date', { mode: 'timestamp' }).notNull(),
+  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdBy: integer('created_by').references(() => users.id),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   consultant: one(consultants, {
@@ -347,7 +358,8 @@ export const consultantsRelations = relations(consultants, ({ one, many }) => ({
   lineItems: many(cycleLineItems),
   invoices: many(invoices),
   payments: many(payments),
-  equipment: many(consultantEquipment)
+  equipment: many(consultantEquipment),
+  vacations: many(vacationDays)
 }));
 
 export const payrollCyclesRelations = relations(payrollCycles, ({ many, one }) => ({
@@ -468,3 +480,14 @@ export const invoiceLineItemsRelations = relations(invoiceLineItems, ({ one }) =
 }));
 
 export const invoiceNumberSequenceRelations = relations(invoiceNumberSequence, ({}) => ({}));
+
+export const vacationDaysRelations = relations(vacationDays, ({ one }) => ({
+  consultant: one(consultants, {
+    fields: [vacationDays.consultantId],
+    references: [consultants.id]
+  }),
+  creator: one(users, {
+    fields: [vacationDays.createdBy],
+    references: [users.id]
+  })
+}));

@@ -962,6 +962,58 @@ class ApiClient {
     });
   }
 
+  // Vacation methods
+  async getVacations(consultantId?: number, startDate?: string, endDate?: string) {
+    const params = new URLSearchParams();
+    if (consultantId) {
+      return this.request(`/vacations/consultant/${consultantId}${startDate ? `?startDate=${startDate}` : ''}${endDate ? `${startDate ? '&' : '?'}endDate=${endDate}` : ''}`);
+    }
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    return this.request(`/vacations${params.toString() ? `?${params.toString()}` : ''}`);
+  }
+
+  async getVacationBalances(referenceDate?: string) {
+    const params = referenceDate ? `?referenceDate=${referenceDate}` : '';
+    return this.request(`/vacations/balances${params}`);
+  }
+
+  async getVacationBalance(consultantId: number, referenceDate?: string) {
+    const params = referenceDate ? `?referenceDate=${referenceDate}` : '';
+    return this.request(`/vacations/consultant/${consultantId}/balance${params}`);
+  }
+
+  async getVacationCalendar(startDate: string, endDate: string) {
+    return this.request(`/vacations/calendar?startDate=${startDate}&endDate=${endDate}`);
+  }
+
+  async createVacationDay(data: any) {
+    return this.request('/vacations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createVacationRange(data: any) {
+    return this.request('/vacations/range', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateVacationDay(id: number, data: any) {
+    return this.request(`/vacations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteVacationDay(id: number) {
+    return this.request(`/vacations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   // User management methods (admin only)
   async getConsultantUsers() {
     return this.request('/users/consultants');

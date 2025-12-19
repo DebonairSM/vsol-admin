@@ -16,6 +16,7 @@ import ClientInvoiceDetailPage from './routes/client-invoice-detail';
 import PaymentsPage from './routes/payments';
 import AuditPage from './routes/audit';
 import WorkHoursPage from './routes/work-hours';
+import VacationsPage from './routes/vacations';
 import SettingsPage from './routes/settings';
 import PayoneerPayeesPage from './routes/payoneer-payees';
 import TimeDoctorActivityPage from './routes/timedoctor-activity';
@@ -139,6 +140,7 @@ function App() {
                   <Route path="/client-invoices/:id" element={<ClientInvoiceDetailPage />} />
                   <Route path="/payments" element={<PaymentsPage />} />
                   <Route path="/work-hours" element={<WorkHoursPage />} />
+                  <Route path="/vacations" element={<VacationsPage />} />
                   <Route path="/audit" element={<AuditPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/payoneer/payees" element={<PayoneerPayeesPage />} />

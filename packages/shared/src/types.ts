@@ -442,3 +442,32 @@ export interface ClientInvoiceWithDetails extends ClientInvoice {
   cycle: PayrollCycle;
   lineItems: InvoiceLineItem[];
 }
+
+// Vacation types
+export interface VacationDay {
+  id: number;
+  consultantId: number;
+  vacationDate: Date;
+  notes?: string | null;
+  createdAt: Date;
+  createdBy?: number | null;
+  updatedAt: Date;
+}
+
+export interface VacationBalance {
+  consultantId: number;
+  consultantName: string;
+  currentYearStart: Date;
+  currentYearEnd: Date;
+  totalAllocated: number; // Always 20
+  daysUsed: number;
+  daysRemaining: number;
+  expiredDays: number; // Days from previous periods that expired
+}
+
+export interface VacationCalendarEvent {
+  date: string; // ISO date string
+  consultantId: number;
+  consultantName: string;
+  notes?: string | null;
+}
