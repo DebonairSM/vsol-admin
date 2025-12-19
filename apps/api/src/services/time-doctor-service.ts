@@ -69,7 +69,7 @@ class TimeDoctorService {
   }
 
   /**
-   * Map Time Doctor payroll data to VSol Admin consultant fields
+   * Map Time Doctor payroll data to Company Portal consultant fields
    */
   private mapTimeDoctorToConsultant(tdData: TimeDoctorPayrollSettings): Partial<Consultant> {
     return {

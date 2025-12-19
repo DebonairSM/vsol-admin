@@ -10,6 +10,7 @@ import { generalRateLimiter, authRateLimiter, writeRateLimiter } from './middlew
 // Import routes
 import authRoutes from './routes/auth';
 import consultantRoutes from './routes/consultants';
+import consultantPortalRoutes from './routes/consultant';
 import cycleRoutes from './routes/cycles';
 import paymentRoutes from './routes/payments';
 import auditRoutes from './routes/audit';
@@ -25,6 +26,7 @@ import companyRoutes from './routes/companies';
 import clientRoutes from './routes/clients';
 import clientInvoiceRoutes from './routes/client-invoices';
 import invoiceLineItemRoutes from './routes/invoice-line-items';
+import userRoutes from './routes/users';
 
 const app = express();
 const PORT = process.env.PORT || 2020;
@@ -216,6 +218,8 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/consultants', consultantRoutes);
+app.use('/api/consultant', consultantPortalRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/cycles', cycleRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/audit', auditRoutes);

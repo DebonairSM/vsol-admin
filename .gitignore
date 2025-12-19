@@ -88,6 +88,8 @@ coverage/
 test-results/
 playwright-report/
 playwright/.cache/
+.playwright/
+tests/.auth/
 
 # =============================================================================
 # Cache Directories

@@ -1,4 +1,4 @@
-# Reset database script for VSol Admin
+# Reset database script for Company Portal
 # This script deletes the database and reseeds it with the latest schema
 
 Write-Host "🔄 Resetting database..." -ForegroundColor Yellow
@@ -69,6 +69,8 @@ Set-Location -Path "..\..\"
 Write-Host ""
 Write-Host "✅ Database reset complete!" -ForegroundColor Green
 Write-Host "🚀 You can now run: pnpm dev" -ForegroundColor Cyan
+
+
 
 
 

@@ -7,6 +7,8 @@ export const users = sqliteTable('users', {
   username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   role: text('role').notNull().default('admin'),
+  mustChangePassword: integer('must_change_password', { mode: 'boolean' }).notNull().default(false),
+  consultantId: integer('consultant_id').references(() => consultants.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
 });
 
@@ -136,7 +138,11 @@ export const invoices = sqliteTable('invoices', {
   sent: integer('sent', { mode: 'boolean' }),
   approved: integer('approved', { mode: 'boolean' }),
   sentDate: integer('sent_date', { mode: 'timestamp' }),
-  approvedDate: integer('approved_date', { mode: 'timestamp' })
+  approvedDate: integer('approved_date', { mode: 'timestamp' }),
+  filePath: text('file_path'),
+  fileName: text('file_name'),
+  uploadedBy: integer('uploaded_by').references(() => users.id),
+  uploadedAt: integer('uploaded_at', { mode: 'timestamp' })
 });
 
 // Payments table
@@ -322,13 +328,22 @@ export const invoiceNumberSequence = sqliteTable('invoice_number_sequence', {
 });
 
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
+  consultant: one(consultants, {
+    fields: [users.consultantId],
+    references: [consultants.id]
+  }),
   auditLogs: many(auditLogs),
   refreshTokens: many(refreshTokens),
-  settingsUpdates: many(settings)
+  settingsUpdates: many(settings),
+  uploadedInvoices: many(invoices)
 }));
 
-export const consultantsRelations = relations(consultants, ({ many }) => ({
+export const consultantsRelations = relations(consultants, ({ one, many }) => ({
+  user: one(users, {
+    fields: [consultants.id],
+    references: [users.consultantId]
+  }),
   lineItems: many(cycleLineItems),
   invoices: many(invoices),
   payments: many(payments),
@@ -363,6 +378,10 @@ export const invoicesRelations = relations(invoices, ({ one }) => ({
   consultant: one(consultants, {
     fields: [invoices.consultantId],
     references: [consultants.id]
+  }),
+  uploadedByUser: one(users, {
+    fields: [invoices.uploadedBy],
+    references: [users.id]
   })
 }));
 

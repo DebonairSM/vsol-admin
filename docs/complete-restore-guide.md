@@ -1,6 +1,6 @@
 # Complete Application Restore Guide
 
-This guide explains how to restore the VSol Admin application to a specific time point on a new laptop using files from OneDrive.
+This guide explains how to restore the Company Portal application to a specific time point on a new laptop using files from OneDrive.
 
 ## What Gets Restored
 

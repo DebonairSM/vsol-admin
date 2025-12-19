@@ -197,6 +197,13 @@
       "when": 1766032944735,
       "tag": "0027_light_venom",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1766068219968,
+      "tag": "0028_chilly_nicolaos",
+      "breakpoints": true
     }
   ]
 }

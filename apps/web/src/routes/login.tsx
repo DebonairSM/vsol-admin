@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, Eye, EyeOff } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
   const location = useLocation();
@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +25,32 @@ export default function LoginPage() {
     setError('');
 
     try {
-      await login(username, password, keepLoggedIn);
+      const result = await login(username, password, keepLoggedIn);
+      
+      if (!result) {
+        // Should not happen, but handle gracefully
+        navigate('/dashboard');
+        return;
+      }
+      
+      // Check if password change is required
+      if (result.mustChangePassword) {
+        // Redirect to password change page
+        navigate('/consultant/change-password', { 
+          state: { 
+            username: result.user?.username,
+            mustChangePassword: true 
+          } 
+        });
+        return;
+      }
+      
+      // Redirect based on user role
+      if (result.user?.role === 'consultant') {
+        navigate('/consultant');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       setError(error.message || 'Login failed');
     } finally {
@@ -37,10 +63,10 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <Table className="h-12 w-12 text-blue-600" />
+            <img src="/vsol-logo-25-c.png" alt="VSol Logo" className="h-12 w-auto" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            VSol Admin
+            Company Portal
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Golden Sheet Management System

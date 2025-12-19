@@ -3,6 +3,8 @@ export interface User {
   username: string;
   passwordHash: string;
   role: string;
+  mustChangePassword: boolean;
+  consultantId?: number | null;
   createdAt: Date;
 }
 
@@ -126,6 +128,10 @@ export interface Invoice {
   approved?: boolean | null;
   sentDate?: Date | null;
   approvedDate?: Date | null;
+  filePath?: string | null;
+  fileName?: string | null;
+  uploadedBy?: number | null;
+  uploadedAt?: Date | null;
 }
 
 export enum PaymentKind {

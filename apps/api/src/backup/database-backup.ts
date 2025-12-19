@@ -234,7 +234,7 @@ Source Database: \`${sourcePath}\`
 
 ## Restore Steps (Windows)
 
-1. **Stop the VSol Admin server** (if running)
+1. **Stop the Company Portal server** (if running)
    - Press Ctrl+C in the terminal where the server is running
    - Or close the terminal window
 

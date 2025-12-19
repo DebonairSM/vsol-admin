@@ -1,4 +1,4 @@
-# VSol Admin
+# Company Portal
 
 Local-first, SQLite-backed payroll management replacing the Excel "golden sheet" with real-time calculations and audit logging.
 

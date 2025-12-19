@@ -3,7 +3,8 @@ import { apiClient } from '@/lib/api-client';
 import type { 
   ConsultantEquipment, 
   CreateEquipmentRequest, 
-  UpdateEquipmentRequest 
+  UpdateEquipmentRequest,
+  CreateConsultantEquipmentRequest
 } from '@vsol-admin/shared';
 
 export function useConsultantEquipment(consultantId: number) {
@@ -84,6 +85,36 @@ export function usePendingEquipmentReturns(consultantId: number) {
     queryKey: ['equipment', consultantId, 'pending-returns'],
     queryFn: (): Promise<ConsultantEquipment[]> => apiClient.getPendingReturns(consultantId),
     enabled: !!consultantId
+  });
+}
+
+// Hooks for consultant portal (uses consultant-equipment query key)
+export function useCreateConsultantEquipment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateConsultantEquipmentRequest) => 
+      apiClient.createConsultantEquipment(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['consultant-equipment'] });
+    }
+  });
+}
+
+export function useUpdateConsultantEquipment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ 
+      equipmentId, 
+      data 
+    }: { 
+      equipmentId: number; 
+      data: UpdateEquipmentRequest 
+    }) => apiClient.updateConsultantEquipment(equipmentId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['consultant-equipment'] });
+    }
   });
 }
 

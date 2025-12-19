@@ -20,6 +20,7 @@
     "db:backup": "node scripts/backup-db.js",
     "db:backup:list": "node scripts/verify-backup.js",
     "user:change-password": "tsx scripts/change-password.ts",
+    "create-consultant-accounts": "tsx scripts/create-consultant-accounts.ts",
     "kill-port": "powershell -Command \"$port = $env:PORT; if (-not $port) { $port = 2020 }; $process = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -First 1; if ($process) { Write-Host \\\"Killing process $process on port $port...\\\"; taskkill /F /PID $process } else { Write-Host \\\"No process found on port $port\\\" }\"",
     "kill-all-ports": "powershell -Command \"@(2020,2021) | ForEach-Object { $port = $_; $process = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -First 1; if ($process) { Write-Host \\\"Killing process $process on port $port...\\\"; taskkill /F /PID $process } else { Write-Host \\\"No process on port $port\\\" } }\""
   },

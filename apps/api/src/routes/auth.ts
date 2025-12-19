@@ -5,11 +5,12 @@ import { comparePassword, hashPassword, needsRehash } from '../lib/password';
 import { signToken } from '../lib/jwt';
 import { validateBody } from '../middleware/validate';
 import { authenticateToken } from '../middleware/auth';
-import { loginSchema, refreshTokenSchema } from '@vsol-admin/shared';
+import { loginSchema, refreshTokenSchema, changePasswordSchema } from '@vsol-admin/shared';
 import { UnauthorizedError } from '../middleware/errors';
 import { createRefreshToken, rotateRefreshToken, revokeRefreshToken, revokeAllUserTokens } from '../services/token-service';
 import { authRateLimiter } from '../middleware/rate-limit';
 import { createBackup, shouldCreateBackup } from '../services/backup-service';
+import { PasswordService } from '../services/password-service';
 
 const router: Router = Router();
 
@@ -72,11 +73,15 @@ router.post('/login', authRateLimiter, validateBody(loginSchema), async (req, re
       });
     }
 
+    // Return tokens and user info
+    // If mustChangePassword is true, frontend will redirect to password change page
+    // but user still needs tokens to authenticate for the password change endpoint
     res.json({
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       // For backward compatibility, also return 'token'
       token: tokens.accessToken,
+      mustChangePassword: user.mustChangePassword,
       user: {
         id: user.id,
         username: user.username,
@@ -160,6 +165,7 @@ router.get('/me', authenticateToken, async (req, res, next) => {
         id: true,
         username: true,
         role: true,
+        mustChangePassword: true,
         createdAt: true
       }
     });
@@ -168,7 +174,27 @@ router.get('/me', authenticateToken, async (req, res, next) => {
       throw new UnauthorizedError('User not found');
     }
 
-    res.json(user);
+    res.json({
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      mustChangePassword: user.mustChangePassword,
+      createdAt: user.createdAt
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/auth/change-password
+router.post('/change-password', authenticateToken, validateBody(changePasswordSchema), async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user!.userId;
+
+    await PasswordService.changePassword(userId, currentPassword, newPassword);
+
+    res.json({ message: 'Password changed successfully' });
   } catch (error) {
     next(error);
   }

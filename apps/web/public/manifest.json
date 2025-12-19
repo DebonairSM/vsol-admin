@@ -1,6 +1,6 @@
 {
-  "name": "VSol Admin - Golden Sheet",
-  "short_name": "VSol Admin",
+  "name": "Company Portal - Golden Sheet",
+  "short_name": "Company Portal",
   "description": "Local-first payroll cycle management system",
   "start_url": "/",
   "display": "standalone",

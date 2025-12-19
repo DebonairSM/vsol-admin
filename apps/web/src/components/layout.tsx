@@ -16,7 +16,6 @@ import {
   CreditCard, 
   History, 
   LogOut,
-  Table,
   Laptop,
   Clock,
   Settings,
@@ -34,6 +33,7 @@ const navigation = [
   { name: 'Invoices', href: '/client-invoices', icon: FileText },
   { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Audit Log', href: '/audit', icon: History },
+  { name: 'User Management', href: '/users', icon: Users },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
@@ -46,9 +46,9 @@ function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
     <div className="flex h-full flex-col">
       {/* Logo */}
       <div className="flex h-16 items-center px-6 border-b">
-        <Table className="h-8 w-8 text-blue-600" />
+        <img src="/vsol-logo-25-c.png" alt="VSol Logo" className="h-8 w-auto" />
         <span className="ml-2 text-xl font-semibold text-gray-900">
-          VSol Admin
+          Company Portal
         </span>
       </div>
 

@@ -19,7 +19,14 @@ import WorkHoursPage from './routes/work-hours';
 import SettingsPage from './routes/settings';
 import PayoneerPayeesPage from './routes/payoneer-payees';
 import TimeDoctorActivityPage from './routes/timedoctor-activity';
+import ConsultantChangePasswordPage from './routes/consultant-change-password';
+import ConsultantPortalPage from './routes/consultant-portal';
+import ConsultantInvoicesPage from './routes/consultant-invoices';
+import ConsultantMyProfilePage from './routes/consultant-my-profile';
+import ConsultantEquipmentPage from './routes/consultant-equipment';
+import UsersPage from './routes/users';
 import Layout from './components/layout';
+import ConsultantLayout from './components/consultant-layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -39,6 +46,26 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  
+  if (user?.role !== 'admin') {
+    return <Navigate to="/consultant" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+function ConsultantRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  
+  if (user?.role !== 'consultant') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
 function App() {
   const { user } = useAuth();
 
@@ -47,7 +74,24 @@ function App() {
       <Routes>
         <Route 
           path="/login" 
-          element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
+          element={
+            user 
+              ? (user.role === 'consultant' 
+                  ? (user.mustChangePassword 
+                      ? <Navigate to="/consultant/change-password" replace /> 
+                      : <Navigate to="/consultant" replace />)
+                  : <Navigate to="/dashboard" replace />) 
+              : <LoginPage />
+          } 
+        />
+        {/* Password change route (no layout) */}
+        <Route
+          path="/consultant/change-password"
+          element={
+            <ProtectedRoute>
+              <ConsultantChangePasswordPage />
+            </ProtectedRoute>
+          }
         />
         {/* Print-only route without Layout wrapper for clean printing */}
         <Route
@@ -55,6 +99,24 @@ function App() {
           element={
             <ProtectedRoute>
               <ConsultantShippingLabelPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Consultant portal routes */}
+        <Route
+          path="/consultant/*"
+          element={
+            <ProtectedRoute>
+              <ConsultantRoute>
+                <ConsultantLayout>
+                  <Routes>
+                    <Route index element={<ConsultantPortalPage />} />
+                    <Route path="invoices" element={<ConsultantInvoicesPage />} />
+                    <Route path="profile" element={<ConsultantMyProfilePage />} />
+                    <Route path="equipment" element={<ConsultantEquipmentPage />} />
+                  </Routes>
+                </ConsultantLayout>
+              </ConsultantRoute>
             </ProtectedRoute>
           }
         />
@@ -81,6 +143,14 @@ function App() {
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/payoneer/payees" element={<PayoneerPayeesPage />} />
                   <Route path="/timedoctor/activity" element={<TimeDoctorActivityPage />} />
+                  <Route 
+                    path="/users" 
+                    element={
+                      <AdminRoute>
+                        <UsersPage />
+                      </AdminRoute>
+                    } 
+                  />
                 </Routes>
               </Layout>
             </ProtectedRoute>

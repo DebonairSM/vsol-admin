@@ -6,7 +6,9 @@ import crypto from 'crypto';
 export class FileStorageService {
   private readonly baseUploadPath = path.join(process.cwd(), 'uploads');
   private readonly maxFileSize = 5 * 1024 * 1024; // 5MB
+  private readonly maxInvoiceFileSize = 10 * 1024 * 1024; // 10MB for invoices
   private readonly allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+  private readonly allowedInvoiceMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
 
   async ensureUploadDirectory(consultantId: number): Promise<string> {
     const consultantDir = path.join(this.baseUploadPath, 'consultants', consultantId.toString());
@@ -101,6 +103,80 @@ export class FileStorageService {
 
   getFullPath(filePath: string): string {
     return path.join(this.baseUploadPath, filePath);
+  }
+
+  // Invoice-specific methods
+  async ensureInvoiceDirectory(consultantId: number, cycleId: number): Promise<string> {
+    const invoiceDir = path.join(this.baseUploadPath, 'invoices', consultantId.toString(), cycleId.toString());
+    
+    try {
+      await fs.access(invoiceDir);
+    } catch {
+      await fs.mkdir(invoiceDir, { recursive: true });
+    }
+    
+    return invoiceDir;
+  }
+
+  generateInvoiceFileName(originalFilename: string): string {
+    const timestamp = Date.now();
+    const extension = path.extname(originalFilename).toLowerCase();
+    const baseName = path.basename(originalFilename, extension)
+      .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .toLowerCase();
+    
+    return `${timestamp}-${baseName}${extension}`;
+  }
+
+  validateInvoiceFile(file: Express.Multer.File): { isValid: boolean; error?: string } {
+    // Check file size
+    if (file.size > this.maxInvoiceFileSize) {
+      return { isValid: false, error: 'File size exceeds 10MB limit' };
+    }
+
+    // Check MIME type
+    if (!this.allowedInvoiceMimeTypes.includes(file.mimetype)) {
+      return { isValid: false, error: 'Only PDF, JPEG and PNG files are allowed' };
+    }
+
+    return { isValid: true };
+  }
+
+  async saveInvoiceFile(
+    consultantId: number,
+    cycleId: number,
+    file: Express.Multer.File
+  ): Promise<{ success: boolean; filePath?: string; fileName?: string; error?: string }> {
+    try {
+      // Validate file
+      const validation = this.validateInvoiceFile(file);
+      if (!validation.isValid) {
+        return { success: false, error: validation.error };
+      }
+
+      // Ensure directory exists
+      const uploadDir = await this.ensureInvoiceDirectory(consultantId, cycleId);
+
+      // Generate filename
+      const fileName = this.generateInvoiceFileName(file.originalname);
+      const fullPath = path.join(uploadDir, fileName);
+
+      // Save file
+      await fs.writeFile(fullPath, file.buffer);
+
+      // Return relative path from uploads directory
+      const relativePath = path.join('invoices', consultantId.toString(), cycleId.toString(), fileName);
+      
+      return { 
+        success: true, 
+        filePath: relativePath,
+        fileName: file.originalname // Store original filename
+      };
+    } catch (error) {
+      console.error('Error saving invoice file:', error);
+      return { success: false, error: 'Failed to save file' };
+    }
   }
 
   // Brazilian document validation functions

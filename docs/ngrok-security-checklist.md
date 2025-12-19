@@ -1,4 +1,4 @@
-# ngrok Security Checklist for VSol Admin
+# ngrok Security Checklist for Company Portal
 
 ## Critical Security Items for Public Internet Access
 

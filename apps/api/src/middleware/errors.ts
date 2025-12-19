@@ -31,6 +31,12 @@ export class UnauthorizedError extends AppError {
   }
 }
 
+export class ForbiddenError extends AppError {
+  constructor(message: string) {
+    super(message, 403);
+  }
+}
+
 /**
  * Sanitize error message to prevent information disclosure
  * Removes sensitive paths, stack traces, and internal details

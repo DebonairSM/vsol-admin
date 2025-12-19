@@ -1,3 +1,5 @@
+import type { UpdateConsultantProfileRequest } from '@vsol-admin/shared';
+
 // Determine API base URL
 // Priority: 1) VITE_API_URL env var, 2) Auto-detect from current hostname, 3) Use proxy
 let API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -77,9 +79,13 @@ class ApiClient {
     const url = `${this.baseURL}${endpoint}`;
     
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
+
+    // Only set Content-Type for JSON, not for FormData (browser will set it with boundary)
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
@@ -125,6 +131,9 @@ class ApiClient {
             }
           }
           // If retry also fails, fall through to error handling below
+        } else {
+          // No refresh token available - clear any stale access token
+          this.setToken(null);
         }
       } catch (refreshError) {
         // Token refresh failed, clear tokens and let the error propagate
@@ -816,14 +825,20 @@ class ApiClient {
   async login(username: string, password: string) {
     try {
       const response = await this.request<{ 
-        token: string; 
-        accessToken: string;
-        refreshToken: string;
-        user: any 
+        token?: string; 
+        accessToken?: string;
+        refreshToken?: string;
+        user: any;
+        mustChangePassword?: boolean;
       }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ username, password }),
       });
+
+      // If password change is required, don't store tokens
+      if (response.mustChangePassword) {
+        return response;
+      }
 
       // Store refresh token
       if (response.refreshToken) {
@@ -834,6 +849,135 @@ class ApiClient {
     } catch (error: any) {
       throw error;
     }
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    return this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
+  // Consultant portal methods
+  async getConsultantCycles() {
+    return this.request('/consultant/cycles');
+  }
+
+  async uploadInvoice(cycleId: number, file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('cycleId', cycleId.toString());
+
+    return this.request('/consultant/invoices', {
+      method: 'POST',
+      headers: {
+        // Don't set Content-Type - browser will set it with boundary
+      },
+      body: formData,
+    }, false); // Don't retry on auth error for file uploads
+  }
+
+  async getConsultantInvoices() {
+    return this.request('/consultant/invoices');
+  }
+
+  async getConsultantInvoice(cycleId: number) {
+    return this.request(`/consultant/invoices/${cycleId}`);
+  }
+
+  async downloadConsultantInvoice(cycleId: number): Promise<Blob> {
+    const url = `${this.baseURL}/consultant/invoices/${cycleId}/download`;
+    const headers: Record<string, string> = {};
+    
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Try to refresh token
+        try {
+          const refreshToken = this.getRefreshToken();
+          if (refreshToken) {
+            const tokens = await this.refreshAccessToken();
+            this.setToken(tokens.accessToken);
+            this.setRefreshToken(tokens.refreshToken);
+            
+            // Retry with new token
+            headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+            const retryResponse = await fetch(url, {
+              method: 'GET',
+              headers,
+            });
+            
+            if (retryResponse.ok) {
+              return await retryResponse.blob();
+            }
+          }
+        } catch (refreshError) {
+          // Refresh failed
+        }
+      }
+      
+      const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+      const error = new Error(errorData.message || errorData.error || `HTTP ${response.status}`);
+      (error as any).response = { data: errorData, status: response.status };
+      throw error;
+    }
+
+    return await response.blob();
+  }
+
+  async getConsultantProfile() {
+    return this.request('/consultant/profile');
+  }
+
+  async updateConsultantProfile(data: UpdateConsultantProfileRequest) {
+    return this.request('/consultant/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getConsultantEquipment() {
+    return this.request('/consultant/equipment');
+  }
+
+  async createConsultantEquipment(data: any) {
+    return this.request('/consultant/equipment', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateConsultantEquipment(equipmentId: number, data: any) {
+    return this.request(`/consultant/equipment/${equipmentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // User management methods (admin only)
+  async getConsultantUsers() {
+    return this.request('/users/consultants');
+  }
+
+  async resetUserPassword(userId: number, sendEmail: boolean = false) {
+    return this.request(`/users/${userId}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ sendEmail }),
+    });
+  }
+
+  async sendUserCredentials(userId: number) {
+    return this.request(`/users/${userId}/send-credentials`, {
+      method: 'POST',
+    });
   }
 
   // Update logout to revoke refresh token

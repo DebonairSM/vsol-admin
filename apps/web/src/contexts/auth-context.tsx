@@ -8,11 +8,12 @@ interface User {
   id: number;
   username: string;
   role: string;
+  mustChangePassword?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string, keepLoggedIn: boolean) => Promise<void>;
+  login: (username: string, password: string, keepLoggedIn: boolean) => Promise<{ mustChangePassword?: boolean } | void>;
   logout: (reason?: 'manual' | 'timeout') => void;
   isLoading: boolean;
 }
@@ -131,8 +132,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string, keepLoggedInFlag: boolean) => {
     const response = await apiClient.login(username, password);
+    
+    // Store tokens even if password change is required
+    // User needs tokens to authenticate for the password change endpoint
     apiClient.setToken(response.token || response.accessToken);
-    setUser(response.user);
+    if (response.refreshToken) {
+      apiClient.setRefreshToken(response.refreshToken);
+    }
+    
+    // Set user state (include mustChangePassword if present)
+    setUser({
+      ...response.user,
+      mustChangePassword: response.mustChangePassword
+    });
     setKeepLoggedIn(keepLoggedInFlag);
     
     // Store preference
@@ -144,6 +156,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSessionExpiresAt(expiry);
       localStorage.setItem('session_expires_at', expiry.toString());
     }
+    
+    // Return user info so login page can redirect based on role
+    return { 
+      user: response.user,
+      mustChangePassword: response.mustChangePassword 
+    };
   };
 
   const logout = useCallback((reason: 'manual' | 'timeout' = 'manual') => {

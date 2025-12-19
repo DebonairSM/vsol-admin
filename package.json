@@ -11,9 +11,15 @@
     "db:seed": "pnpm --filter @vsol-admin/api db:seed",
     "backup:db": "node ./apps/api/scripts/backup-db.js",
     "kill-port": "pnpm --filter @vsol-admin/api kill-port",
-    "kill-all-ports": "pnpm --filter @vsol-admin/api kill-all-ports"
+    "kill-all-ports": "pnpm --filter @vsol-admin/api kill-all-ports",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  },
   "packageManager": "pnpm@8.15.6",
   "engines": {
     "node": ">=18"

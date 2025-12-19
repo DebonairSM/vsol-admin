@@ -10,6 +10,11 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required')
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters')
+});
+
 export const userSchema = z.object({
   id: z.number(),
   username: z.string(),
@@ -190,6 +195,57 @@ export const updateConsultantSchema = z.object({
       clientInvoiceServiceDescription: z.string().nullable().optional()
 });
 
+// Consultant profile update schema - only personal data fields that consultants can update
+// Excludes all company-private fields: hourlyRate, evaluationNotes, termination data, etc.
+export const updateConsultantProfileSchema = z.object({
+  // Personal Data
+  email: z.string().email('Invalid email format').nullable().optional(),
+  address: z.string().nullable().optional(),
+  neighborhood: z.string().nullable().optional(),
+  city: z.string().nullable().optional(),
+  state: z.string().length(2, 'State must be 2 characters (e.g., RJ)').nullable().optional(),
+  cep: z.string().regex(/^\d{5}-?\d{3}$/, 'CEP must be in format 12345-678').nullable().optional(),
+  phone: z.string().regex(/^\+?55\s?\d{2}\s?\d{4,5}-?\d{4}$/, 'Invalid Brazilian phone format').nullable().optional(),
+  birthDate: z.string().datetime().nullable().optional(),
+  shirtSize: z.enum(['P', 'M', 'G', 'GG', 'GGG']).nullable().optional(),
+  // Company Data (consultant's own company info)
+  companyLegalName: z.string().nullable().optional(),
+  companyTradeName: z.string().nullable().optional(),
+  cnpj: z.preprocess(
+    (val) => {
+      // Normalize: convert empty string to null
+      if (val === '' || val === null || val === undefined) return null;
+      // Strip formatting to normalize the value
+      if (typeof val === 'string') {
+        const cleaned = val.replace(/\D/g, '');
+        // If empty after cleaning, return null
+        if (cleaned === '') return null;
+        // Return cleaned value for validation
+        return cleaned;
+      }
+      return val;
+    },
+    z.union([
+      z.string().refine((val) => {
+        // If we have exactly 14 digits, validate the CNPJ format and check digits
+        if (val.length === 14) {
+          return validateCNPJ(val);
+        }
+        // Reject incomplete CNPJs (must be exactly 14 digits or null)
+        return false;
+      }, 'Invalid CNPJ format. CNPJ must have exactly 14 digits with valid check digits.'),
+      z.null()
+    ]).optional()
+  ),
+  payoneerID: z.string().nullable().optional(),
+  // Emergency Contact
+  emergencyContactName: z.string().nullable().optional(),
+  emergencyContactRelation: z.string().nullable().optional(),
+  emergencyContactPhone: z.string().regex(/^\+?55\s?\d{2}\s?\d{4,5}-?\d{4}$/, 'Invalid Brazilian phone format').nullable().optional(),
+  // Documents
+  cpf: z.string().refine(validateCPF, 'Invalid CPF format').nullable().optional()
+});
+
 // Cycle schemas
 export const createCycleSchema = z.object({
   monthLabel: z.string().min(1, 'Month label is required'),
@@ -254,8 +310,10 @@ export const createPaymentSchema = z.object({
 // Export types from schemas
 export type LoginRequest = z.infer<typeof loginSchema>;
 export type RefreshTokenRequest = z.infer<typeof refreshTokenSchema>;
+export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;
 export type CreateConsultantRequest = z.infer<typeof createConsultantSchema>;
 export type UpdateConsultantRequest = z.infer<typeof updateConsultantSchema>;
+export type UpdateConsultantProfileRequest = z.infer<typeof updateConsultantProfileSchema>;
 export type CreateCycleRequest = z.infer<typeof createCycleSchema>;
 export type UpdateCycleRequest = z.infer<typeof updateCycleSchema>;
 export type UpdateLineItemRequest = z.infer<typeof updateLineItemSchema>;
@@ -297,6 +355,16 @@ export const updateEquipmentSchema = z.object({
   notes: z.string().nullable().optional()
 });
 
+// Consultant equipment schema (without consultantId - comes from auth)
+export const createConsultantEquipmentSchema = z.object({
+  deviceName: z.string().min(1, 'Device name is required'),
+  model: z.string().optional(),
+  purchaseDate: z.string().datetime().optional(),
+  serialNumber: z.string().optional(),
+  returnRequired: z.boolean().default(true),
+  notes: z.string().optional()
+});
+
 // Termination schemas
 export const initiateTerminationSchema = z.object({
   consultantId: z.number().int().positive(),
@@ -334,6 +402,7 @@ export const workHoursYearSchema = z.object({
 // Export equipment and termination types
 export type CreateEquipmentRequest = z.infer<typeof createEquipmentSchema>;
 export type UpdateEquipmentRequest = z.infer<typeof updateEquipmentSchema>;
+export type CreateConsultantEquipmentRequest = z.infer<typeof createConsultantEquipmentSchema>;
 export type InitiateTerminationRequest = z.infer<typeof initiateTerminationSchema>;
 export type GenerateTerminationDocumentRequest = z.infer<typeof generateTerminationDocumentSchema>;
 export type CalculatePaymentRequest = z.infer<typeof calculatePaymentSchema>;
@@ -556,3 +625,11 @@ export type UpdateClientInvoiceRequest = z.infer<typeof updateClientInvoiceSchem
 export type UpdateClientInvoiceStatusRequest = z.infer<typeof updateClientInvoiceStatusSchema>;
 export type CreateInvoiceLineItemRequest = z.infer<typeof createInvoiceLineItemSchema>;
 export type UpdateInvoiceLineItemRequest = z.infer<typeof updateInvoiceLineItemSchema>;
+
+// Consultant portal schemas
+export const uploadInvoiceSchema = z.object({
+  cycleId: z.number().int().positive('Cycle ID is required'),
+  // File will be handled via multipart/form-data, not in this schema
+});
+
+export type UploadInvoiceRequest = z.infer<typeof uploadInvoiceSchema>;

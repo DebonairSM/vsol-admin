@@ -69,3 +69,22 @@ export async function validateFileContent(
   }
 }
 
+// Configure multer for invoice uploads (PDF and images)
+export const uploadInvoice = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit for invoices
+  },
+  fileFilter: async (req: Request, file, cb) => {
+    // First check MIME type from headers
+    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    if (!allowedMimes.includes(file.mimetype)) {
+      return cb(new Error('Only PDF, JPEG and PNG files are allowed'));
+    }
+    
+    // Note: Actual file content validation happens in the route handler
+    // after multer processes the file, since we need the buffer
+    cb(null, true);
+  },
+});
+

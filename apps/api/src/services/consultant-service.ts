@@ -254,4 +254,44 @@ export class ConsultantService {
 
     return fileStorage.getFullPath(filePath);
   }
+
+  /**
+   * Sanitize consultant data for consultant self-service view
+   * Removes all company-private fields and returns only personal data
+   */
+  static sanitizeForConsultant(consultant: any): any {
+    return {
+      id: consultant.id,
+      name: consultant.name,
+      // Personal Data
+      email: consultant.email,
+      address: consultant.address,
+      neighborhood: consultant.neighborhood,
+      city: consultant.city,
+      state: consultant.state,
+      cep: consultant.cep,
+      phone: consultant.phone,
+      birthDate: consultant.birthDate,
+      shirtSize: consultant.shirtSize,
+      // Company Data (consultant's own company info)
+      companyLegalName: consultant.companyLegalName,
+      companyTradeName: consultant.companyTradeName,
+      cnpj: consultant.cnpj,
+      payoneerID: consultant.payoneerID,
+      // Emergency Contact
+      emergencyContactName: consultant.emergencyContactName,
+      emergencyContactRelation: consultant.emergencyContactRelation,
+      emergencyContactPhone: consultant.emergencyContactPhone,
+      // Documents
+      cpf: consultant.cpf,
+      // Timestamps
+      createdAt: consultant.createdAt,
+      updatedAt: consultant.updatedAt
+      // Explicitly excluded: hourlyRate, evaluationNotes, terminationDate, terminationReason,
+      // finalPaymentAmount, equipmentReturnDeadline, contractSignedDate, timeDoctorPayeeId,
+      // hourlyLimit, rateType, currency, timeDoctorSyncEnabled, lastTimeDoctorSync,
+      // yearlyBonus, bonusMonth, number, role, serviceDescription, clientInvoiceServiceName,
+      // clientInvoiceUnitPrice, clientInvoiceServiceDescription, startDate
+    };
+  }
 }

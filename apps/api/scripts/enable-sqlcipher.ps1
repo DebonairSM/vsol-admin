@@ -1,4 +1,4 @@
-# Enable SQLCipher Encryption for VSol Admin Database
+# Enable SQLCipher Encryption for Company Portal Database
 #
 # This script:
 # 1. Generates a secure random encryption key (256-bit)
@@ -11,7 +11,7 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "🔐 VSol Admin - Enable SQLCipher Encryption" -ForegroundColor Cyan
+Write-Host "🔐 Company Portal - Enable SQLCipher Encryption" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 
