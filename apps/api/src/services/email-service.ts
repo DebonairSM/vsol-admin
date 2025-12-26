@@ -3,6 +3,8 @@ import { CycleService } from './cycle-service';
 import { ValidationError } from '../middleware/errors';
 import { db, clientInvoices } from '../db';
 import { eq } from 'drizzle-orm';
+import fs from 'fs/promises';
+import path from 'path';
 
 const resend = new Resend(process.env.RESEND_KEY);
 
@@ -12,6 +14,31 @@ if (!process.env.RESEND_KEY) {
 
 const DEFAULT_RECIPIENT_EMAIL = process.env.RESEND_ADMIN_EMAIL || 'apmailbox@omnigo.com';
 const ADMIN_BCC_EMAIL = 'admin@vsol.software';
+
+// Cache for logo base64 string to avoid reading file on every email send
+let cachedLogoBase64: string | null = null;
+
+/**
+ * Get the VSol logo as a base64 data URI for embedding in emails
+ * Logo is cached after first read to improve performance
+ */
+async function getLogoBase64(): Promise<string | null> {
+  if (cachedLogoBase64) {
+    return cachedLogoBase64;
+  }
+
+  try {
+    const logoPath = path.join(process.cwd(), 'src', 'assets', 'vsol-logo-email.png');
+    const logoBuffer = await fs.readFile(logoPath);
+    const base64String = logoBuffer.toString('base64');
+    cachedLogoBase64 = `data:image/png;base64,${base64String}`;
+    return cachedLogoBase64;
+  } catch (error) {
+    // Graceful degradation: if logo file doesn't exist, emails still send without logo
+    console.warn('VSol logo not found, emails will be sent without logo:', error);
+    return null;
+  }
+}
 
 export interface ReceiptEmailData {
   cycleId: number;
@@ -103,8 +130,14 @@ export class EmailService {
 
     // Generate email subject
     const subject = data.invoiceNumber 
-      ? `Payment Receipt - Invoice #${data.invoiceNumber} - ${cycle.monthLabel} - Portal`
-      : `Payment Receipt - ${cycle.monthLabel} - Portal`;
+      ? `VSol Software - Payment Receipt - Invoice #${data.invoiceNumber} - ${cycle.monthLabel}`
+      : `VSol Software - Payment Receipt - ${cycle.monthLabel}`;
+
+    // Get logo for email body
+    const logoBase64 = await getLogoBase64();
+    const logoHtml = logoBase64 
+      ? `<div style="text-align: center; margin-bottom: 20px;"><img src="${logoBase64}" alt="VSol Software" style="max-width: 200px; height: auto;" /></div>`
+      : '';
 
     // Generate HTML email body
     const htmlBody = `
@@ -117,6 +150,7 @@ export class EmailService {
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+    ${logoHtml}
     <h2 style="color: #2c3e50; margin-top: 0;">Payment Receipt</h2>
     <p>Dear Omnigo Accounts Payable Team,</p>
     <p>This email confirms receipt of payment for consultant services to be performed in ${workPeriodText}.</p>
@@ -211,7 +245,7 @@ Website: www.vsol.software
       throw new ValidationError('Client contact email is required to send invoice');
     }
 
-    const subject = `Invoice #${invoice.invoiceNumber} - ${invoice.cycle?.monthLabel ?? 'Portal'}`;
+    const subject = `VSol Software - Invoice #${invoice.invoiceNumber} - ${invoice.cycle?.monthLabel ?? ''}`;
     const dueDateText =
       invoice.dueDate instanceof Date ? invoice.dueDate.toLocaleDateString('en-US') : String(invoice.dueDate);
     const invoiceDateText =
@@ -219,6 +253,12 @@ Website: www.vsol.software
 
     const formatUsd = (value: number) =>
       new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0);
+
+    // Get logo for email body
+    const logoBase64 = await getLogoBase64();
+    const logoHtml = logoBase64 
+      ? `<div style="text-align: center; margin-bottom: 20px;"><img src="${logoBase64}" alt="VSol Software" style="max-width: 200px; height: auto;" /></div>`
+      : '';
 
     const lineItemsHtml = (invoice.lineItems || [])
       .map((li) => {
@@ -249,6 +289,7 @@ Website: www.vsol.software
   <title>Invoice #${invoice.invoiceNumber}</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; padding: 20px;">
+  ${logoHtml}
   <h2 style="margin:0 0 10px 0;">Invoice #${invoice.invoiceNumber}</h2>
   <div style="color:#555;margin-bottom:16px;">
     <div><strong>Invoice Date:</strong> ${invoiceDateText}</div>
@@ -330,7 +371,13 @@ Website: www.vsol.software
     }
 
     // Generate email subject
-    const subject = `Your Portal Account - ${data.consultantName}`;
+    const subject = `VSol Software - Your Portal Account - ${data.consultantName}`;
+
+    // Get logo for email body
+    const logoBase64 = await getLogoBase64();
+    const logoHtml = logoBase64 
+      ? `<div style="text-align: center; margin-bottom: 20px;"><img src="${logoBase64}" alt="VSol Software" style="max-width: 200px; height: auto;" /></div>`
+      : '';
 
     // Generate HTML email body
     const htmlBody = `
@@ -343,6 +390,7 @@ Website: www.vsol.software
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+    ${logoHtml}
     <h2 style="color: #2c3e50; margin-top: 0;">Welcome to Portal</h2>
     <p>Dear ${data.consultantName},</p>
     <p>Your account has been created for the Portal. You can now log in to upload invoices and manage your profile information.</p>
