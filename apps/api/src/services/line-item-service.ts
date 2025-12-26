@@ -22,12 +22,15 @@ export class LineItemService {
   }
 
   static async getByCycle(cycleId: number) {
-    return db.query.cycleLineItems.findMany({
+    const lineItems = await db.query.cycleLineItems.findMany({
       where: eq(cycleLineItems.cycleId, cycleId),
       with: {
         consultant: true
       }
     });
+    
+    // Filter out terminated consultants
+    return lineItems.filter(line => !line.consultant.terminationDate);
   }
 
   static async update(id: number, data: UpdateLineItemRequest) {

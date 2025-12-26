@@ -197,7 +197,14 @@ export class TerminationService {
     }
 
     if (missingFields.length > 0) {
-      throw new ValidationError(`Missing required fields for termination: ${missingFields.join(', ')}`);
+      throw new ValidationError(
+        `Missing required fields for termination: ${missingFields.join(', ')}`,
+        {
+          code: 'MISSING_TERMINATION_DOCUMENT_FIELDS',
+          consultantId,
+          missingFields
+        }
+      );
     }
 
     return {

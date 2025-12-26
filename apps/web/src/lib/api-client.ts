@@ -316,6 +316,61 @@ class ApiClient {
     return await response.blob();
   }
 
+  async getTerminationDocumentEligibility(consultantId: number) {
+    return this.request<{
+      canGenerate: boolean;
+      reasons?: string[];
+      missingFields?: string[];
+    }>(`/consultants/${consultantId}/termination/document/check`);
+  }
+
+  async downloadTerminationDocument(consultantId: number): Promise<Blob> {
+    const url = `${this.baseURL}/consultants/${consultantId}/termination/document`;
+    const headers: Record<string, string> = {};
+
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Try to refresh token
+        try {
+          const refreshToken = this.getRefreshToken();
+          if (refreshToken) {
+            const tokens = await this.refreshAccessToken();
+            this.setToken(tokens.accessToken);
+            this.setRefreshToken(tokens.refreshToken);
+
+            headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+            const retryResponse = await fetch(url, {
+              method: 'GET',
+              headers
+            });
+
+            if (retryResponse.ok) {
+              return await retryResponse.blob();
+            }
+          }
+        } catch (refreshError) {
+          // Refresh failed; fall through
+        }
+      }
+
+      const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+      const error = new Error(errorData.message || errorData.error || `HTTP ${response.status}`);
+      (error as any).response = { data: errorData, status: response.status };
+      throw error;
+    }
+
+    return await response.blob();
+  }
+
   async generateConsultantContract(consultantId: number): Promise<void> {
     const url = `${this.baseURL}/consultants/${consultantId}/contract`;
     const headers: Record<string, string> = {};
@@ -477,6 +532,16 @@ class ApiClient {
     return this.request<any>(`/client-invoices/from-cycle/${cycleId}`, {
       method: 'POST',
     });
+  }
+
+  async getCreateClientInvoiceFromCycleEligibility(cycleId: number) {
+    return this.request<{
+      canCreate: boolean;
+      invoiceExists: boolean;
+      existingInvoiceId?: number;
+      missingClient: boolean;
+      missingConsultants: Array<{ id: number; name: string }>;
+    }>(`/client-invoices/from-cycle/${cycleId}/check`);
   }
 
   async updateClientInvoice(id: number, data: any) {

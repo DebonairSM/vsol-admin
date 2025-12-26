@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDate } from '@/lib/utils';
 import { AlertTriangle, CheckCircle, Download, FileText, Calendar, DollarSign, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import {
   useTerminationStatus,
   useInitiateTermination,
@@ -35,6 +37,7 @@ const terminationReasons = [
 ];
 
 export default function TerminationWorkflow({ consultantId }: TerminationWorkflowProps) {
+  const navigate = useNavigate();
   const [showInitiateForm, setShowInitiateForm] = useState(false);
   const [formData, setFormData] = useState<TerminationFormData>({
     terminationReason: '',
@@ -92,6 +95,15 @@ export default function TerminationWorkflow({ consultantId }: TerminationWorkflo
       const blob = await generateDocumentMutation.mutateAsync(consultantId);
       downloadTerminationDocument(blob, terminationStatus?.consultant?.name || 'consultant');
     } catch (error) {
+      const details = (error as any)?.response?.data?.details;
+      if (details?.code === 'MISSING_TERMINATION_DOCUMENT_FIELDS' && Array.isArray(details?.missingFields)) {
+        const fields = details.missingFields.join(', ');
+        toast.error(`Cannot generate termination document. Missing fields: ${fields}`, { duration: 10000 });
+        // Offer a clear next step
+        navigate(`/consultants/${consultantId}/edit`);
+        return;
+      }
+      toast.error((error as any)?.message || 'Error generating document');
       console.error('Error generating document:', error);
     }
   };

@@ -275,6 +275,44 @@ router.get('/:id/termination/status', async (req, res, next) => {
   }
 });
 
+// GET /api/consultants/:id/termination/document/check - Check whether termination document can be generated
+router.get('/:id/termination/document/check', async (req, res, next) => {
+  try {
+    const consultantId = parseInt(req.params.id);
+
+    // 1) High-level termination/equipment gating
+    const { canGenerate: canGenerateByProcess, reasons } = await TerminationService.canGenerateDocument(consultantId);
+
+    // 2) Data requirements gating (without generating the PDF)
+    // Reuse the same validation as document generation, but capture missing fields.
+    let missingFields: string[] = [];
+    try {
+      await TerminationService.validateTerminationData(consultantId);
+    } catch (err: any) {
+      const details = err?.details;
+      if (details?.code === 'MISSING_TERMINATION_DOCUMENT_FIELDS' && Array.isArray(details?.missingFields)) {
+        missingFields = details.missingFields;
+      } else if (err?.message?.includes?.('Missing required fields for termination')) {
+        // Fallback for unexpected shapes
+        missingFields = [];
+      } else if (err) {
+        // If it's some other validation error (e.g., not terminated), surface through normal error handling
+        throw err;
+      }
+    }
+
+    const canGenerate = Boolean(canGenerateByProcess) && missingFields.length === 0;
+
+    res.json({
+      canGenerate,
+      reasons: reasons && reasons.length > 0 ? reasons : undefined,
+      missingFields: missingFields.length > 0 ? missingFields : undefined
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/consultants/:id/termination/initiate - Initiate termination
 router.post('/:id/termination/initiate',
   validateBody(initiateTerminationSchema),

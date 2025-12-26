@@ -127,7 +127,11 @@ export default function NewCyclePage() {
       navigate(`/cycles/${cycle.id}`);
     } catch (error) {
       console.error('Failed to create cycle:', error);
-      setErrors({ submit: 'Failed to create cycle. Please try again.' });
+      // Extract error message from API response
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to create cycle. Please try again.';
+      setErrors({ submit: errorMessage });
     }
   };
 

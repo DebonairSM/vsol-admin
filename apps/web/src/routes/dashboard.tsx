@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BlurredValue } from '@/components/ui/blurred-value';
-import { Calendar } from '@/components/ui/calendar';
+import { Calendar as DayPickerCalendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Plus, Calendar as CalendarIcon, DollarSign, Users, FileText, CalendarCheck, Sparkles, Plane, Clock } from 'lucide-react';
@@ -199,7 +199,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Cycles</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{cycles?.length || 0}</div>
@@ -243,7 +243,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Cycles */}
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle>Recent Payroll Cycles</CardTitle>
           <CardDescription>
@@ -307,7 +307,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <CalendarIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <p>No payroll cycles found</p>
               <p className="text-sm">Create your first cycle to get started</p>
             </div>
@@ -346,7 +346,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <Calendar
+              <DayPickerCalendar
                 mode="single"
                 month={selectedMonth}
                 onMonthChange={setSelectedMonth}

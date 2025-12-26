@@ -140,6 +140,38 @@ describe('ClientInvoiceService', () => {
       grouped.forEach((v) => expect(v.rate).toBeCloseTo(5410.77, 2));
     });
   });
+
+  describe('getCreateFromCycleEligibility', () => {
+    it('returns missing consultants when unit price is missing', async () => {
+      vi.spyOn(ClientInvoiceService, 'getByCycleId').mockResolvedValue(null as any);
+      vi.spyOn(db.query.clients, 'findFirst').mockResolvedValue({ id: 1 } as any);
+      vi.spyOn(db.query.payrollCycles, 'findFirst').mockResolvedValue({
+        id: 10,
+        lines: [
+          { consultant: { id: 12, name: 'Test Consultant', clientInvoiceUnitPrice: null } }
+        ]
+      } as any);
+
+      await expect(ClientInvoiceService.getCreateFromCycleEligibility(10)).resolves.toEqual({
+        canCreate: false,
+        invoiceExists: false,
+        missingClient: false,
+        missingConsultants: [{ id: 12, name: 'Test Consultant' }]
+      });
+    });
+
+    it('returns invoiceExists when an invoice already exists for the cycle', async () => {
+      vi.spyOn(ClientInvoiceService, 'getByCycleId').mockResolvedValue({ id: 99 } as any);
+
+      await expect(ClientInvoiceService.getCreateFromCycleEligibility(10)).resolves.toEqual({
+        canCreate: false,
+        invoiceExists: true,
+        existingInvoiceId: 99,
+        missingClient: false,
+        missingConsultants: []
+      });
+    });
+  });
 });
 
 

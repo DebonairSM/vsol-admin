@@ -359,3 +359,5 @@ export function CreateCeremonyDialog({ open, onOpenChange, trigger }: CreateCere
   );
 }
 
+
+

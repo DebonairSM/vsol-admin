@@ -80,10 +80,7 @@ export function useSignTerminationContract() {
 export function useGenerateTerminationDocument() {
   return useMutation({
     mutationFn: async (consultantId: number): Promise<Blob> => {
-      const response = await apiClient.get(`/consultants/${consultantId}/termination/document`, {
-        responseType: 'blob'
-      });
-      return response.data;
+      return await apiClient.downloadTerminationDocument(consultantId);
     }
   });
 }
@@ -92,21 +89,11 @@ export function useCanGenerateTerminationDocument(consultantId: number) {
   return useQuery({
     queryKey: ['termination', consultantId, 'can-generate'],
     queryFn: async (): Promise<DocumentGenerationCheck> => {
-      try {
-        // Try to get the document to check if it's allowed
-        await apiClient.get(`/consultants/${consultantId}/termination/document`, {
-          method: 'HEAD' // Just check headers, don't download
-        });
-        return { canGenerate: true };
-      } catch (error: any) {
-        if (error.response?.status === 400) {
-          return {
-            canGenerate: false,
-            reasons: error.response.data.reasons || [error.response.data.error]
-          };
-        }
-        throw error;
-      }
+      const result = await apiClient.getTerminationDocumentEligibility(consultantId);
+      return {
+        canGenerate: result.canGenerate,
+        reasons: result.reasons || (result.missingFields?.length ? [`Missing fields: ${result.missingFields.join(', ')}`] : undefined)
+      };
     },
     enabled: !!consultantId,
     retry: false

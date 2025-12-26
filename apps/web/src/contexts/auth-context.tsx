@@ -24,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const ACCESS_TOKEN_DURATION = 15 * 60 * 1000; // 15 minutes
 const WARNING_BEFORE_EXPIRY = 60 * 1000; // Show warning 60 seconds before expiry
 const SESSION_CHECK_INTERVAL = 10 * 1000; // Check every 10 seconds
+const TOKEN_REFRESH_INTERVAL = 12 * 60 * 1000; // Refresh token every 12 minutes (before 15min expiry)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -50,10 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       apiClient.setToken(accessToken);
       apiClient.setRefreshToken(refreshToken);
       
-      // Reset session expiry
-      const newExpiry = Date.now() + ACCESS_TOKEN_DURATION;
-      setSessionExpiresAt(newExpiry);
-      localStorage.setItem('session_expires_at', newExpiry.toString());
+      // Only set session expiry if not "keep logged in"
+      const storedKeepLoggedIn = localStorage.getItem('keep_logged_in') === 'true';
+      if (!storedKeepLoggedIn) {
+        const newExpiry = Date.now() + ACCESS_TOKEN_DURATION;
+        setSessionExpiresAt(newExpiry);
+        localStorage.setItem('session_expires_at', newExpiry.toString());
+      } else {
+        // Clear session expiry for "keep logged in" users
+        setSessionExpiresAt(null);
+        localStorage.removeItem('session_expires_at');
+      }
       
       setShowTimeoutWarning(false);
       return true;
@@ -79,30 +87,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (timeUntilExpiry <= 0) {
       logout('timeout');
     }
-  }, [sessionExpiresAt, keepLoggedIn]);
+  }, [sessionExpiresAt, keepLoggedIn, logout]);
 
-  // Set up session timeout checker
+  // Automatic token refresh for "keep logged in" users
+  const refreshTokenPeriodically = useCallback(async () => {
+    // Check both state and localStorage to ensure we have the correct value
+    const storedKeepLoggedIn = localStorage.getItem('keep_logged_in') === 'true';
+    if ((!keepLoggedIn && !storedKeepLoggedIn) || !user) return;
+    
+    try {
+      await refreshSession();
+    } catch (error) {
+      console.error('Failed to refresh token automatically:', error);
+      // If refresh fails, logout the user
+      logout('timeout');
+    }
+  }, [keepLoggedIn, user, refreshSession, logout]);
+
+  // Set up session timeout checker or automatic token refresh
   useEffect(() => {
-    if (user && !keepLoggedIn && sessionExpiresAt) {
-      clearSessionTimers();
-      
-      timeoutCheckIntervalRef.current = setInterval(() => {
-        checkSessionTimeout();
-      }, SESSION_CHECK_INTERVAL);
+    clearSessionTimers();
+    
+    if (user) {
+      if (keepLoggedIn) {
+        // For "keep logged in" users: automatically refresh token before it expires
+        // Refresh every 12 minutes (before 15min expiry)
+        refreshTokenPeriodically(); // Refresh immediately, then set interval
+        timeoutCheckIntervalRef.current = setInterval(() => {
+          refreshTokenPeriodically();
+        }, TOKEN_REFRESH_INTERVAL);
+      } else if (sessionExpiresAt) {
+        // For regular sessions: check timeout and show warning
+        timeoutCheckIntervalRef.current = setInterval(() => {
+          checkSessionTimeout();
+        }, SESSION_CHECK_INTERVAL);
+      }
     }
 
     return () => {
       clearSessionTimers();
     };
-  }, [user, keepLoggedIn, sessionExpiresAt, checkSessionTimeout, clearSessionTimers]);
+  }, [user, keepLoggedIn, sessionExpiresAt, checkSessionTimeout, refreshTokenPeriodically, clearSessionTimers]);
 
   // Initialize auth state
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('auth_token');
+        const refreshToken = apiClient.getRefreshToken();
         const storedKeepLoggedIn = localStorage.getItem('keep_logged_in') === 'true';
         const storedExpiry = localStorage.getItem('session_expires_at');
+
+        // If no token but we have refresh token and keepLoggedIn is true, try to refresh
+        if (!token && refreshToken && storedKeepLoggedIn) {
+          try {
+            const tokens = await apiClient.refreshAccessToken();
+            apiClient.setToken(tokens.accessToken);
+            apiClient.setRefreshToken(tokens.refreshToken);
+            
+            const userData = await apiClient.getMe();
+            setUser(userData);
+            setKeepLoggedIn(true);
+            setIsLoading(false);
+            return;
+          } catch (error) {
+            // Refresh failed, clear everything
+            apiClient.setToken(null);
+            apiClient.setRefreshToken(null);
+            localStorage.removeItem('keep_logged_in');
+            localStorage.removeItem('session_expires_at');
+            setIsLoading(false);
+            return;
+          }
+        }
 
         if (!token) {
           setIsLoading(false);
@@ -111,17 +168,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setKeepLoggedIn(storedKeepLoggedIn);
         
-        if (storedExpiry) {
+        if (storedExpiry && !storedKeepLoggedIn) {
           setSessionExpiresAt(parseInt(storedExpiry));
         }
 
         const userData = await apiClient.getMe();
         setUser(userData);
       } catch (error) {
-        apiClient.setToken(null);
-        apiClient.setRefreshToken(null);
-        localStorage.removeItem('keep_logged_in');
-        localStorage.removeItem('session_expires_at');
+        // If token is invalid, try to refresh if we have refresh token and keepLoggedIn
+        const refreshToken = apiClient.getRefreshToken();
+        const storedKeepLoggedIn = localStorage.getItem('keep_logged_in') === 'true';
+        
+        if (refreshToken && storedKeepLoggedIn) {
+          try {
+            const tokens = await apiClient.refreshAccessToken();
+            apiClient.setToken(tokens.accessToken);
+            apiClient.setRefreshToken(tokens.refreshToken);
+            
+            const userData = await apiClient.getMe();
+            setUser(userData);
+            setKeepLoggedIn(true);
+            setIsLoading(false);
+            return;
+          } catch (refreshError) {
+            // Refresh also failed, clear everything
+            apiClient.setToken(null);
+            apiClient.setRefreshToken(null);
+            localStorage.removeItem('keep_logged_in');
+            localStorage.removeItem('session_expires_at');
+          }
+        } else {
+          // No refresh token or not keeping logged in, clear everything
+          apiClient.setToken(null);
+          apiClient.setRefreshToken(null);
+          localStorage.removeItem('keep_logged_in');
+          localStorage.removeItem('session_expires_at');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -151,10 +233,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('keep_logged_in', keepLoggedInFlag.toString());
     
     if (!keepLoggedInFlag) {
-      // Set session expiry time
+      // Set session expiry time for regular sessions
       const expiry = Date.now() + ACCESS_TOKEN_DURATION;
       setSessionExpiresAt(expiry);
       localStorage.setItem('session_expires_at', expiry.toString());
+    } else {
+      // Clear any existing session expiry for "keep logged in" users
+      setSessionExpiresAt(null);
+      localStorage.removeItem('session_expires_at');
     }
     
     // Return user info so login page can redirect based on role

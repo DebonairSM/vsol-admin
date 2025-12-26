@@ -3,19 +3,21 @@ import { Request, Response, NextFunction } from 'express';
 export class AppError extends Error {
   public statusCode: number;
   public isOperational: boolean;
+  public details?: unknown;
 
-  constructor(message: string, statusCode: number) {
+  constructor(message: string, statusCode: number, details?: unknown) {
     super(message);
     this.statusCode = statusCode;
     this.isOperational = true;
+    this.details = details;
 
     Error.captureStackTrace(this, this.constructor);
   }
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string) {
-    super(message, 400);
+  constructor(message: string, details?: unknown) {
+    super(message, 400, details);
   }
 }
 
@@ -96,29 +98,40 @@ export function errorHandler(
     message = sanitizeErrorMessage(error, isDevelopment);
   }
 
-  // Log full error details server-side (never expose to client)
-  console.error('Error:', {
+  // Log error details server-side (never expose to client)
+  // Keep stacks for 5xx/unexpected errors; avoid noisy stacks for expected 4xx validation errors.
+  const logPayload = {
     message: error.message,
-    stack: error.stack,
     url: req.url,
     method: req.method,
     userId: req.user?.userId,
     ip: req.socket.remoteAddress
-  });
+  };
+
+  const shouldLogStack =
+    !(error instanceof AppError) ||
+    (error instanceof AppError && error.statusCode >= 500);
+
+  if (shouldLogStack) {
+    console.error('Error:', { ...logPayload, stack: error.stack });
+  } else {
+    console.warn('Request rejected:', logPayload);
+  }
 
   // SECURITY: Never expose stack traces or sensitive details to clients
   const response: { error: string; details?: any } = {
     error: message
   };
   
-  // Only include validation details for ValidationError in development
-  if (isDevelopment && error instanceof ValidationError) {
-    // Could add validation details here if needed
+  // Include safe, explicit details for operational errors (e.g., validation)
+  if (error instanceof AppError && error.details !== undefined) {
+    response.details = error.details;
   }
   
   // Never include stack traces in production
   if (isDevelopment && error.stack) {
     response.details = {
+      ...(response.details ?? {}),
       stack: error.stack.split('\n').slice(0, 5) // Limit stack trace lines
     };
   }

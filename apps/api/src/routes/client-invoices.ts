@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ClientInvoiceService } from '../services/client-invoice-service';
+import { EmailService } from '../services/email-service';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody, validateQuery } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
@@ -81,6 +82,21 @@ router.post('/from-cycle/:cycleId',
   }
 );
 
+// GET /api/client-invoices/from-cycle/:cycleId/check
+router.get('/from-cycle/:cycleId/check', async (req, res, next) => {
+  try {
+    const cycleId = parseInt(req.params.cycleId);
+    if (isNaN(cycleId)) {
+      return res.status(400).json({ error: 'Invalid cycle ID' });
+    }
+
+    const result = await ClientInvoiceService.getCreateFromCycleEligibility(cycleId);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // PUT /api/client-invoices/:id
 router.put('/:id',
   validateBody(updateClientInvoiceSchema),
@@ -101,7 +117,14 @@ router.put('/:id/status',
   auditMiddleware('UPDATE_CLIENT_INVOICE_STATUS', 'client_invoice'),
   async (req, res, next) => {
     try {
-      const invoice = await ClientInvoiceService.updateStatus(parseInt(req.params.id), req.body);
+      const invoiceId = parseInt(req.params.id);
+
+      // If marking SENT, send the invoice email first; only mark SENT if sending succeeds.
+      if (req.body?.status === 'SENT') {
+        await EmailService.sendClientInvoiceEmail({ clientInvoiceId: invoiceId });
+      }
+
+      const invoice = await ClientInvoiceService.updateStatus(invoiceId, req.body);
       res.json(invoice);
     } catch (error) {
       next(error);

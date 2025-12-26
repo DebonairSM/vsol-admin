@@ -44,7 +44,17 @@ export function useCreateInvoiceFromCycle() {
     onSuccess: (_, cycleId) => {
       queryClient.invalidateQueries({ queryKey: ['client-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['client-invoices', 'cycle', cycleId] });
+      queryClient.invalidateQueries({ queryKey: ['client-invoices', 'from-cycle', 'eligibility', cycleId] });
     },
+  });
+}
+
+export function useCreateInvoiceFromCycleEligibility(cycleId: number) {
+  return useQuery({
+    queryKey: ['client-invoices', 'from-cycle', 'eligibility', cycleId],
+    queryFn: () => apiClient.getCreateClientInvoiceFromCycleEligibility(cycleId),
+    enabled: !!cycleId,
+    staleTime: 0,
   });
 }
 

@@ -18,7 +18,7 @@ import { getWorkHoursForMonthByNumber, getMonthName } from '@/lib/work-hours';
 import { toast } from 'sonner';
 import type { PayrollCycle } from '@vsol-admin/shared';
 import { apiClient } from '@/lib/api-client';
-import { useClientInvoiceByCycle, useCreateInvoiceFromCycle, useUpdateInvoiceStatus } from '@/hooks/use-client-invoices';
+import { useClientInvoiceByCycle, useCreateInvoiceFromCycle, useCreateInvoiceFromCycleEligibility, useUpdateInvoiceStatus } from '@/hooks/use-client-invoices';
 import { useNavigate } from 'react-router-dom';
 
 interface WorkflowTrackerProps {
@@ -39,10 +39,13 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const [showPreview, setShowPreview] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const [showMissingBillingDialog, setShowMissingBillingDialog] = useState(false);
+  const [missingBillingConsultants, setMissingBillingConsultants] = useState<Array<{ id: number; name: string }>>([]);
   
   const calculatePaymentMutation = useCalculatePayment();
   const { data: invoiceData, refetch: refetchInvoice, isLoading: isLoadingInvoice } = useClientInvoiceByCycle(cycle.id);
   const createInvoiceFromCycleMutation = useCreateInvoiceFromCycle();
+  const { data: createInvoiceEligibility, isLoading: isLoadingEligibility } = useCreateInvoiceFromCycleEligibility(cycle.id);
   const updateInvoiceStatusMutation = useUpdateInvoiceStatus();
 
   // Update current time for countdown - more frequently when showing hours
@@ -464,17 +467,44 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   };
 
   const handleCreateInvoiceFromCycle = async () => {
+    // Proactive guard: avoid POST if we already know this will fail
+    if (createInvoiceEligibility && !createInvoiceEligibility.canCreate) {
+      if (createInvoiceEligibility.invoiceExists && createInvoiceEligibility.existingInvoiceId) {
+        toast.error('An invoice already exists for this cycle. Opening it now.');
+        navigate(`/client-invoices/${createInvoiceEligibility.existingInvoiceId}`);
+        return;
+      }
+
+      if (createInvoiceEligibility.missingClient) {
+        toast.error('Cannot create invoice: no client is configured. Seed client data first.');
+        return;
+      }
+
+      if (createInvoiceEligibility.missingConsultants?.length) {
+        setMissingBillingConsultants(createInvoiceEligibility.missingConsultants);
+        setShowMissingBillingDialog(true);
+        toast.error('Cannot create invoice: some consultants are missing Client Invoice Unit Price.', { duration: 8000 });
+        return;
+      }
+    }
+
     try {
       await createInvoiceFromCycleMutation.mutateAsync(cycle.id);
       toast.success('Invoice created successfully');
       await refetchInvoice();
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to create invoice';
+      const details = error?.response?.data?.details;
       
       // If invoice already exists, refetch to get the existing invoice and show helpful message
       if (errorMessage.includes('Invoice already exists')) {
         await refetchInvoice();
         toast.error('An invoice already exists for this cycle. Please edit the existing invoice instead.');
+      } else if (details?.code === 'MISSING_CLIENT_INVOICE_UNIT_PRICE') {
+        const missing = Array.isArray(details?.missingConsultants) ? details.missingConsultants : [];
+        setMissingBillingConsultants(missing);
+        setShowMissingBillingDialog(true);
+        toast.error('Cannot create invoice: some consultants are missing Client Invoice Unit Price.', { duration: 8000 });
       } else {
         // Only log unexpected errors to console
         console.error('Failed to create invoice:', error);
@@ -514,6 +544,69 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
 
   return (
     <Card>
+      <Dialog open={showMissingBillingDialog} onOpenChange={setShowMissingBillingDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Missing billing configuration</DialogTitle>
+            <DialogDescription>
+              Client invoice creation requires <span className="font-medium">Client Invoice Unit Price (USD)</span> for each consultant included in the cycle.
+              Set it on each consultant, then retry creating the invoice.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {missingBillingConsultants.length === 0 ? (
+              <div className="text-sm text-gray-600">
+                Missing consultants were not provided by the server. Please check the Consultants page.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Consultant</TableHead>
+                    <TableHead className="w-[140px]">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {missingBillingConsultants.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">
+                        {c.name} <span className="text-xs text-gray-500">(id={c.id})</span>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setShowMissingBillingDialog(false);
+                            navigate(`/consultants/${c.id}/edit`);
+                          }}
+                        >
+                          Edit consultant
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+
+            <div className="flex items-center justify-between pt-2">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowMissingBillingDialog(false);
+                  navigate('/consultants');
+                }}
+              >
+                Go to Consultants
+              </Button>
+              <Button onClick={() => setShowMissingBillingDialog(false)}>Close</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <CardHeader>
         <div className="flex items-center justify-between gap-4 overflow-hidden">
           <CardTitle className="flex items-center gap-2 min-w-0 flex-shrink">
@@ -948,12 +1041,56 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                                   </p>
                                   <Button
                                     onClick={handleCreateInvoiceFromCycle}
-                                    disabled={createInvoiceFromCycleMutation.isPending || isLoadingInvoice || !!invoiceData}
+                                    disabled={
+                                      createInvoiceFromCycleMutation.isPending ||
+                                      isLoadingInvoice ||
+                                      isLoadingEligibility ||
+                                      !!invoiceData ||
+                                      (createInvoiceEligibility ? !createInvoiceEligibility.canCreate : false)
+                                    }
                                     className="w-full"
                                     size="sm"
                                   >
-                                    {createInvoiceFromCycleMutation.isPending ? 'Creating...' : isLoadingInvoice ? 'Loading...' : 'Create Invoice from Cycle'}
+                                    {createInvoiceFromCycleMutation.isPending
+                                      ? 'Creating...'
+                                      : isLoadingInvoice || isLoadingEligibility
+                                        ? 'Loading...'
+                                        : createInvoiceEligibility && !createInvoiceEligibility.canCreate
+                                          ? 'Fix billing fields to create invoice'
+                                          : 'Create Invoice from Cycle'}
                                   </Button>
+                                  {createInvoiceEligibility && !createInvoiceEligibility.canCreate && !invoiceData && (
+                                    <div className="text-xs text-gray-600">
+                                      {createInvoiceEligibility.invoiceExists ? (
+                                        <Button
+                                          variant="link"
+                                          size="sm"
+                                          className="px-0 h-auto"
+                                          onClick={() => {
+                                            if (createInvoiceEligibility.existingInvoiceId) {
+                                              navigate(`/client-invoices/${createInvoiceEligibility.existingInvoiceId}`);
+                                            }
+                                          }}
+                                        >
+                                          Open existing invoice
+                                        </Button>
+                                      ) : createInvoiceEligibility.missingConsultants?.length ? (
+                                        <Button
+                                          variant="link"
+                                          size="sm"
+                                          className="px-0 h-auto"
+                                          onClick={() => {
+                                            setMissingBillingConsultants(createInvoiceEligibility.missingConsultants);
+                                            setShowMissingBillingDialog(true);
+                                          }}
+                                        >
+                                          View missing billing fields
+                                        </Button>
+                                      ) : createInvoiceEligibility.missingClient ? (
+                                        <span>No client configured.</span>
+                                      ) : null}
+                                    </div>
+                                  )}
                                 </>
                               )}
                               {isCompleted && cycle.sendInvoiceDate && (

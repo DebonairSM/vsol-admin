@@ -42,8 +42,11 @@ export class CycleService {
       throw new NotFoundError('Payroll cycle not found');
     }
 
+    // Filter out terminated consultants from line items
+    const activeLines = cycle.lines.filter(line => !line.consultant.terminationDate);
+
     // Add computed subtotals to line items
-    const linesWithSubtotals = cycle.lines.map(line => ({
+    const linesWithSubtotals = activeLines.map(line => ({
       ...line,
       subtotal: this.calculateLineItemSubtotal(line, cycle.globalWorkHours || 0)
     }));
@@ -207,6 +210,9 @@ export class CycleService {
   static async getSummary(id: number): Promise<CycleSummary> {
     const cycle = await this.getById(id);
     
+    // Filter out terminated consultants (already filtered in getById, but ensure we use active lines)
+    // cycle.lines from getById() already excludes terminated consultants
+    
     // Calculate total hourly value (sum of all consultant rates)
     // NOTE: This uses snapshotted ratePerHour values from line items, not current Consultant.hourlyRate
     // This preserves historical accuracy - rates are captured when the cycle is created
@@ -270,31 +276,15 @@ export class CycleService {
   }
 
   static async calculatePayment(id: number, noBonus: boolean = false): Promise<PaymentCalculationResult> {
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:247',message:'calculatePayment entry',data:{cycleId:id,noBonus},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     const cycle = await this.getById(id);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:250',message:'cycle retrieved',data:{cycleId:cycle.id,monthLabel:cycle.monthLabel},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-
     const parsedMonth = this.parseMonthLabel(cycle.monthLabel);
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:252',message:'parseMonthLabel result',data:{monthLabel:cycle.monthLabel,parsedMonth},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     if (!parsedMonth) {
       throw new ValidationError('Invalid month label format. Expected "Month YYYY".');
     }
 
     const { year: nextYear, month: nextMonth } = this.getNextMonth(parsedMonth.year, parsedMonth.month);
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:258',message:'getNextMonth result',data:{currentYear:parsedMonth.year,currentMonth:parsedMonth.month,nextYear,nextMonth},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     const nextMonthWorkHoursRef = await WorkHoursService.getByYearMonth(nextYear, nextMonth);
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:260',message:'WorkHoursService.getByYearMonth result',data:{nextYear,nextMonth,workHoursRef:nextMonthWorkHoursRef?{id:nextMonthWorkHoursRef.id,workHours:nextMonthWorkHoursRef.workHours}:null,globalWorkHours:cycle.globalWorkHours},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
 
     let paymentWorkHours: number;
     let usingCalculatedFallback = false;
@@ -304,16 +294,9 @@ export class CycleService {
       // This ensures we use the correct hours (e.g., 184 for December 2025) even if not in DB yet
       paymentWorkHours = this.calculateWorkHoursForMonth(nextYear, nextMonth);
       usingCalculatedFallback = true;
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:295',message:'Using calculated work hours fallback',data:{nextYear,nextMonth,calculatedWorkHours:paymentWorkHours,cycleId:cycle.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run3',hypothesisId:'G'})}).catch(()=>{});
-      // #endregion
     } else {
       paymentWorkHours = nextMonthWorkHoursRef.workHours;
     }
-
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:299',message:'paymentWorkHours value before consultant calculations',data:{paymentWorkHours,nextYear,nextMonth,usingCalculatedFallback,cycleId:cycle.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run4',hypothesisId:'H'})}).catch(()=>{});
-    // #endregion
 
     const paymentMonthLabel = `${this.getMonthName(nextMonth)} ${nextYear}`;
 
@@ -378,22 +361,12 @@ export class CycleService {
       usdTotal: usdTotalForPayment, // Use payment month's work hours, not cycle's globalWorkHours
       anomalies: summary.anomalies
     };
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:365',message:'Payment calculation result being returned',data:{paymentMonthWorkHours:result.paymentMonthWorkHours,paymentMonthLabel:result.paymentMonthLabel,globalWorkHours:result.globalWorkHours,usdTotal:result.usdTotal,usdTotalFromSummary:summary.usdTotal,firstConsultantWorkHours:result.consultantPayments[0]?.workHours,cycleId:result.cycleId},timestamp:Date.now(),sessionId:'debug-session',runId:'run5',hypothesisId:'J'})}).catch(()=>{});
-    // #endregion
-    
+
     return result;
   }
 
   private static parseMonthLabel(monthLabel: string): { year: number; month: number } | null {
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:327',message:'parseMonthLabel entry',data:{monthLabel},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     const match = monthLabel.match(/^(\w+)\s+(\d{4})$/);
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:329',message:'parseMonthLabel regex match',data:{monthLabel,match:match?match[0]:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     if (!match) {
       return null;
     }
@@ -407,9 +380,6 @@ export class CycleService {
     ];
 
     const month = monthNames.indexOf(monthName) + 1;
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:343',message:'parseMonthLabel result',data:{monthLabel,monthName,year,month,monthIndex:monthNames.indexOf(monthName)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     if (month === 0) {
       return null;
     }
@@ -418,9 +388,6 @@ export class CycleService {
   }
 
   private static getNextMonth(year: number, month: number): { year: number; month: number } {
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:351',message:'getNextMonth entry',data:{year,month},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     let nextMonth = month + 1;
     let nextYear = year;
 
@@ -428,10 +395,6 @@ export class CycleService {
       nextMonth = 1;
       nextYear = year + 1;
     }
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/fb9a9584-6af1-4baa-9069-fbe3fcc81587',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'cycle-service.ts:359',message:'getNextMonth result',data:{inputYear:year,inputMonth:month,nextYear,nextMonth},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
-
     return { year: nextYear, month: nextMonth };
   }
 

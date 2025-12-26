@@ -18,7 +18,8 @@
     "test:e2e:debug": "playwright test --debug"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0"
+    "@playwright/test": "^1.40.0",
+    "baseline-browser-mapping": "^2.9.11"
   },
   "packageManager": "pnpm@8.15.6",
   "engines": {

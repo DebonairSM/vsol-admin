@@ -190,6 +190,62 @@ export class ClientInvoiceService {
     return invoiceNumber;
   }
 
+  static async getCreateFromCycleEligibility(cycleId: number): Promise<{
+    canCreate: boolean;
+    invoiceExists: boolean;
+    existingInvoiceId?: number;
+    missingClient: boolean;
+    missingConsultants: Array<{ id: number; name: string }>;
+  }> {
+    const existing = await this.getByCycleId(cycleId);
+    if (existing) {
+      return {
+        canCreate: false,
+        invoiceExists: true,
+        existingInvoiceId: (existing as any).id,
+        missingClient: false,
+        missingConsultants: []
+      };
+    }
+
+    const cycle = await db.query.payrollCycles.findFirst({
+      where: eq(payrollCycles.id, cycleId),
+      with: {
+        lines: {
+          with: {
+            consultant: true
+          }
+        }
+      }
+    });
+
+    if (!cycle) {
+      throw new NotFoundError('Cycle not found');
+    }
+
+    const client = await db.query.clients.findFirst();
+    const missingClient = !client;
+
+    // Filter out terminated consultants before checking eligibility
+    const activeLines = cycle.lines.filter(line => !line.consultant.terminationDate);
+
+    const missingConsultants: Array<{ id: number; name: string }> = [];
+    for (const line of activeLines) {
+      const consultant = line.consultant;
+      const unitPrice = consultant.clientInvoiceUnitPrice;
+      if (unitPrice === null || unitPrice === undefined) {
+        missingConsultants.push({ id: consultant.id, name: consultant.name });
+      }
+    }
+
+    return {
+      canCreate: !missingClient && missingConsultants.length === 0,
+      invoiceExists: false,
+      missingClient,
+      missingConsultants
+    };
+  }
+
   static async createFromCycle(cycleId: number) {
     // Check if invoice already exists for this cycle
     const existing = await this.getByCycleId(cycleId);
@@ -262,7 +318,10 @@ export class ClientInvoiceService {
 
     const missingBilling: Array<{ id: number; name: string }> = [];
 
-    for (const line of cycle.lines) {
+    // Filter out terminated consultants before processing
+    const activeLines = cycle.lines.filter(line => !line.consultant.terminationDate);
+
+    for (const line of activeLines) {
       const consultant = line.consultant;
 
       const serviceName =
@@ -301,7 +360,12 @@ export class ClientInvoiceService {
       const names = missingBilling.map((c) => `${c.name} (id=${c.id})`).join(', ');
       throw new ValidationError(
         `Missing client invoice unit price for ${missingBilling.length} consultant(s): ${names}. ` +
-          `Set Consultant.clientInvoiceUnitPrice (and optionally service name/description) before creating a client invoice from cycle.`
+          `Set Consultant.clientInvoiceUnitPrice (and optionally service name/description) before creating a client invoice from cycle.`,
+        {
+          code: 'MISSING_CLIENT_INVOICE_UNIT_PRICE',
+          cycleId: cycle.id,
+          missingConsultants: missingBilling
+        }
       );
     }
 
