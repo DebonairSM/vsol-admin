@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ClientInvoiceService } from '../services/client-invoice-service';
 import { EmailService } from '../services/email-service';
+import { PDFService } from '../services/pdf-service';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody, validateQuery } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
@@ -144,6 +145,30 @@ router.delete('/:id',
     }
   }
 );
+
+// GET /api/client-invoices/:id/pdf
+router.get('/:id/pdf', async (req, res, next) => {
+  try {
+    const invoiceId = parseInt(req.params.id);
+    if (isNaN(invoiceId)) {
+      return res.status(400).json({ error: 'Invalid invoice ID' });
+    }
+
+    const invoice = await ClientInvoiceService.getById(invoiceId);
+    const pdfBuffer = await PDFService.generateInvoicePDF(invoiceId);
+    const fileName = `invoice-${invoice.invoiceNumber}.pdf`;
+
+    // Check if this is a preview request (inline) or download (attachment)
+    const isPreview = req.query.preview === 'true';
+    const disposition = isPreview ? 'inline' : 'attachment';
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `${disposition}; filename="${fileName}"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;
 

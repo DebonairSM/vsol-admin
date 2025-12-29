@@ -71,6 +71,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Logout function - defined early so it can be used in other callbacks
+  const logout = useCallback((reason: 'manual' | 'timeout' = 'manual') => {
+    clearSessionTimers();
+    apiClient.logout();
+    apiClient.setToken(null);
+    setUser(null);
+    setKeepLoggedIn(false);
+    setSessionExpiresAt(null);
+    setShowTimeoutWarning(false);
+    localStorage.removeItem('keep_logged_in');
+    localStorage.removeItem('session_expires_at');
+    
+    if (reason === 'timeout') {
+      toast({
+        title: 'Session Expired',
+        description: 'You have been logged out due to inactivity for security reasons.',
+        variant: 'destructive',
+      });
+      navigate('/login', { state: { sessionExpired: true } });
+    }
+  }, [clearSessionTimers, navigate, toast]);
+
   // Check session status
   const checkSessionTimeout = useCallback(() => {
     if (!sessionExpiresAt || keepLoggedIn) return;
@@ -249,27 +271,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mustChangePassword: response.mustChangePassword 
     };
   };
-
-  const logout = useCallback((reason: 'manual' | 'timeout' = 'manual') => {
-    clearSessionTimers();
-    apiClient.logout();
-    apiClient.setToken(null);
-    setUser(null);
-    setKeepLoggedIn(false);
-    setSessionExpiresAt(null);
-    setShowTimeoutWarning(false);
-    localStorage.removeItem('keep_logged_in');
-    localStorage.removeItem('session_expires_at');
-    
-    if (reason === 'timeout') {
-      toast({
-        title: 'Session Expired',
-        description: 'You have been logged out due to inactivity for security reasons.',
-        variant: 'destructive',
-      });
-      navigate('/login', { state: { sessionExpired: true } });
-    }
-  }, [clearSessionTimers, navigate, toast]);
 
   const handleStayLoggedIn = useCallback(async () => {
     const refreshed = await refreshSession();

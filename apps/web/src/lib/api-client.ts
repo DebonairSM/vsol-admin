@@ -564,6 +564,68 @@ class ApiClient {
     });
   }
 
+  /**
+   * Fetches a PDF invoice as a blob
+   * @param invoiceId - The invoice ID
+   * @param preview - If true, returns inline (preview), otherwise attachment (download)
+   */
+  async getClientInvoicePDF(invoiceId: number, preview: boolean = false): Promise<Blob> {
+    const url = `${this.baseURL}/client-invoices/${invoiceId}/pdf${preview ? '?preview=true' : ''}`;
+    const headers: Record<string, string> = {
+      'Accept': 'application/pdf',
+    };
+    
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      // Try to refresh token if 401/403
+      if ((response.status === 401 || response.status === 403) && this.token) {
+        try {
+          const refreshToken = this.getRefreshToken();
+          if (refreshToken) {
+            const tokens = await this.refreshAccessToken();
+            this.setToken(tokens.accessToken);
+            this.setRefreshToken(tokens.refreshToken);
+            
+            // Retry with new token
+            headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+            const retryResponse = await fetch(url, {
+              method: 'GET',
+              headers,
+              credentials: 'include',
+            });
+
+            if (retryResponse.ok) {
+              return await retryResponse.blob();
+            }
+          }
+        } catch (refreshError) {
+          // Fall through to error handling
+        }
+      }
+
+      const errorText = await response.text();
+      let errorMessage = 'Failed to fetch PDF';
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.error || errorMessage;
+      } catch {
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.blob();
+  }
+
   // Invoice line item methods
   async getInvoiceLineItems(invoiceId: number) {
     return this.request<any[]>(`/invoice-line-items/invoice/${invoiceId}`);

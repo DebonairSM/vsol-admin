@@ -5,6 +5,7 @@ import { db, clientInvoices } from '../db';
 import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
+import { PDFService } from './pdf-service';
 
 const resend = new Resend(process.env.RESEND_KEY);
 
@@ -23,19 +24,44 @@ let cachedLogoBase64: string | null = null;
  * Logo is cached after first read to improve performance
  */
 async function getLogoBase64(): Promise<string | null> {
-  if (cachedLogoBase64) {
+  if (cachedLogoBase64 !== null) {
     return cachedLogoBase64;
   }
 
   try {
-    const logoPath = path.join(process.cwd(), 'src', 'assets', 'vsol-logo-email.png');
-    const logoBuffer = await fs.readFile(logoPath);
+    const candidateLogoPaths = [
+      // Running from apps/api (dev with tsx watch)
+      path.join(process.cwd(), 'src', 'assets', 'vsol-logo-email.png'),
+      // Running from repo root
+      path.join(process.cwd(), 'apps', 'api', 'src', 'assets', 'vsol-logo-email.png'),
+      // Fallback to the web/public original (monorepo dev convenience)
+      path.join(process.cwd(), 'apps', 'web', 'public', 'vsol-logo-25-c.png'),
+      // Another common cwd case (apps/api) to reach apps/web
+      path.join(process.cwd(), '..', 'web', 'public', 'vsol-logo-25-c.png')
+    ];
+
+    let logoBuffer: Buffer | null = null;
+    for (const candidatePath of candidateLogoPaths) {
+      try {
+        logoBuffer = await fs.readFile(candidatePath);
+        break;
+      } catch {
+        // keep trying other paths
+      }
+    }
+
+    if (!logoBuffer) {
+      cachedLogoBase64 = null;
+      return null;
+    }
+
     const base64String = logoBuffer.toString('base64');
     cachedLogoBase64 = `data:image/png;base64,${base64String}`;
     return cachedLogoBase64;
   } catch (error) {
     // Graceful degradation: if logo file doesn't exist, emails still send without logo
     console.warn('VSol logo not found, emails will be sent without logo:', error);
+    cachedLogoBase64 = null;
     return null;
   }
 }
@@ -341,13 +367,36 @@ Email: admin@vsol.software
 Website: www.vsol.software
     `.trim();
 
+    // Generate PDF invoice
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await PDFService.generateInvoicePDF(data.clientInvoiceId);
+      console.log(`Generated PDF for invoice ${invoice.invoiceNumber}, size: ${pdfBuffer.length} bytes`);
+    } catch (error) {
+      console.error('Failed to generate PDF invoice:', error);
+      throw new ValidationError(`Failed to generate PDF invoice: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    
+    const pdfFileName = `invoice-${invoice.invoiceNumber}.pdf`;
+
+    // Resend expects base64-encoded content for attachments
+    const attachmentContent = pdfBuffer.toString('base64');
+    
+    console.log(`Sending invoice email with PDF attachment: ${pdfFileName} (${attachmentContent.length} chars base64)`);
+
     const result = await resend.emails.send({
       from: 'Portal <noreply@notifications.vsol.software>',
       to: recipientEmail,
       bcc: ADMIN_BCC_EMAIL,
       subject,
       html: htmlBody,
-      text: textBody
+      text: textBody,
+      attachments: [
+        {
+          filename: pdfFileName,
+          content: attachmentContent,
+        }
+      ]
     });
 
     if (result.error) {

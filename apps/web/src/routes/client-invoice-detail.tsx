@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useClientInvoice, useUpdateInvoiceStatus, useDeleteClientInvoice } from '@/hooks/use-client-invoices';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { ArrowLeft, FileText, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, Trash2, Download, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiClient } from '@/lib/api-client';
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -32,7 +33,7 @@ export default function ClientInvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const invoiceId = id ? parseInt(id) : 0;
-  const { data: invoice, isLoading } = useClientInvoice(invoiceId);
+  const { data: invoice, isLoading, refetch: refetchInvoice } = useClientInvoice(invoiceId);
   const updateStatusMutation = useUpdateInvoiceStatus();
   const deleteInvoiceMutation = useDeleteClientInvoice();
 
@@ -43,7 +44,9 @@ export default function ClientInvoiceDetailPage() {
         id: invoice.id,
         status: 'SENT'
       });
-      toast.success('Invoice marked as sent');
+      // Refetch invoice to get updated status
+      await refetchInvoice();
+      toast.success('Invoice marked as sent and PDF attached to email');
     } catch (error: any) {
       toast.error(error.message || 'Failed to update invoice status');
     }
@@ -57,6 +60,51 @@ export default function ClientInvoiceDetailPage() {
       navigate('/client-invoices');
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete invoice');
+    }
+  };
+
+  const handlePreviewPDF = async () => {
+    if (!invoice) return;
+    try {
+      const blob = await apiClient.getClientInvoicePDF(invoice.id, true);
+      
+      // Verify it's actually a PDF
+      if (blob.size === 0) {
+        throw new Error('Invalid PDF response from server');
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      // Note: We don't revoke the URL immediately since it's opened in a new tab
+      // The browser will clean it up when the tab is closed
+    } catch (error: any) {
+      console.error('PDF preview error:', error);
+      toast.error(error.message || 'Failed to preview PDF. Please try downloading instead.');
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!invoice) return;
+    try {
+      const blob = await apiClient.getClientInvoicePDF(invoice.id, false);
+      
+      // Verify it's actually a PDF
+      if (blob.size === 0) {
+        throw new Error('Invalid PDF response from server');
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invoice.invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('PDF downloaded successfully');
+    } catch (error: any) {
+      console.error('PDF download error:', error);
+      toast.error(error.message || 'Failed to download PDF');
     }
   };
 
@@ -174,14 +222,35 @@ export default function ClientInvoiceDetailPage() {
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+              <Button
+                onClick={handlePreviewPDF}
+                variant="default"
+                className="w-full"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Preview PDF
+              </Button>
+              <Button
+                onClick={handleDownloadPDF}
+                variant="outline"
+                className="w-full"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
+              </Button>
               {invoice.status === 'DRAFT' && (
-                <Button
-                  onClick={handleMarkAsSent}
-                  disabled={updateStatusMutation.isPending}
-                  className="w-full"
-                >
-                  {updateStatusMutation.isPending ? 'Updating...' : 'Mark as Sent'}
-                </Button>
+                <>
+                  <Button
+                    onClick={handleMarkAsSent}
+                    disabled={updateStatusMutation.isPending}
+                    className="w-full"
+                  >
+                    {updateStatusMutation.isPending ? 'Updating...' : 'Mark as Sent'}
+                  </Button>
+                  <p className="text-xs text-gray-500 text-center mt-1">
+                    PDF will be automatically attached to the email
+                  </p>
+                </>
               )}
               <Link to={`/cycles/${invoice.cycleId}`} className="block">
                 <Button variant="outline" className="w-full">

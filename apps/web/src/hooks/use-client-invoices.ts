@@ -77,9 +77,23 @@ export function useUpdateInvoiceStatus() {
   return useMutation({
     mutationFn: ({ id, status }: { id: number; status: ClientInvoiceStatus }) =>
       apiClient.updateClientInvoiceStatus(id, status),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['client-invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['client-invoices', variables.id] });
+    onSuccess: async (updatedInvoice, variables) => {
+      // Invalidate all invoice-related queries to ensure UI updates everywhere
+      await queryClient.invalidateQueries({ queryKey: ['client-invoices'] });
+      await queryClient.invalidateQueries({ queryKey: ['client-invoices', variables.id] });
+      
+      // If we have the updated invoice with cycleId, invalidate the cycle-specific query
+      if (updatedInvoice?.cycleId) {
+        await queryClient.invalidateQueries({ 
+          queryKey: ['client-invoices', 'cycle', updatedInvoice.cycleId] 
+        });
+      }
+      
+      // Also invalidate all cycle-specific queries (using exact: false to match all cycle queries)
+      await queryClient.invalidateQueries({ 
+        queryKey: ['client-invoices', 'cycle'],
+        exact: false 
+      });
     },
   });
 }

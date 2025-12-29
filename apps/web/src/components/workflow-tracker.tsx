@@ -533,8 +533,10 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
       const localNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
       await onUpdateWorkflowDate('sendInvoiceDate', localNoon.toISOString());
       
-      toast.success('Invoice marked as sent');
+      // Refetch invoice data to get updated status
       await refetchInvoice();
+      
+      toast.success('Invoice marked as sent and PDF attached to email');
       setEditingStep(null);
     } catch (error: any) {
       console.error('Failed to mark invoice as sent:', error);

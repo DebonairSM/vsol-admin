@@ -29,6 +29,7 @@
     "@libsql/client": "^0.4.0",
     "@types/file-type": "^10.9.3",
     "@types/jspdf": "^2.0.0",
+    "@types/pdfkit": "^0.17.4",
     "@types/supertest": "^6.0.3",
     "@vsol-admin/shared": "workspace:*",
     "argon2": "^0.31.2",
@@ -48,6 +49,7 @@
     "jspdf": "^3.0.3",
     "multer": "^2.0.2",
     "node-cron": "^3.0.3",
+    "pdfkit": "^0.17.2",
     "resend": "^6.6.0",
     "supertest": "^7.1.4",
     "zod": "^3.22.4"
