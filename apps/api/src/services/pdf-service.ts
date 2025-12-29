@@ -156,29 +156,27 @@ export class PDFService {
         // Try to add logo (await before starting document generation)
         const logoBuffer = await PDFService.getLogoBuffer();
         
-        // Right column: Logo in top right corner
+        // Left column: Logo in top left corner
         if (logoBuffer) {
           try {
             const logoWidth = 120;
             const logoHeight = 40;
-            // Position logo in top right corner
-            const logoX = pageWidth - margin - logoWidth;
-            doc.image(logoBuffer, logoX, rightY, { 
+            // Position logo in top left corner
+            const logoX = margin;
+            doc.image(logoBuffer, logoX, leftY, { 
               width: logoWidth,
               height: logoHeight,
               fit: [logoWidth, logoHeight]
             });
-            // Move invoice details below logo
-            rightY += logoHeight + 10;
+            // Move company info below logo
+            leftY += logoHeight + 10;
           } catch (error) {
             // If logo fails to load, continue without it
             console.warn('Failed to load logo in PDF:', error);
           }
         }
         
-        // Left column: Company info
-        doc.fontSize(20).font('Helvetica-Bold').text('VSol Software', margin, leftY);
-        leftY += 24;
+        // Left column: Company info (no "VSol Software" text)
 
         // Company contact info (compact)
         doc.fontSize(8).font('Helvetica').fillColor('#666666');
