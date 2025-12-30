@@ -221,7 +221,7 @@ Website: www.vsol.software
 
     try {
       const result = await resend.emails.send({
-        from: 'Portal <noreply@notifications.vsol.software>',
+        from: 'VSol Software <noreply@notifications.vsol.software>',
         to: recipientEmail,
         bcc: ADMIN_BCC_EMAIL,
         subject: subject,
@@ -385,7 +385,7 @@ Website: www.vsol.software
     console.log(`Sending invoice email with PDF attachment: ${pdfFileName} (${attachmentContent.length} chars base64)`);
 
     const result = await resend.emails.send({
-      from: 'Portal <noreply@notifications.vsol.software>',
+      from: 'VSol Software <noreply@notifications.vsol.software>',
       to: recipientEmail,
       bcc: ADMIN_BCC_EMAIL,
       subject,
@@ -503,7 +503,7 @@ Website: www.vsol.software
 
     try {
       const result = await resend.emails.send({
-        from: 'Portal <noreply@notifications.vsol.software>',
+        from: 'VSol Software <noreply@notifications.vsol.software>',
         to: data.email,
         bcc: ADMIN_BCC_EMAIL,
         subject: subject,
