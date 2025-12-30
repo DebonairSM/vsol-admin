@@ -487,6 +487,7 @@ export class PDFService {
           // Subtle divider before footer
           doc.moveTo(margin, footerY - 8).lineTo(pageWidth - margin, footerY - 8).stroke('#e5e5e5');
           doc.fontSize(8).font('Helvetica').fillColor('#888888');
+          doc.text('Visual Solutions Software Consultants LLC', margin, footerY - 12, { align: 'center', width: contentWidth });
           doc.text('Thank you for your business!', margin, footerY, { align: 'center', width: contentWidth });
           doc.fillColor('#000000');
         }
