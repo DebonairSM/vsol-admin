@@ -18,7 +18,9 @@ export default defineConfig({
       'vsol-aurora.home',
       'vsol.home',
       'localhost',
-      'vsol-admin.ngrok.app'
+      'vsol-admin.ngrok.app',
+      'portal.vsol.software',
+      'api.portal.vsol.software'
     ],
     proxy: {
       '/api': {
