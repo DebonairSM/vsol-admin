@@ -68,7 +68,7 @@ For production access via `portal.vsol.software`:
    cloudflared tunnel create portal-vsol
    ```
 
-4. Create a configuration file at `%USERPROFILE%\.cloudflared\config.yml`:
+4. Create a configuration file at `%USERPROFILE%\.cloudflared\config-portal.yml`:
    ```yaml
    tunnel: <tunnel-id>
    credentials-file: %USERPROFILE%\.cloudflared\<tunnel-id>.json
@@ -97,15 +97,24 @@ For production access via `portal.vsol.software`:
    VITE_API_URL=https://api.portal.vsol.software/api
    ```
 
-7. Start the tunnel:
-   ```powershell
-   cloudflared tunnel run portal-vsol
-   ```
-
-8. Start the application servers:
+7. Start the application servers:
    ```powershell
    pnpm dev
    ```
+
+8. Start the tunnel using the PowerShell script:
+   ```powershell
+   # Option 1: Use the provided script (recommended)
+   & "$env:USERPROFILE\.cloudflared\start-portal-tunnel.ps1"
+   
+   # Option 2: Manual start
+   cloudflared tunnel --config C:\Users\romme\.cloudflared\config-portal.yml run
+   ```
+
+   The script will:
+   - Check if web app (port 5173) and API (port 2020) are running
+   - Display warnings if services are not available
+   - Start the tunnel with the correct configuration file
 
 The application will be accessible at https://portal.vsol.software
 
