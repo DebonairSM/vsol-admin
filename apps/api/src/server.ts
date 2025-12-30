@@ -100,6 +100,14 @@ function getCorsOrigin(): string | string[] | ((origin: string | undefined) => b
         return true;
       }
       
+      // Always allow Cloudflare Tunnel domains (portal.vsol.software, api.portal.vsol.software)
+      if (origin.match(/^https:\/\/(portal|api\.portal)\.vsol\.software$/)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ CORS: Allowing Cloudflare Tunnel origin: ${origin}`);
+        }
+        return true;
+      }
+      
       return false;
     };
   }
@@ -128,6 +136,14 @@ function getCorsOrigin(): string | string[] | ((origin: string | undefined) => b
     if (origin.match(/^https:\/\/[a-z0-9-]+\.ngrok-free\.(io|app)$/)) {
       if (process.env.NODE_ENV === 'development') {
         console.log(`✅ CORS: Allowing ngrok-free origin: ${origin}`);
+      }
+      return true;
+    }
+    
+    // Always allow Cloudflare Tunnel domains (portal.vsol.software, api.portal.vsol.software)
+    if (origin.match(/^https:\/\/(portal|api\.portal)\.vsol\.software$/)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`✅ CORS: Allowing Cloudflare Tunnel origin: ${origin}`);
       }
       return true;
     }

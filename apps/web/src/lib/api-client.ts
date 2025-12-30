@@ -21,10 +21,16 @@ if (!API_BASE_URL || API_BASE_URL === '/api') {
     // Never auto-detect for HTTPS domains - require explicit VITE_API_URL configuration
     // This ensures Cloudflare Tunnel and other HTTPS setups work correctly
     if (protocol === 'https:') {
-      if (!import.meta.env.VITE_API_URL) {
+      // Auto-detect Cloudflare Tunnel domain (portal.vsol.software -> api.portal.vsol.software)
+      if (hostname === 'portal.vsol.software') {
+        API_BASE_URL = 'https://api.portal.vsol.software/api';
+        console.log(`[API Client] Detected Cloudflare Tunnel domain, using API URL: ${API_BASE_URL}`);
+      } else if (!import.meta.env.VITE_API_URL) {
         console.warn(`[API Client] HTTPS domain detected (${hostname}) but VITE_API_URL is not set. Defaulting to /api proxy, which may not work. Please set VITE_API_URL environment variable.`);
+        API_BASE_URL = '/api';
+      } else {
+        API_BASE_URL = '/api';
       }
-      API_BASE_URL = '/api';
     } else if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
       // Remote IP access (HTTP only) - construct API URL using same hostname
       API_BASE_URL = `http://${hostname}:2020/api`;
