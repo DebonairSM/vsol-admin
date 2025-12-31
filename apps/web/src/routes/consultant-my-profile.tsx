@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ export default function ConsultantMyProfilePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   const { data: profile, isLoading } = useQuery({
     queryKey: ['consultant-profile'],
@@ -108,12 +110,19 @@ export default function ConsultantMyProfilePage() {
     onSuccess: () => {
       toast({
         title: 'Password Changed',
-        description: 'Your password has been changed successfully.',
+        description: 'Your password has been changed successfully. Please log in again.',
       });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setPasswordError('');
+
+      // Clear any stored tokens
+      apiClient.setToken(null);
+      apiClient.setRefreshToken(null);
+
+      // Redirect to login
+      navigate('/login', {
+        state: {
+          message: 'Password changed successfully. Please log in with your new password.'
+        }
+      });
     },
     onError: (error: any) => {
       const errorMessage = error?.response?.data?.error || error?.message || 'Failed to change password';

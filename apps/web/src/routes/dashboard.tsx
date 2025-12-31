@@ -53,10 +53,10 @@ export default function DashboardPage() {
   
   // Group all calendar events by date and type
   const eventsByDate = useMemo(() => {
-    if (!calendarEvents?.data) return new Map<string, CalendarEventOccurrence[]>();
+    if (!calendarEvents) return new Map<string, CalendarEventOccurrence[]>();
     
     const map = new Map<string, CalendarEventOccurrence[]>();
-    calendarEvents.data.forEach((event: CalendarEventOccurrence) => {
+    calendarEvents.forEach((event: CalendarEventOccurrence) => {
       const dateStr = event.date.toISOString().split('T')[0];
       const existing = map.get(dateStr) || [];
       map.set(dateStr, [...existing, event]);
@@ -66,8 +66,8 @@ export default function DashboardPage() {
   
   // Get dates with events for calendar modifiers
   const vacationDates = useMemo(() => {
-    if (!calendarEvents?.data) return [];
-    return calendarEvents.data
+    if (!calendarEvents) return [];
+    return calendarEvents
       .filter(e => e.type === 'vacation')
       .map(e => {
         const d = new Date(e.date);
@@ -76,8 +76,8 @@ export default function DashboardPage() {
   }, [calendarEvents]);
 
   const ceremonyDates = useMemo(() => {
-    if (!calendarEvents?.data) return [];
-    return calendarEvents.data
+    if (!calendarEvents) return [];
+    return calendarEvents
       .filter(e => e.type === 'ceremony')
       .map(e => {
         const d = new Date(e.date);
@@ -86,8 +86,8 @@ export default function DashboardPage() {
   }, [calendarEvents]);
 
   const holidayDates = useMemo(() => {
-    if (!calendarEvents?.data) return [];
-    return calendarEvents.data
+    if (!calendarEvents) return [];
+    return calendarEvents
       .filter(e => e.type === 'holiday')
       .map(e => {
         const d = new Date(e.date);
@@ -367,19 +367,19 @@ export default function DashboardPage() {
                   {vacationDates.length > 0 && (
                     <div>
                       <span className="inline-block w-3 h-3 bg-blue-100 rounded mr-1"></span>
-                      Days with vacations
+                      Vacations
                     </div>
                   )}
                   {ceremonyDates.length > 0 && (
                     <div>
                       <span className="inline-block w-3 h-3 bg-green-100 rounded mr-1"></span>
-                      Days with ceremonies
+                      Ceremonies
                     </div>
                   )}
                   {holidayDates.length > 0 && (
                     <div>
                       <span className="inline-block w-3 h-3 bg-red-100 rounded mr-1"></span>
-                      Holidays
+                      Company holidays
                     </div>
                   )}
                 </div>
@@ -405,7 +405,7 @@ export default function DashboardPage() {
                             <div className="space-y-2">
                               {events.filter(e => e.type === 'vacation').map((event, idx) => (
                                 <div key={`vacation-${idx}`} className="text-sm p-2 bg-blue-50 rounded">
-                                  <div className="font-medium text-blue-900">Vacation: {typeof event.metadata === 'object' && 'consultantName' in event.metadata ? event.metadata.consultantName : 'Unknown'}</div>
+                                  <div className="font-medium text-blue-900">Vacation: {event.title}</div>
                                   {typeof event.metadata === 'object' && 'notes' in event.metadata && event.metadata.notes && (
                                     <div className="text-xs text-blue-700">{event.metadata.notes}</div>
                                   )}

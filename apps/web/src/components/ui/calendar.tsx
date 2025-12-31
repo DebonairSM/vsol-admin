@@ -1,11 +1,50 @@
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import { format } from "date-fns"
+import { DayPicker, type CaptionProps, useNavigation } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
+
+function CalendarCaption({ displayMonth }: CaptionProps) {
+  const { goToMonth, nextMonth, previousMonth } = useNavigation()
+
+  return (
+    <div className="flex items-center justify-center gap-2 pt-1">
+      <button
+        type="button"
+        aria-label="Go to previous month"
+        disabled={!previousMonth}
+        onClick={() => previousMonth && goToMonth(previousMonth)}
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 disabled:opacity-25"
+        )}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+
+      <div className="min-w-[10rem] text-center text-sm font-medium">
+        {format(displayMonth, "LLLL yyyy")}
+      </div>
+
+      <button
+        type="button"
+        aria-label="Go to next month"
+        disabled={!nextMonth}
+        onClick={() => nextMonth && goToMonth(nextMonth)}
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 disabled:opacity-25"
+        )}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
 
 function Calendar({
   className,
@@ -23,17 +62,8 @@ function Calendar({
         // mapped at runtime, so weekday labels collapse without these v9 keys.
         months: "flex flex-col sm:flex-row gap-4",
         month: "space-y-4",
-        month_caption: "flex justify-center pt-1 relative items-center",
+        month_caption: "flex justify-center",
         caption_label: "text-sm font-medium",
-        nav: "space-x-1 flex items-center",
-        button_previous: cn(
-          buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1"
-        ),
-        button_next: cn(
-          buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1"
-        ),
         month_grid: "w-full border-collapse",
         weekdays: "flex w-full",
         weekday:
@@ -55,12 +85,7 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Chevron: ({ orientation }) => {
-          if (orientation === "left") {
-            return <ChevronLeft className="h-4 w-4" />;
-          }
-          return <ChevronRight className="h-4 w-4" />;
-        },
+        Caption: CalendarCaption,
       }}
       {...props}
     />
