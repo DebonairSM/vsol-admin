@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { HolidayService } from '../services/holiday-service';
 import { validateBody } from '../middleware/validate';
 import { updateHolidaySchema } from '@vsol-admin/shared';
@@ -7,8 +7,8 @@ import { auditMiddleware } from '../middleware/audit';
 
 const router: Router = Router();
 
-// All routes require authentication
-router.use(authenticateToken);
+// All routes require admin authentication (consultants have read-only access via /api/consultant/holidays)
+router.use(authenticateAdmin);
 
 // GET /api/holidays - Get holidays for year (defaults to current year)
 router.get('/', async (req, res, next) => {

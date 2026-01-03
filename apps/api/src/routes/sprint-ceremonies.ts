@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateBody } from '../middleware/validate';
 import { SprintCeremonyService } from '../services/sprint-ceremony-service';
 import { createSprintCeremonySchema, updateSprintCeremonySchema } from '@vsol-admin/shared';
@@ -7,8 +7,8 @@ import { auditMiddleware } from '../middleware/audit';
 
 const router: Router = Router();
 
-// All routes require authentication
-router.use(authenticateToken);
+// All routes require admin authentication (consultants have read-only access via /api/consultant/ceremonies)
+router.use(authenticateAdmin);
 
 // GET /api/sprint-ceremonies - List ceremonies with optional date range filter
 router.get('/', async (req, res, next) => {

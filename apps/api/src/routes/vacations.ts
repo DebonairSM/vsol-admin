@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { VacationService } from '../services/vacation-service';
 import { authenticateToken } from '../middleware/auth';
+import { requireAdmin } from '../middleware/admin-auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { createVacationDaySchema, createVacationRangeSchema, updateVacationDaySchema } from '@vsol-admin/shared';
@@ -67,8 +68,8 @@ router.get('/balances', async (req, res, next) => {
   }
 });
 
-// GET /api/vacations/consultant/:id - Get vacations for a specific consultant
-router.get('/consultant/:id', async (req, res, next) => {
+// GET /api/vacations/consultant/:id - Get vacations for a specific consultant (admin only)
+router.get('/consultant/:id', requireAdmin, async (req, res, next) => {
   try {
     const consultantId = parseInt(req.params.id);
     const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
@@ -81,8 +82,8 @@ router.get('/consultant/:id', async (req, res, next) => {
   }
 });
 
-// GET /api/vacations/consultant/:id/balance - Get vacation balance for a consultant
-router.get('/consultant/:id/balance', async (req, res, next) => {
+// GET /api/vacations/consultant/:id/balance - Get vacation balance for a consultant (admin only)
+router.get('/consultant/:id/balance', requireAdmin, async (req, res, next) => {
   try {
     const consultantId = parseInt(req.params.id);
     const referenceDate = req.query.referenceDate ? new Date(req.query.referenceDate as string) : new Date();

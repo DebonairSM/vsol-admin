@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { WorkHoursService } from '../services/work-hours-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { importWorkHoursSchema } from '@vsol-admin/shared';
 
 const router: Router = Router();
 
-// All work hours routes require authentication
-router.use(authenticateToken);
+// All work hours routes require admin authentication
+router.use(authenticateAdmin);
 
 // GET /api/work-hours
 router.get('/', async (req, res, next) => {

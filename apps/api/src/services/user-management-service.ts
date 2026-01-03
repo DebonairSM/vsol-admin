@@ -11,8 +11,8 @@ const DEFAULT_CONSULTANT_PASSWORD = process.env.CONSULTANT_DEFAULT_PASSWORD || '
  * Get login URL from environment or default to localhost
  */
 function getLoginUrl(): string {
-  // Priority: APP_LOGIN_URL env var > localhost
-  return process.env.APP_LOGIN_URL || 'http://localhost:5173';
+  // Priority: APP_LOGIN_URL env var > production portal URL
+  return process.env.APP_LOGIN_URL || 'https://portal.vsol.software/';
 }
 
 export class UserManagementService {

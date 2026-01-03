@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validateBody } from '../middleware/validate';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { auditMiddleware } from '../middleware/audit';
 import { updateBonusWorkflowSchema } from '@vsol-admin/shared';
 import { BonusWorkflowService } from '../services/bonus-workflow-service';
@@ -8,7 +8,7 @@ import { BonusWorkflowService } from '../services/bonus-workflow-service';
 const router: Router = Router();
 
 // Get bonus workflow for a cycle
-router.get('/cycles/:cycleId/bonus', authenticateToken, async (req, res, next) => {
+router.get('/cycles/:cycleId/bonus', authenticateAdmin, async (req, res, next) => {
   try {
     const cycleId = parseInt(req.params.cycleId);
     const workflow = await BonusWorkflowService.getByCycleId(cycleId);
@@ -20,7 +20,7 @@ router.get('/cycles/:cycleId/bonus', authenticateToken, async (req, res, next) =
 
 // Create bonus workflow for a cycle
 router.post('/cycles/:cycleId/bonus',
-  authenticateToken,
+  authenticateAdmin,
   auditMiddleware('CREATE_BONUS_WORKFLOW', 'BONUS_WORKFLOW'),
   async (req, res, next) => {
     try {
@@ -35,7 +35,7 @@ router.post('/cycles/:cycleId/bonus',
 
 // Update bonus workflow
 router.patch('/cycles/:cycleId/bonus',
-  authenticateToken,
+  authenticateAdmin,
   validateBody(updateBonusWorkflowSchema),
   auditMiddleware('UPDATE_BONUS_WORKFLOW', 'BONUS_WORKFLOW'),
   async (req, res, next) => {
@@ -50,7 +50,7 @@ router.patch('/cycles/:cycleId/bonus',
 );
 
 // Generate bonus email content
-router.post('/cycles/:cycleId/bonus/generate-email', authenticateToken, async (req, res, next) => {
+router.post('/cycles/:cycleId/bonus/generate-email', authenticateAdmin, async (req, res, next) => {
   try {
     const cycleId = parseInt(req.params.cycleId);
     const consultantId = req.body.consultantId;

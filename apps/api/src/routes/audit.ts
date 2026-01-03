@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { eq, and } from 'drizzle-orm';
 import { db, auditLogs } from '../db';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateQuery } from '../middleware/validate';
 import { z } from 'zod';
 
 const router: Router = Router();
 
-// All audit routes require authentication
-router.use(authenticateToken);
+// All audit routes require admin authentication
+router.use(authenticateAdmin);
 
 const querySchema = z.object({
   cycleId: z.string().transform(Number).optional(),

@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { CompanyService } from '../services/company-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { updateCompanySchema } from '@vsol-admin/shared';
 
 const router: Router = Router();
 
-// All company routes require authentication
-router.use(authenticateToken);
+// All company routes require admin authentication
+router.use(authenticateAdmin);
 
 // GET /api/companies
 router.get('/', async (req, res, next) => {

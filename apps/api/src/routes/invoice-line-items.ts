@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { InvoiceLineItemService } from '../services/invoice-line-item-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { createInvoiceLineItemSchema, updateInvoiceLineItemSchema } from '@vsol-admin/shared';
 
 const router: Router = Router();
 
-// All invoice line item routes require authentication
-router.use(authenticateToken);
+// All invoice line item routes require admin authentication
+router.use(authenticateAdmin);
 
 // GET /api/invoice-line-items/invoice/:invoiceId
 router.get('/invoice/:invoiceId', async (req, res, next) => {

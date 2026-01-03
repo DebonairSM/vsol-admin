@@ -4,7 +4,7 @@ import { EquipmentService } from '../services/equipment-service';
 import { TerminationService } from '../services/termination-service';
 import { DocumentService } from '../services/document-service';
 import { ContractService } from '../services/contract-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { uploadConsultantDocument, validateFileContent } from '../middleware/upload';
@@ -20,8 +20,8 @@ import {
 
 const router: Router = Router();
 
-// All consultant routes require authentication
-router.use(authenticateToken);
+// All consultant routes require admin authentication
+router.use(authenticateAdmin);
 
 // GET /api/consultants
 router.get('/', async (req, res, next) => {

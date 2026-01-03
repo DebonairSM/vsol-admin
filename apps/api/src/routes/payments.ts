@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { PaymentService } from '../services/payment-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateBody, validateQuery } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { createPaymentSchema } from '@vsol-admin/shared';
@@ -8,8 +8,8 @@ import { z } from 'zod';
 
 const router: Router = Router();
 
-// All payment routes require authentication
-router.use(authenticateToken);
+// All payment routes require admin authentication
+router.use(authenticateAdmin);
 
 const querySchema = z.object({
   cycleId: z.string().transform(Number).optional()

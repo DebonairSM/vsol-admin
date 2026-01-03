@@ -12,7 +12,7 @@ const DEFAULT_PASSWORD = process.env.CONSULTANT_DEFAULT_PASSWORD || 'ChangeMe123
  * Get login URL from environment or default to localhost
  */
 function getLoginUrl(): string {
-  return process.env.APP_LOGIN_URL || 'http://localhost:5173';
+  return process.env.APP_LOGIN_URL || 'https://portal.vsol.software/';
 }
 
 /**

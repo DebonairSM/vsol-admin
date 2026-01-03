@@ -1,13 +1,13 @@
 import { Router, type Request, type Response } from 'express';
 import { SettingsService } from '../services/settings-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateBody } from '../middleware/validate';
 import { updateSettingsSchema, settingSchema } from '@vsol-admin/shared';
 
 const router: Router = Router();
 
-// All settings routes require authentication
-router.use(authenticateToken);
+// All settings routes require admin authentication
+router.use(authenticateAdmin);
 
 // GET /api/settings
 router.get('/', async (req, res, next) => {

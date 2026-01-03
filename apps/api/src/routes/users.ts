@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth';
-import { ForbiddenError } from '../middleware/errors';
+import { requireAdmin } from '../middleware/admin-auth';
 import { UserManagementService } from '../services/user-management-service';
 import { validateBody } from '../middleware/validate';
 import { z } from 'zod';
@@ -9,14 +9,6 @@ const router: Router = Router();
 
 // All routes require admin authentication
 router.use(authenticateToken);
-
-// Middleware to ensure user is admin
-function requireAdmin(req: any, res: any, next: any) {
-  if (req.user?.role !== 'admin') {
-    throw new ForbiddenError('Admin access required');
-  }
-  next();
-}
 
 // GET /api/users/consultants - List all consultant user accounts
 router.get('/consultants', requireAdmin, async (req, res, next) => {

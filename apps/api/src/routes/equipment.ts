@@ -3,8 +3,12 @@ import { EquipmentService } from '../services/equipment-service';
 import { validateBody } from '../middleware/validate';
 import { createEquipmentSchema, updateEquipmentSchema } from '@vsol-admin/shared';
 import { auditMiddleware } from '../middleware/audit';
+import { authenticateAdmin } from '../middleware/admin-auth';
 
 const router: Router = Router();
+
+// All equipment routes require admin authentication
+router.use(authenticateAdmin);
 
 // GET /equipment - List all equipment
 router.get('/', async (req, res, next) => {

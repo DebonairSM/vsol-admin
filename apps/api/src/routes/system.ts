@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { generalRateLimiter, writeRateLimiter } from '../middleware/rate-limit';
 import {
   getBackupDirectory,
@@ -13,8 +13,8 @@ import {
 
 const router: Router = Router();
 
-// All system routes require authentication
-router.use(authenticateToken);
+// All system routes require admin authentication
+router.use(authenticateAdmin);
 
 /**
  * GET /api/system/backup-status

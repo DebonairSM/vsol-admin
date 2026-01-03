@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { ClientInvoiceService } from '../services/client-invoice-service';
 import { EmailService } from '../services/email-service';
 import { PDFService } from '../services/pdf-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateBody, validateQuery } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { createClientInvoiceSchema, updateClientInvoiceSchema, updateClientInvoiceStatusSchema } from '@vsol-admin/shared';
@@ -10,8 +10,8 @@ import { z } from 'zod';
 
 const router: Router = Router();
 
-// All invoice routes require authentication
-router.use(authenticateToken);
+// All invoice routes require admin authentication
+router.use(authenticateAdmin);
 
 const querySchema = z.object({
   cycleId: z.string().transform(Number).optional(),

@@ -1,11 +1,11 @@
 import { Router, type Request, type Response } from 'express';
 import { TimeDoctorService } from '../services/timedoctor-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 
 const router: Router = Router();
 
-// All Time Doctor routes require authentication
-router.use(authenticateToken);
+// All Time Doctor routes require admin authentication
+router.use(authenticateAdmin);
 
 /**
  * GET /api/time-doctor/test

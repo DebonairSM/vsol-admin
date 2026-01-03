@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { CycleService } from '../services/cycle-service';
 import { LineItemService } from '../services/line-item-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { createCycleSchema, updateCycleSchema, updateLineItemSchema, calculatePaymentSchema, sendReceiptSchema } from '@vsol-admin/shared';
@@ -9,8 +9,8 @@ import { EmailService } from '../services/email-service';
 
 const router: Router = Router();
 
-// All cycle routes require authentication
-router.use(authenticateToken);
+// All cycle routes require admin authentication
+router.use(authenticateAdmin);
 
 // GET /api/cycles
 router.get('/', async (req, res, next) => {

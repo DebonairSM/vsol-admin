@@ -470,7 +470,7 @@ Website: www.vsol.software
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
     ${logoHtml}
-    <h2 style="color: #2c3e50; margin-top: 0;">Welcome to Portal</h2>
+    <h2 style="color: #2c3e50; margin-top: 0;">Welcome to the Portal</h2>
     <p>Dear ${data.consultantName},</p>
     <p>Your account has been created for the Portal. You can now log in to upload invoices and manage your profile information.</p>
     
@@ -507,7 +507,7 @@ Website: www.vsol.software
 
     // Plain text version for email clients that don't support HTML
     const text = `
-Welcome to Portal
+Welcome to the Portal
 
 Dear ${data.consultantName},
 

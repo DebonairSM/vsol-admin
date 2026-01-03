@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { ClientService } from '../services/client-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { validateBody } from '../middleware/validate';
 import { auditMiddleware } from '../middleware/audit';
 import { createClientSchema, updateClientSchema } from '@vsol-admin/shared';
 
 const router: Router = Router();
 
-// All client routes require authentication
-router.use(authenticateToken);
+// All client routes require admin authentication
+router.use(authenticateAdmin);
 
 // GET /api/clients
 router.get('/', async (req, res, next) => {

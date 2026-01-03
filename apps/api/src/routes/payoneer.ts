@@ -1,11 +1,11 @@
 import { Router, type Request, type Response } from 'express';
 import { PayoneerService } from '../services/payoneer-service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 
 const router: Router = Router();
 
-// All Payoneer routes require authentication
-router.use(authenticateToken);
+// All Payoneer routes require admin authentication
+router.use(authenticateAdmin);
 
 /**
  * GET /api/payoneer/test

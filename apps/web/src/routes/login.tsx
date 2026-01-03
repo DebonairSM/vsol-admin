@@ -69,7 +69,7 @@ export default function LoginPage() {
             Portal
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Golden Sheet Management System
+            Our complete Business Management Solution
           </p>
         </div>
 

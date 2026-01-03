@@ -1,7 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateAdmin } from '../middleware/admin-auth';
 import { writeRateLimiter } from '../middleware/rate-limit';
 import { validateBody } from '../middleware/validate';
 import { z } from 'zod';
@@ -11,8 +11,8 @@ import { getBackupsDirectory, getDatabasePath, parseTimestampFromFilename } from
 
 const router: Router = Router();
 
-// All backup routes require authentication and rate limiting
-router.use(authenticateToken);
+// All backup routes require admin authentication and rate limiting
+router.use(authenticateAdmin);
 router.use(writeRateLimiter);
 
 // Schema for restore request
