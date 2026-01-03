@@ -90,16 +90,20 @@ export class CycleService {
       : null;
 
     // Create cycle and line items in transaction
-    const result = await db.transaction(async (tx) => {
+    const result = db.transaction((tx) => {
       // Create the cycle
-      const [cycle] = await tx.insert(payrollCycles).values({
+      const cycle = tx.insert(payrollCycles).values({
         monthLabel: data.monthLabel,
         globalWorkHours: data.globalWorkHours || null,
         omnigoBonus: data.omnigoBonus || null,
         invoiceBonus: data.invoiceBonus || null,
         payoneerBalanceCarryover: newCarryover !== null ? newCarryover : null,
         payoneerBalanceApplied: null
-      }).returning();
+      }).returning().get();
+
+      if (!cycle) {
+        throw new ValidationError('Failed to create payroll cycle');
+      }
 
       // Create line items for all active consultants
       const lineItemsData = activeConsultants.map(consultant => ({
@@ -109,7 +113,7 @@ export class CycleService {
         bonusAdvance: consultant.yearlyBonus || null // Pre-fill yearly bonus if set
       }));
 
-      await tx.insert(cycleLineItems).values(lineItemsData);
+      tx.insert(cycleLineItems).values(lineItemsData);
 
       return cycle;
     });

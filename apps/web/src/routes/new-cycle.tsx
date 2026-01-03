@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCreateCycle, useCycles } from '@/hooks/use-cycles';
 import { useSettings } from '@/hooks/use-settings';
 import { useWorkHoursByYear } from '@/hooks/use-work-hours';
-import { getMonthlyWorkHoursForYear, type MonthlyWorkHoursData } from '@/lib/work-hours';
+import { getMonthlyWorkHoursForYear } from '@/lib/work-hours';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,17 +24,14 @@ export default function NewCyclePage() {
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
   
-  // Fetch work hours from API for current year and next year (for December -> January)
+  // Fetch work hours from API for current year
   const { data: apiWorkHours = [], isLoading: isLoadingWorkHours, error: workHoursError } = useWorkHoursByYear(currentYear);
-  const { data: nextYearApiWorkHours = [] } = useWorkHoursByYear(currentYear + 1);
   
   // Fallback to calculated work hours if API returns empty (for backwards compatibility)
   const calculatedWorkHours = useMemo(() => getMonthlyWorkHoursForYear(currentYear), [currentYear]);
-  const calculatedNextYearWorkHours = useMemo(() => getMonthlyWorkHoursForYear(currentYear + 1), [currentYear]);
   
   // Use API data if available, otherwise fall back to calculated
   const monthlyWorkHours = apiWorkHours.length > 0 ? apiWorkHours : calculatedWorkHours;
-  const nextYearWorkHours = nextYearApiWorkHours.length > 0 ? nextYearApiWorkHours : calculatedNextYearWorkHours;
 
   const [formData, setFormData] = useState({
     monthLabel: '',
@@ -135,7 +132,7 @@ export default function NewCyclePage() {
     }
   };
 
-  const handleInputChange = (field: keyof typeof formData, value: string | number) => {
+  const handleInputChange = (field: keyof typeof formData, value: string | number | undefined) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -291,7 +288,10 @@ export default function NewCyclePage() {
                 min="0"
                 step="0.01"
                 value={formData.invoiceBonus ?? ''}
-                onChange={(e) => handleInputChange('invoiceBonus', e.target.value === '' ? undefined : parseFloat(e.target.value) || 0)}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                  handleInputChange('invoiceBonus', value !== undefined && !isNaN(value) ? value : undefined);
+                }}
                 placeholder="0.00"
               />
               <p className="text-xs text-gray-500">

@@ -208,7 +208,14 @@ export interface FileUpload {
   filename: string;
   mimetype: string;
   size: number;
-  buffer: Buffer;
+  /**
+   * Raw file bytes.
+   *
+   * Note: Use `Uint8Array` instead of Node's `Buffer` so this shared type
+   * doesn't assume Node globals when consumed in the browser.
+   * (In Node.js, `Buffer` is a `Uint8Array` subclass.)
+   */
+  buffer: Uint8Array;
 }
 
 export interface ConsultantEquipment {

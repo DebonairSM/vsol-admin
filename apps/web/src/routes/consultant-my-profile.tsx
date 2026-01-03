@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/api-client';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,24 +56,25 @@ export default function ConsultantMyProfilePage() {
   // Initialize form data when profile loads
   useEffect(() => {
     if (profile) {
+      const p = profile as any; // Profile is sanitized consultant data
       setFormData({
-        email: profile.email || null,
-        address: profile.address || null,
-        neighborhood: profile.neighborhood || null,
-        city: profile.city || null,
-        state: profile.state || null,
-        cep: profile.cep || null,
-        phone: profile.phone || null,
-        birthDate: profile.birthDate ? new Date(profile.birthDate).toISOString() : null,
-        shirtSize: profile.shirtSize || null,
-        companyLegalName: profile.companyLegalName || null,
-        companyTradeName: profile.companyTradeName || null,
-        cnpj: profile.cnpj || null,
-        payoneerID: profile.payoneerID || null,
-        emergencyContactName: profile.emergencyContactName || null,
-        emergencyContactRelation: profile.emergencyContactRelation || null,
-        emergencyContactPhone: profile.emergencyContactPhone || null,
-        cpf: profile.cpf || null,
+        email: p.email || null,
+        address: p.address || null,
+        neighborhood: p.neighborhood || null,
+        city: p.city || null,
+        state: p.state || null,
+        cep: p.cep || null,
+        phone: p.phone || null,
+        birthDate: p.birthDate ? new Date(p.birthDate).toISOString() : null,
+        shirtSize: p.shirtSize || null,
+        companyLegalName: p.companyLegalName || null,
+        companyTradeName: p.companyTradeName || null,
+        cnpj: p.cnpj || null,
+        payoneerID: p.payoneerID || null,
+        emergencyContactName: p.emergencyContactName || null,
+        emergencyContactRelation: p.emergencyContactRelation || null,
+        emergencyContactPhone: p.emergencyContactPhone || null,
+        cpf: p.cpf || null,
       });
       setHasChanges(false);
       setIsEditing(false);
@@ -180,24 +181,25 @@ export default function ConsultantMyProfilePage() {
 
   const handleCancel = () => {
     if (profile) {
+      const p = profile as any; // Profile is sanitized consultant data
       setFormData({
-        email: profile.email || null,
-        address: profile.address || null,
-        neighborhood: profile.neighborhood || null,
-        city: profile.city || null,
-        state: profile.state || null,
-        cep: profile.cep || null,
-        phone: profile.phone || null,
-        birthDate: profile.birthDate ? new Date(profile.birthDate).toISOString() : null,
-        shirtSize: profile.shirtSize || null,
-        companyLegalName: profile.companyLegalName || null,
-        companyTradeName: profile.companyTradeName || null,
-        cnpj: profile.cnpj || null,
-        payoneerID: profile.payoneerID || null,
-        emergencyContactName: profile.emergencyContactName || null,
-        emergencyContactRelation: profile.emergencyContactRelation || null,
-        emergencyContactPhone: profile.emergencyContactPhone || null,
-        cpf: profile.cpf || null,
+        email: p.email || null,
+        address: p.address || null,
+        neighborhood: p.neighborhood || null,
+        city: p.city || null,
+        state: p.state || null,
+        cep: p.cep || null,
+        phone: p.phone || null,
+        birthDate: p.birthDate ? new Date(p.birthDate).toISOString() : null,
+        shirtSize: p.shirtSize || null,
+        companyLegalName: p.companyLegalName || null,
+        companyTradeName: p.companyTradeName || null,
+        cnpj: p.cnpj || null,
+        payoneerID: p.payoneerID || null,
+        emergencyContactName: p.emergencyContactName || null,
+        emergencyContactRelation: p.emergencyContactRelation || null,
+        emergencyContactPhone: p.emergencyContactPhone || null,
+        cpf: p.cpf || null,
       });
     }
     setHasChanges(false);
@@ -424,7 +426,7 @@ export default function ConsultantMyProfilePage() {
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
-                value={profile.name}
+                value={(profile as any)?.name || ''}
                 disabled
                 className="bg-gray-50"
               />

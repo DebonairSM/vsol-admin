@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useClientInvoices } from '@/hooks/use-client-invoices';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { FileText, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 function getStatusColor(status: string) {
   switch (status) {

@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGetSetting, useUpdateSetting, useTestPayoneerConnection, useTestTimeDoctorConnection } from '@/hooks/use-settings';
-import { useBackups, useCreateBackup, useRestoreBackup, useBackupStatus, useTriggerBackup } from '@/hooks/use-backups';
+import { useBackups, useRestoreBackup, useBackupStatus, useTriggerBackup } from '@/hooks/use-backups';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertTriangle, Database, RefreshCw, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -79,7 +79,6 @@ export default function SettingsPage() {
   const { data: backupsData, isLoading: isLoadingBackups } = useBackups();
   const backups = backupsData?.backups || [];
   const backupDirectory = backupsData?.backupDirectory || '';
-  const createBackup = useCreateBackup();
   const restoreBackup = useRestoreBackup();
   const { data: backupStatus, isLoading: isLoadingStatus, refetch: refetchStatus } = useBackupStatus();
   const triggerBackup = useTriggerBackup();

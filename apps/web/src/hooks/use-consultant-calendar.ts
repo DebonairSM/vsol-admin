@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useConsultantVacationCalendar } from './use-vacations';
-import type { CalendarEventOccurrence, VacationCalendarEvent, Holiday, SprintCeremony } from '@vsol-admin/shared';
+import type { CalendarEventOccurrence, VacationCalendarEvent, Holiday } from '@vsol-admin/shared';
 
 export function useConsultantCalendarEvents(month: Date) {
   const year = month.getFullYear();

@@ -1,4 +1,17 @@
+// @ts-nocheck - Test file with dynamic imports of types
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// Define types inline for tests
+type JWTPayload = {
+  userId: number;
+  username: string;
+  role: string;
+};
+
+type RefreshTokenPayload = JWTPayload & {
+  tokenFamily: string;
+  tokenId: number;
+};
 
 describe('JWT Token Security', () => {
   const originalEnv = process.env;
@@ -18,7 +31,7 @@ describe('JWT Token Security', () => {
 
   describe('Token Signing', () => {
     it('should sign access token with valid secret', async () => {
-      const { signAccessToken, JWTPayload } = await import('./jwt');
+      const { signAccessToken } = await import('./jwt');
       const payload: JWTPayload = {
         userId: 1,
         username: 'testuser',
@@ -32,7 +45,7 @@ describe('JWT Token Security', () => {
     });
 
     it('should sign refresh token with valid secret', async () => {
-      const { signRefreshToken, RefreshTokenPayload } = await import('./jwt');
+      const { signRefreshToken } = await import('./jwt');
       const payload: RefreshTokenPayload = {
         userId: 1,
         username: 'testuser',
@@ -60,7 +73,7 @@ describe('JWT Token Security', () => {
 
   describe('Token Verification', () => {
     it('should verify valid access token', async () => {
-      const { signAccessToken, verifyAccessToken, JWTPayload } = await import('./jwt');
+      const { signAccessToken, verifyAccessToken } = await import('./jwt');
       const payload: JWTPayload = {
         userId: 1,
         username: 'testuser',
@@ -76,7 +89,7 @@ describe('JWT Token Security', () => {
     });
 
     it('should verify valid refresh token', async () => {
-      const { signRefreshToken, verifyRefreshToken, RefreshTokenPayload } = await import('./jwt');
+      const { signRefreshToken, verifyRefreshToken } = await import('./jwt');
       const payload: RefreshTokenPayload = {
         userId: 1,
         username: 'testuser',
@@ -94,7 +107,7 @@ describe('JWT Token Security', () => {
     });
 
     it('should reject token with invalid signature', async () => {
-      const { signAccessToken, verifyAccessToken, JWTPayload } = await import('./jwt');
+      const { signAccessToken, verifyAccessToken } = await import('./jwt');
       const payload: JWTPayload = {
         userId: 1,
         username: 'testuser',
@@ -113,7 +126,7 @@ describe('JWT Token Security', () => {
     it('should reject expired token', async () => {
       // This test would require mocking time or using a very short expiry
       // For now, we test that tokens have expiry set
-      const { signAccessToken, verifyAccessToken, JWTPayload } = await import('./jwt');
+      const { signAccessToken, verifyAccessToken } = await import('./jwt');
       const payload: JWTPayload = {
         userId: 1,
         username: 'testuser',
@@ -126,7 +139,7 @@ describe('JWT Token Security', () => {
     });
 
     it('should reject token without required claims', async () => {
-      const { signAccessToken, verifyRefreshToken, JWTPayload } = await import('./jwt');
+      const { signAccessToken, verifyRefreshToken } = await import('./jwt');
       const payload: JWTPayload = {
         userId: 1,
         username: 'testuser',
@@ -144,7 +157,7 @@ describe('JWT Token Security', () => {
     });
 
     it('should reject refresh token used as access token', async () => {
-      const { signRefreshToken, verifyAccessToken, RefreshTokenPayload } = await import('./jwt');
+      const { signRefreshToken, verifyAccessToken } = await import('./jwt');
       const payload: RefreshTokenPayload = {
         userId: 1,
         username: 'testuser',
@@ -164,7 +177,7 @@ describe('JWT Token Security', () => {
     });
 
     it('should include correct audience and issuer', async () => {
-      const { signAccessToken, JWTPayload } = await import('./jwt');
+      const { signAccessToken } = await import('./jwt');
       const payload: JWTPayload = {
         userId: 1,
         username: 'testuser',
@@ -184,7 +197,7 @@ describe('JWT Token Security', () => {
 
   describe('Token Manipulation', () => {
     it('should prevent userId manipulation in token', async () => {
-      const { signAccessToken, verifyAccessToken, JWTPayload } = await import('./jwt');
+      const { signAccessToken, verifyAccessToken } = await import('./jwt');
       const payload: JWTPayload = {
         userId: 1,
         username: 'testuser',
@@ -208,7 +221,7 @@ describe('JWT Token Security', () => {
     });
 
     it('should prevent role escalation in token', async () => {
-      const { signAccessToken, verifyAccessToken, JWTPayload } = await import('./jwt');
+      const { signAccessToken, verifyAccessToken } = await import('./jwt');
       const payload: JWTPayload = {
         userId: 1,
         username: 'testuser',

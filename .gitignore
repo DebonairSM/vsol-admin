@@ -35,6 +35,8 @@ jspm_packages/
 backups/
 *.backup
 *.db.backup
+*.db.bak-*
+*.db.bak*
 
 # =============================================================================
 # Build Outputs

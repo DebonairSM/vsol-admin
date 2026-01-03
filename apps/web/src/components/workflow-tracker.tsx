@@ -17,6 +17,7 @@ import { calculateDeadlineAlert, parseMonthLabel } from '@/lib/business-days';
 import { getWorkHoursForMonthByNumber, getMonthName } from '@/lib/work-hours';
 import { toast } from 'sonner';
 import type { PayrollCycle } from '@vsol-admin/shared';
+import { ClientInvoiceStatus } from '@vsol-admin/shared';
 import { apiClient } from '@/lib/api-client';
 import { useClientInvoiceByCycle, useCreateInvoiceFromCycle, useCreateInvoiceFromCycleEligibility, useUpdateInvoiceStatus } from '@/hooks/use-client-invoices';
 import { useNavigate } from 'react-router-dom';
@@ -37,7 +38,6 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const [recipientEmail, setRecipientEmail] = useState<string>('apmailbox@omnigo.com');
   const [sendingReceipt, setSendingReceipt] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   const [showMissingBillingDialog, setShowMissingBillingDialog] = useState(false);
   const [missingBillingConsultants, setMissingBillingConsultants] = useState<Array<{ id: number; name: string }>>([]);
@@ -48,14 +48,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
   const { data: createInvoiceEligibility, isLoading: isLoadingEligibility } = useCreateInvoiceFromCycleEligibility(cycle.id);
   const updateInvoiceStatusMutation = useUpdateInvoiceStatus();
 
-  // Update current time for countdown - more frequently when showing hours
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 10000); // Update every 10 seconds for accurate hour countdown
-    
-    return () => clearInterval(interval);
-  }, []);
+  // Countdown is calculated on-demand in calculateCountdown function
 
   // Auto-fill receipt amount from invoice when invoice data is available
   useEffect(() => {
@@ -525,7 +518,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     try {
       await updateInvoiceStatusMutation.mutateAsync({
         id: invoiceData.id,
-        status: 'SENT'
+        status: ClientInvoiceStatus.SENT
       });
       
       // Update cycle.sendInvoiceDate

@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/auth-context';
+import { useAuth } from './hooks/use-auth';
 import { Toaster } from './components/ui/toaster';
 import LoginPage from './routes/login';
 import DashboardPage from './routes/dashboard';

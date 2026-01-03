@@ -14,12 +14,13 @@ import bcrypt from 'bcryptjs';
  * These settings provide strong security while maintaining
  * reasonable performance for authentication flows.
  */
-const ARGON2_OPTIONS: argon2.Options = {
+const ARGON2_OPTIONS: argon2.Options & { raw?: false } = {
   type: argon2.argon2id,
   memoryCost: 65536, // 64 MB
   timeCost: 3,       // 3 iterations
   parallelism: 4,    // 4 threads
-  hashLength: 32     // 32 bytes = 256 bits
+  hashLength: 32,    // 32 bytes = 256 bits
+  raw: false
 };
 
 /**
@@ -34,7 +35,7 @@ const ARGON2_OPTIONS: argon2.Options = {
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
-    return await argon2.hash(password, ARGON2_OPTIONS);
+    return await argon2.hash(password, ARGON2_OPTIONS as argon2.Options & { raw?: false });
   } catch (error) {
     throw new Error(`Password hashing failed: ${error}`);
   }

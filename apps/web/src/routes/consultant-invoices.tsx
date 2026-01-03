@@ -4,7 +4,7 @@ import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, CheckCircle, AlertCircle, Download, Eye, RefreshCw } from 'lucide-react';
+import { Upload, FileText, CheckCircle, Download, Eye, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
@@ -235,13 +235,12 @@ export default function ConsultantInvoicesPage() {
               <Select
                 value={selectedCycleId}
                 onValueChange={setSelectedCycleId}
-                disabled={cyclesLoading}
               >
-                <SelectTrigger id="cycle">
+                <SelectTrigger id="cycle" disabled={cyclesLoading}>
                   <SelectValue placeholder="Select a cycle" />
                 </SelectTrigger>
                 <SelectContent>
-                  {cycles?.map((cycle) => (
+                  {Array.isArray(cycles) && cycles.map((cycle) => (
                     <SelectItem key={cycle.id} value={cycle.id.toString()}>
                       {cycle.monthLabel}
                     </SelectItem>
@@ -334,7 +333,7 @@ export default function ConsultantInvoicesPage() {
         <CardContent>
           {invoicesLoading ? (
             <div className="text-center py-8 text-gray-500">Loading invoices...</div>
-          ) : !invoices || invoices.length === 0 ? (
+          ) : !invoices || !Array.isArray(invoices) || invoices.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No invoices uploaded yet
             </div>

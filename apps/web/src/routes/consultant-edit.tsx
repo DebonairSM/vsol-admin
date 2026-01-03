@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { UpdateConsultantRequest } from '@vsol-admin/shared';
-import { ArrowLeft, Save, X, Upload, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, X, CheckCircle2, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import EquipmentManagement from '@/components/equipment-management';
 import TerminationWorkflow from '@/components/termination-workflow';

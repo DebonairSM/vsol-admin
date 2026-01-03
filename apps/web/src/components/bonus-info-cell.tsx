@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { formatCurrency, formatDate, cn } from '@/lib/utils';
+import { formatDate, cn } from '@/lib/utils';
 import { Edit, DollarSign, Info, X } from 'lucide-react';
 
 interface BonusInfoCellProps {
@@ -19,7 +19,7 @@ interface BonusInfoCellProps {
   onUpdate: (lineId: number, data: Record<string, any>) => Promise<void>;
 }
 
-export default function BonusInfoCell({ lineItem, cycleSendReceiptDate, bonusRecipientConsultantId, onUpdate }: BonusInfoCellProps) {
+export default function BonusInfoCell({ lineItem, bonusRecipientConsultantId, onUpdate }: BonusInfoCellProps) {
   // Helper to convert UTC date to date input string (YYYY-MM-DD)
   const utcDateToInputString = (date: Date | string | null | undefined): string => {
     if (!date) return '';

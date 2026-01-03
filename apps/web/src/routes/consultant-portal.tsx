@@ -18,18 +18,12 @@ export default function ConsultantPortalPage() {
     queryKey: ['consultant-cycles'],
     queryFn: () => apiClient.getConsultantCycles(),
     retry: 1,
-    onError: (error) => {
-      console.error('Failed to load consultant cycles:', error);
-    },
   });
 
-  const { data: profile, error: profileError } = useQuery({
+  const { data: profile } = useQuery({
     queryKey: ['consultant-profile'],
     queryFn: () => apiClient.getConsultantProfile(),
     retry: 1,
-    onError: (error) => {
-      console.error('Failed to load consultant profile:', error);
-    },
   });
 
   const { data: vacationBalance } = useConsultantVacationBalance();
@@ -50,10 +44,10 @@ export default function ConsultantPortalPage() {
   
   // Group calendar events by date
   const eventsByDate = useMemo(() => {
-    if (!calendarEvents?.data) return new Map<string, CalendarEventOccurrence[]>();
+    if (!calendarEvents) return new Map<string, CalendarEventOccurrence[]>();
     
     const map = new Map<string, CalendarEventOccurrence[]>();
-    calendarEvents.data.forEach((event: CalendarEventOccurrence) => {
+    calendarEvents.forEach((event: CalendarEventOccurrence) => {
       const dateStr = event.date.toISOString().split('T')[0];
       const existing = map.get(dateStr) || [];
       map.set(dateStr, [...existing, event]);
@@ -63,8 +57,8 @@ export default function ConsultantPortalPage() {
   
   // Get dates with events for calendar modifiers
   const vacationDates = useMemo(() => {
-    if (!calendarEvents?.data) return [];
-    return calendarEvents.data
+    if (!calendarEvents) return [];
+    return calendarEvents
       .filter(e => e.type === 'vacation')
       .map(e => {
         const d = new Date(e.date);
@@ -73,8 +67,8 @@ export default function ConsultantPortalPage() {
   }, [calendarEvents]);
 
   const ceremonyDates = useMemo(() => {
-    if (!calendarEvents?.data) return [];
-    return calendarEvents.data
+    if (!calendarEvents) return [];
+    return calendarEvents
       .filter(e => e.type === 'ceremony')
       .map(e => {
         const d = new Date(e.date);
@@ -83,8 +77,8 @@ export default function ConsultantPortalPage() {
   }, [calendarEvents]);
 
   const holidayDates = useMemo(() => {
-    if (!calendarEvents?.data) return [];
-    return calendarEvents.data
+    if (!calendarEvents) return [];
+    return calendarEvents
       .filter(e => e.type === 'holiday')
       .map(e => {
         const d = new Date(e.date);
@@ -94,16 +88,16 @@ export default function ConsultantPortalPage() {
   
   // Get next 5 upcoming vacations
   const nextVacations = useMemo(() => {
-    if (!upcomingVacations) return [];
+    if (!upcomingVacations || !Array.isArray(upcomingVacations)) return [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     return upcomingVacations
-      .filter(event => {
+      .filter((event: any) => {
         const eventDate = new Date(event.date);
         return eventDate >= today;
       })
-      .sort((a, b) => a.date.localeCompare(b.date))
+      .sort((a: any, b: any) => a.date.localeCompare(b.date))
       .slice(0, 5);
   }, [upcomingVacations]);
 
@@ -112,7 +106,7 @@ export default function ConsultantPortalPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Consultant Portal</h1>
         <p className="mt-2 text-sm text-gray-600">
-          Welcome, {profile?.name || 'Consultant'}
+          Welcome, {(profile as any)?.name || 'Consultant'}
         </p>
       </div>
 
@@ -153,7 +147,7 @@ export default function ConsultantPortalPage() {
             ) : cyclesError ? (
               <p className="text-sm text-red-500">Unable to load cycles</p>
             ) : (
-              <p className="text-2xl font-bold">{cycles?.length || 0}</p>
+              <p className="text-2xl font-bold">{Array.isArray(cycles) ? cycles.length : 0}</p>
             )}
           </CardContent>
         </Card>
@@ -189,12 +183,12 @@ export default function ConsultantPortalPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {vacationBalance ? (
+            {vacationBalance && typeof vacationBalance === 'object' && vacationBalance !== null && 'daysRemaining' in vacationBalance ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Days Remaining</span>
-                  <Badge variant={vacationBalance.daysRemaining < 5 ? 'destructive' : 'default'}>
-                    {vacationBalance.daysRemaining} / {vacationBalance.totalAllocated}
+                  <Badge variant={(vacationBalance as any).daysRemaining < 5 ? 'destructive' : 'default'}>
+                    {(vacationBalance as any).daysRemaining} / {(vacationBalance as any).totalAllocated}
                   </Badge>
                 </div>
                 {nextVacations && nextVacations.length > 0 && (

@@ -105,9 +105,11 @@ export class BonusWorkflowService {
       updateData.bonusRecipientConsultantId = data.bonusRecipientConsultantId;
       
       // If recipient is changing, clear bonus fields from all other consultants
+      const newRecipientId = data.bonusRecipientConsultantId;
       if (existing.bonusRecipientConsultantId !== null && 
-          data.bonusRecipientConsultantId !== existing.bonusRecipientConsultantId) {
-        await this.clearBonusFieldsFromOtherConsultants(cycleId, data.bonusRecipientConsultantId);
+          newRecipientId !== existing.bonusRecipientConsultantId &&
+          typeof newRecipientId === 'number') {
+        await this.clearBonusFieldsFromOtherConsultants(cycleId, newRecipientId);
         
         // If there's an existing announcement date, sync it to the new recipient's line item
         const announcementDateToSync = data.bonusAnnouncementDate !== undefined 

@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth } from '@/hooks/use-auth';
 import { useDemo } from '@/contexts/demo-context';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/toaster';

@@ -198,7 +198,7 @@ export default function ConsultantEquipmentPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {equipment && equipment.length > 0 ? (
+          {equipment && Array.isArray(equipment) && equipment.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -212,7 +212,7 @@ export default function ConsultantEquipmentPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {equipment.map((item) => (
+                {equipment.map((item: ConsultantEquipment) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.deviceName}</TableCell>
                     <TableCell>{item.model || 'N/A'}</TableCell>

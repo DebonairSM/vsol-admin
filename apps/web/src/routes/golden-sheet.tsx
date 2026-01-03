@@ -22,7 +22,7 @@ import { BlurredValue } from '@/components/ui/blurred-value';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
 import { useCountdown } from '@/hooks/use-countdown';
 import { useState, useMemo } from 'react';
-import { Trash2, X, Calendar, CreditCard, Clock, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Trash2, X, Calendar, CreditCard, Clock, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import BonusInfoCell from '@/components/bonus-info-cell';
 import WorkflowTracker from '@/components/workflow-tracker';
@@ -605,7 +605,7 @@ export default function GoldenSheetPage() {
             {showHourlyBreakdown && summary.hourlyValueBreakdown && (
               <div className="mt-2 pt-2 border-t text-xs space-y-1 bg-gray-50 p-2 rounded">
                 <div className="font-semibold text-gray-700 mb-1">Breakdown (snapshotted rates):</div>
-                {summary.hourlyValueBreakdown.map((item) => (
+                {summary.hourlyValueBreakdown.map((item: any) => (
                   <div key={item.consultantId} className="flex justify-between text-gray-600">
                     <span className="truncate">{item.consultantName}:</span>
                     <span className="font-mono ml-2">

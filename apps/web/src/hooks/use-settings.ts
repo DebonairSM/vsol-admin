@@ -55,7 +55,7 @@ export function useUpdateSetting() {
       });
       return response.data;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate the specific setting query
       queryClient.invalidateQueries({ queryKey: ['settings', 'kv', variables.key] });
       // Also invalidate the keys list

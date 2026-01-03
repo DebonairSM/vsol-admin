@@ -4,6 +4,35 @@ import type { UpdateConsultantProfileRequest } from '@vsol-admin/shared';
 // Priority: 1) VITE_API_URL env var, 2) Auto-detect from current hostname, 3) Use proxy
 let API_BASE_URL = import.meta.env.VITE_API_URL;
 
+// Dev convenience for Cloudflare Tunnel-style setups:
+// When the frontend is served over HTTPS (e.g., portal.vsol.software) but the API is expected to be
+// reached via the Vite proxy (/api -> http://localhost:2020), an explicit VITE_API_URL pointing at
+// https://api.portal.vsol.software can create noisy TLS failures in the browser (and then we fall
+// back anyway). In DEV only, prefer the proxy up-front for the known tunnel hostnames.
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  const isKnownTunnelHostname =
+    hostname === 'portal.vsol.software' ||
+    hostname === 'api.portal.vsol.software' ||
+    hostname.endsWith('.ngrok.app') ||
+    hostname.endsWith('.ngrok.io') ||
+    hostname.endsWith('.ngrok-free.app') ||
+    hostname.endsWith('.ngrok-free.io');
+
+  if (protocol === 'https:' && isKnownTunnelHostname) {
+    // If VITE_API_URL is a full URL (http/https), prefer the proxy to keep same-origin and avoid
+    // TLS/cert/cipher issues with custom API subdomains.
+    if (API_BASE_URL && API_BASE_URL.startsWith('http')) {
+      console.warn(
+        `[API Client] DEV HTTPS tunnel hostname detected (${hostname}). ` +
+          `Ignoring VITE_API_URL=${API_BASE_URL} and using /api proxy instead.`
+      );
+      API_BASE_URL = '/api';
+    }
+  }
+}
+
 // If accessing from localhost, always use the Vite proxy to avoid CORS issues
 // This overrides VITE_API_URL when accessing from localhost
 if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
@@ -21,17 +50,17 @@ if (!API_BASE_URL || API_BASE_URL === '/api') {
     // Never auto-detect for HTTPS domains - require explicit VITE_API_URL configuration
     // This ensures Cloudflare Tunnel and other HTTPS setups work correctly
     if (protocol === 'https:') {
-      // Only auto-detect Cloudflare Tunnel domain if VITE_API_URL is not explicitly set
-      // This allows overriding the auto-detection with a local development URL
-      if (hostname === 'portal.vsol.software' && !import.meta.env.VITE_API_URL) {
-        API_BASE_URL = 'https://api.portal.vsol.software/api';
-        console.log(`[API Client] Detected Cloudflare Tunnel domain, using API URL: ${API_BASE_URL}`);
-      } else if (!import.meta.env.VITE_API_URL) {
-        console.warn(`[API Client] HTTPS domain detected (${hostname}) but VITE_API_URL is not set. Defaulting to /api proxy, which may not work. Please set VITE_API_URL environment variable.`);
-        API_BASE_URL = '/api';
-      } else {
+      // For HTTPS domains, use the proxy by default (Vite will route /api to localhost:2020)
+      // Only use direct HTTPS API URL if VITE_API_URL is explicitly set
+      if (import.meta.env.VITE_API_URL) {
         // VITE_API_URL is explicitly set, use it (don't override)
         API_BASE_URL = import.meta.env.VITE_API_URL;
+      } else {
+        // Use proxy for HTTPS domains - Vite proxy will handle routing to the API server
+        // This works because the frontend and API are on the same machine behind the tunnel
+        API_BASE_URL = '/api';
+        console.log(`[API Client] HTTPS domain detected (${hostname}), using /api proxy (routes to localhost:2020 via Vite)`);
+        console.log(`[API Client] To use direct API URL, set VITE_API_URL in apps/web/.env`);
       }
     } else if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
       // Remote IP access (HTTP only) - construct API URL using same hostname
@@ -67,6 +96,14 @@ if (!API_BASE_URL) {
 // Ensure trailing slash is removed for consistency
 if (API_BASE_URL.endsWith('/')) {
   API_BASE_URL = API_BASE_URL.slice(0, -1);
+}
+
+// Log the API URL being used (helpful for debugging)
+if (typeof window !== 'undefined') {
+  console.log(`[API Client] Using API base URL: ${API_BASE_URL}`);
+  if (API_BASE_URL === '/api' && typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    console.log('[API Client] Using Vite proxy for HTTPS domain. Ensure API server is running on localhost:2020');
+  }
 }
 
 class ApiClient {
@@ -113,14 +150,64 @@ class ApiClient {
       headers,
     };
 
-    let response: Response;
+    let response: Response | undefined;
     try {
       response = await fetch(url, config);
     } catch (fetchError: any) {
-      // Re-throw with more context
-      const enhancedError = new Error(`Network error: ${fetchError?.message || 'Unknown error'} (URL: ${url})`);
+      // DEV-only fallback: if an explicit remote API URL is configured but unreachable,
+      // retry via the Vite proxy (/api) so local development doesn't hard-fail.
+      //
+      // This is intentionally limited to DEV to avoid unexpected behavior in production builds.
+      if (
+        import.meta.env.DEV &&
+        typeof window !== 'undefined' &&
+        this.baseURL.startsWith('http') &&
+        endpoint.startsWith('/')
+      ) {
+        const fallbackBaseURL = '/api';
+        const fallbackUrl = `${fallbackBaseURL}${endpoint}`;
+
+        try {
+          const fallbackResponse = await fetch(fallbackUrl, config);
+          // If the fallback works, keep using it for subsequent requests.
+          this.baseURL = fallbackBaseURL;
+          console.warn(
+            `[API Client] Network error calling ${url}; falling back to ${fallbackBaseURL} for this session.`
+          );
+          response = fallbackResponse;
+        } catch {
+          // Ignore and throw the original enhanced error below.
+        }
+      }
+
+      // If fallback didn't succeed, throw an enhanced network error.
+      if (!response) {
+      // Provide helpful error message for network failures
+      let errorMessage = `Network error: Failed to fetch (URL: ${url})`;
+      
+      // Add helpful suggestions based on the URL being used
+      if (url.includes('api.portal.vsol.software')) {
+        errorMessage += '\n\nPossible solutions:';
+        errorMessage += '\n1. Ensure the Cloudflare Tunnel is running and properly configured';
+        errorMessage += '\n2. Ensure the API server is running on port 2020';
+        errorMessage += '\n3. Use the Vite proxy instead: remove VITE_API_URL or set it to /api';
+        errorMessage += '\n4. For local development, set VITE_API_URL=http://localhost:2020/api';
+      } else if (url.includes('/api') && typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        errorMessage += '\n\nPossible solutions:';
+        errorMessage += '\n1. Ensure the API server is running: pnpm dev';
+        errorMessage += '\n2. Ensure the Vite dev server is running (it proxies /api to localhost:2020)';
+        errorMessage += '\n3. Check that the Cloudflare Tunnel is routing portal.vsol.software to localhost:5173';
+      } else if (url.includes('localhost') || url.includes('127.0.0.1')) {
+        errorMessage += '\n\nPossible solutions:';
+        errorMessage += '\n1. Ensure the API server is running: pnpm dev';
+        errorMessage += '\n2. Check that the API is accessible at the configured URL';
+      }
+      
+      const enhancedError = new Error(errorMessage);
       (enhancedError as any).originalError = fetchError;
+      (enhancedError as any).url = url;
       throw enhancedError;
+      }
     }
 
     // Handle 403/401 errors by attempting token refresh (except for auth endpoints)

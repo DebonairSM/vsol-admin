@@ -79,7 +79,8 @@ export class SprintCeremonyService {
         const daysOfWeek = rule.daysOfWeek && rule.daysOfWeek.length > 0 
           ? rule.daysOfWeek 
           : [currentDate.getDay()]; // Default to the start date's day of week
-        let checkDate = new Date(Math.max(currentDate, startDate)); // Start from the later of ceremony start or range start
+        const laterTime: number = Math.max(currentDate.getTime(), startDate.getTime());
+        let checkDate = new Date(laterTime); // Start from the later of ceremony start or range start
         while (checkDate <= actualEndDate && checkDate <= endDate) {
           const dayOfWeek = checkDate.getDay();
           if (daysOfWeek.includes(dayOfWeek)) {

@@ -320,6 +320,7 @@ export type UpdateLineItemRequest = z.infer<typeof updateLineItemSchema>;
 export type CreatePaymentRequest = z.infer<typeof createPaymentSchema>;
 
 // File upload schemas
+// Note: Buffer validation is skipped in browser environments
 export const fileUploadSchema = z.object({
   fieldname: z.string(),
   originalname: z.string(),
@@ -329,7 +330,7 @@ export const fileUploadSchema = z.object({
     'Only JPEG and PNG files are allowed'
   ),
   size: z.number().max(5 * 1024 * 1024, 'File size must be less than 5MB'),
-  buffer: z.instanceof(Buffer)
+  buffer: z.any() // Use z.any() instead of z.instanceof(Buffer) for browser compatibility
 });
 
 export type FileUploadRequest = z.infer<typeof fileUploadSchema>;

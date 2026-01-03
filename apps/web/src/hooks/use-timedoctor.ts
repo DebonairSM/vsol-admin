@@ -59,13 +59,14 @@ export function useTimeDoctorActivity(params: { from: string; to: string; userId
   return useQuery<ActivityResponse>({
     queryKey: ['timedoctor', 'activity', params.from, params.to, params.userId],
     queryFn: async () => {
-      const response = await apiClient.get('/time-doctor/activity', {
-        params: {
-          from: params.from,
-          to: params.to,
-          userId: params.userId
-        }
+      const queryParams = new URLSearchParams({
+        from: params.from,
+        to: params.to,
       });
+      if (params.userId) {
+        queryParams.append('userId', params.userId);
+      }
+      const response = await apiClient.get(`/time-doctor/activity?${queryParams.toString()}`);
       return response.data;
     },
     enabled: !!params.from && !!params.to,

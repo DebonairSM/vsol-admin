@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useVacations, useVacationBalances, useCreateVacationDay, useCreateVacationRange, useUpdateVacationDay, useDeleteVacationDay } from '@/hooks/use-vacations';
+import { useVacations, useVacationBalances, useCreateVacationDay, useCreateVacationRange, useDeleteVacationDay } from '@/hooks/use-vacations';
 import { useConsultants } from '@/hooks/use-consultants';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,14 +11,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/lib/utils';
-import { Plus, Calendar, Trash2, Edit, X } from 'lucide-react';
+import { Plus, Calendar, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
-import type { VacationDay, VacationBalance } from '@vsol-admin/shared';
+import type { VacationBalance } from '@vsol-admin/shared';
 
 export default function VacationsPage() {
   const { data: consultants } = useConsultants();
-  const { toast } = useToast();
+  const toast = useToast().toast;
   
   const [selectedConsultant, setSelectedConsultant] = useState<number | undefined>();
   const [startDate, setStartDate] = useState<string>('');
@@ -34,12 +34,10 @@ export default function VacationsPage() {
   
   const createDay = useCreateVacationDay();
   const createRange = useCreateVacationRange();
-  const updateDay = useUpdateVacationDay();
   const deleteDay = useDeleteVacationDay();
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isRangeDialogOpen, setIsRangeDialogOpen] = useState(false);
-  const [editingVacation, setEditingVacation] = useState<VacationDay | null>(null);
   
   // Form state for single day
   const [dayForm, setDayForm] = useState({
@@ -149,13 +147,14 @@ export default function VacationsPage() {
   };
   
   const getBalanceForConsultant = (consultantId: number): VacationBalance | undefined => {
-    return balances?.find((b: VacationBalance) => b.consultantId === consultantId);
+    if (!balances || !Array.isArray(balances)) return undefined;
+    return balances.find((b: VacationBalance) => b.consultantId === consultantId);
   };
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" key="vacations-page">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" key="header">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Vacations</h1>
           <p className="text-sm sm:text-base text-gray-600">Manage consultant vacation days</p>
@@ -298,8 +297,7 @@ export default function VacationsPage() {
         </div>
       </div>
       
-      {/* Filters */}
-      <Card>
+      {(<Card>
         <CardHeader>
           <CardTitle>Filters</CardTitle>
         </CardHeader>
@@ -344,10 +342,10 @@ export default function VacationsPage() {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card>) as any}
       
       {/* Vacation Balances */}
-      {balances && balances.length > 0 && (
+      {balances && Array.isArray(balances) && balances.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Vacation Balances</CardTitle>
@@ -388,13 +386,13 @@ export default function VacationsPage() {
         <CardHeader>
           <CardTitle>Vacation Days</CardTitle>
           <CardDescription>
-            {vacations ? `${vacations.length} vacation day${vacations.length !== 1 ? 's' : ''} found` : 'Loading...'}
+            {vacations && Array.isArray(vacations) ? `${vacations.length} vacation day${vacations.length !== 1 ? 's' : ''} found` : 'Loading...'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8">Loading...</div>
-          ) : vacations && vacations.length > 0 ? (
+          ) : vacations && Array.isArray(vacations) && vacations.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -454,7 +452,7 @@ export default function VacationsPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  ) as any;
 }
 
 

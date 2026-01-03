@@ -34,6 +34,31 @@ import vacationRoutes from './routes/vacations';
 const app = express();
 const PORT = process.env.PORT || 2020;
 
+// When running behind a reverse proxy (Cloudflare Tunnel, ngrok, etc.), Express must trust the proxy
+// so middleware (notably rate limiting) can safely read client IPs from X-Forwarded-For.
+//
+// IMPORTANT: Do not set 'trust proxy' to boolean true. It is overly permissive and causes
+// express-rate-limit to throw ERR_ERL_PERMISSIVE_TRUST_PROXY.
+//
+// Configure via env:
+// - TRUST_PROXY=1 (recommended for a single proxy hop)
+// - TRUST_PROXY=2,3,... (multiple proxy hops)
+// - TRUST_PROXY=loopback / linklocal / uniquelocal (Express supported strings)
+// - TRUST_PROXY=true (treated as 1 for backward compatibility)
+const trustProxyEnv = process.env.TRUST_PROXY;
+if (trustProxyEnv) {
+  const trimmed = trustProxyEnv.trim();
+  if (trimmed === 'true') {
+    app.set('trust proxy', 1);
+  } else if (trimmed === 'false') {
+    // Explicitly disabled
+  } else if (/^\d+$/.test(trimmed)) {
+    app.set('trust proxy', Number(trimmed));
+  } else {
+    app.set('trust proxy', trimmed);
+  }
+}
+
 // Keep track of the server instance for graceful shutdown
 let server: Server;
 // Keep track of the backup cron task for graceful shutdown

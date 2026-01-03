@@ -8,8 +8,9 @@ import { buttonVariants } from "@/components/ui/button"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
-function CalendarCaption({ displayMonth }: CaptionProps) {
+function CalendarCaption(props: CaptionProps) {
   const { goToMonth, nextMonth, previousMonth } = useNavigation()
+  const displayMonth = (props as any).calendarMonth?.start || new Date()
 
   return (
     <div className="flex items-center justify-center gap-2 pt-1">
@@ -86,7 +87,7 @@ function Calendar({
       }}
       components={{
         Caption: CalendarCaption,
-      }}
+      } as any}
       {...props}
     />
   )

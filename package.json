@@ -5,7 +5,7 @@
     "dev": "pnpm --parallel -r dev",
     "dev:clean": "pnpm kill-all-ports && pnpm dev",
     "build": "pnpm -r build",
-    "start": "pnpm --filter @vsol-admin/api start & pnpm --filter @vsol-admin/web preview",
+    "start": "pnpm build && pnpm --filter @vsol-admin/api start & pnpm --filter @vsol-admin/web preview",
     "db:migrate": "pnpm --filter @vsol-admin/api db:migrate",
     "db:studio": "pnpm --filter @vsol-admin/api db:studio",
     "db:seed": "pnpm --filter @vsol-admin/api db:seed",

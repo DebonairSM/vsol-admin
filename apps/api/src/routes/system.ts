@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { authenticateToken } from '../middleware/auth';
@@ -11,7 +11,7 @@ import {
   getEnvironment,
 } from '../backup/database-backup';
 
-const router = Router();
+const router: Router = Router();
 
 // All system routes require authentication
 router.use(authenticateToken);

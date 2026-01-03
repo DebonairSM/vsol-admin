@@ -75,7 +75,7 @@ export default function ConsultantsPage() {
       const value = editingNumber.value.trim() === '' ? null : parseFloat(editingNumber.value);
       await updateConsultant.mutateAsync({
         id: editingNumber.consultantId,
-        data: { number: isNaN(value as number) ? null : value }
+        data: { number: (value !== null && !isNaN(value)) ? value : null }
       });
       setEditingNumber(null);
     } catch (error) {
@@ -180,8 +180,8 @@ export default function ConsultantsPage() {
                           <div className="flex gap-1 items-center">
                             <Input
                               type="number"
-                              value={editingNumber.value}
-                              onChange={(e) => setEditingNumber({ ...editingNumber, value: e.target.value })}
+                              value={editingNumber?.value || ''}
+                              onChange={(e) => editingNumber && setEditingNumber({ ...editingNumber, value: e.target.value })}
                               className="w-20 h-8 text-xs"
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') handleNumberSave();

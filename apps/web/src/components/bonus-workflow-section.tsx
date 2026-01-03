@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { formatDate, formatMonthAbbr } from '@/lib/utils';
+import { formatMonthAbbr } from '@/lib/utils';
 import { Mail, Info, Copy, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useBonusWorkflow, useCreateBonusWorkflow, useUpdateBonusWorkflow, useGenerateBonusEmail } from '@/hooks/use-bonus-workflow';
 import { useCycleLines, useCycle } from '@/hooks/use-cycles';

@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { SettingsService } from '../services/settings-service';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { updateSettingsSchema, settingSchema } from '@vsol-admin/shared';
 
-const router = Router();
+const router: Router = Router();
 
 // All settings routes require authentication
 router.use(authenticateToken);

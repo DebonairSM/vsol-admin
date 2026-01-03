@@ -1,12 +1,13 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useClientInvoice, useUpdateInvoiceStatus, useDeleteClientInvoice } from '@/hooks/use-client-invoices';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { ArrowLeft, FileText, Trash2, Download, Eye } from 'lucide-react';
+import { ArrowLeft, Trash2, Download, Eye } from 'lucide-react';
+import { ClientInvoiceStatus } from '@vsol-admin/shared';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 
@@ -42,7 +43,7 @@ export default function ClientInvoiceDetailPage() {
     try {
       await updateStatusMutation.mutateAsync({
         id: invoice.id,
-        status: 'SENT'
+        status: ClientInvoiceStatus.SENT
       });
       // Refetch invoice to get updated status
       await refetchInvoice();

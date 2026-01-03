@@ -65,7 +65,6 @@ export function useMarkEquipmentReturned() {
 
   return useMutation({
     mutationFn: ({ 
-      consultantId, 
       equipmentId, 
       returnedDate 
     }: { 

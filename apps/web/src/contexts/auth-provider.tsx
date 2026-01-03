@@ -1,24 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { apiClient } from '@/lib/api-client';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '@/lib/api-client';
 import { SessionTimeoutModal } from '@/components/session-timeout-modal';
 import { useToast } from '@/hooks/use-toast';
-
-interface User {
-  id: number;
-  username: string;
-  role: string;
-  mustChangePassword?: boolean;
-}
-
-interface AuthContextType {
-  user: User | null;
-  login: (username: string, password: string, keepLoggedIn: boolean) => Promise<{ mustChangePassword?: boolean } | void>;
-  logout: (reason?: 'manual' | 'timeout') => void;
-  isLoading: boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext, type User } from '@/contexts/auth-context';
 
 // Session timeout configuration
 const ACCESS_TOKEN_DURATION = 15 * 60 * 1000; // 15 minutes
@@ -32,7 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const [sessionExpiresAt, setSessionExpiresAt] = useState<number | null>(null);
-  const timeoutCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -50,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { accessToken, refreshToken } = await apiClient.refreshAccessToken();
       apiClient.setToken(accessToken);
       apiClient.setRefreshToken(refreshToken);
-      
+
       // Only set session expiry if not "keep logged in"
       const storedKeepLoggedIn = localStorage.getItem('keep_logged_in') === 'true';
       if (!storedKeepLoggedIn) {
@@ -62,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSessionExpiresAt(null);
         localStorage.removeItem('session_expires_at');
       }
-      
+
       setShowTimeoutWarning(false);
       return true;
     } catch (error) {
@@ -72,26 +57,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Logout function - defined early so it can be used in other callbacks
-  const logout = useCallback((reason: 'manual' | 'timeout' = 'manual') => {
-    clearSessionTimers();
-    apiClient.logout();
-    apiClient.setToken(null);
-    setUser(null);
-    setKeepLoggedIn(false);
-    setSessionExpiresAt(null);
-    setShowTimeoutWarning(false);
-    localStorage.removeItem('keep_logged_in');
-    localStorage.removeItem('session_expires_at');
-    
-    if (reason === 'timeout') {
-      toast({
-        title: 'Session Expired',
-        description: 'You have been logged out due to inactivity for security reasons.',
-        variant: 'destructive',
-      });
-      navigate('/login', { state: { sessionExpired: true } });
-    }
-  }, [clearSessionTimers, navigate, toast]);
+  const logout = useCallback(
+    (reason: 'manual' | 'timeout' = 'manual') => {
+      clearSessionTimers();
+      apiClient.logout();
+      apiClient.setToken(null);
+      setUser(null);
+      setKeepLoggedIn(false);
+      setSessionExpiresAt(null);
+      setShowTimeoutWarning(false);
+      localStorage.removeItem('keep_logged_in');
+      localStorage.removeItem('session_expires_at');
+
+      if (reason === 'timeout') {
+        toast({
+          title: 'Session Expired',
+          description: 'You have been logged out due to inactivity for security reasons.',
+          variant: 'destructive'
+        });
+        navigate('/login', { state: { sessionExpired: true } });
+      }
+    },
+    [clearSessionTimers, navigate, toast]
+  );
 
   // Check session status
   const checkSessionTimeout = useCallback(() => {
@@ -116,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check both state and localStorage to ensure we have the correct value
     const storedKeepLoggedIn = localStorage.getItem('keep_logged_in') === 'true';
     if ((!keepLoggedIn && !storedKeepLoggedIn) || !user) return;
-    
+
     try {
       await refreshSession();
     } catch (error) {
@@ -129,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Set up session timeout checker or automatic token refresh
   useEffect(() => {
     clearSessionTimers();
-    
+
     if (user) {
       if (keepLoggedIn) {
         // For "keep logged in" users: automatically refresh token before it expires
@@ -149,7 +137,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       clearSessionTimers();
     };
-  }, [user, keepLoggedIn, sessionExpiresAt, checkSessionTimeout, refreshTokenPeriodically, clearSessionTimers]);
+  }, [
+    user,
+    keepLoggedIn,
+    sessionExpiresAt,
+    checkSessionTimeout,
+    refreshTokenPeriodically,
+    clearSessionTimers
+  ]);
 
   // Initialize auth state
   useEffect(() => {
@@ -166,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const tokens = await apiClient.refreshAccessToken();
             apiClient.setToken(tokens.accessToken);
             apiClient.setRefreshToken(tokens.refreshToken);
-            
+
             const userData = await apiClient.getMe();
             setUser(userData);
             setKeepLoggedIn(true);
@@ -189,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setKeepLoggedIn(storedKeepLoggedIn);
-        
+
         if (storedExpiry && !storedKeepLoggedIn) {
           setSessionExpiresAt(parseInt(storedExpiry));
         }
@@ -200,13 +195,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // If token is invalid, try to refresh if we have refresh token and keepLoggedIn
         const refreshToken = apiClient.getRefreshToken();
         const storedKeepLoggedIn = localStorage.getItem('keep_logged_in') === 'true';
-        
+
         if (refreshToken && storedKeepLoggedIn) {
           try {
             const tokens = await apiClient.refreshAccessToken();
             apiClient.setToken(tokens.accessToken);
             apiClient.setRefreshToken(tokens.refreshToken);
-            
+
             const userData = await apiClient.getMe();
             setUser(userData);
             setKeepLoggedIn(true);
@@ -236,24 +231,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string, keepLoggedInFlag: boolean) => {
     const response = await apiClient.login(username, password);
-    
+
     // Store tokens even if password change is required
     // User needs tokens to authenticate for the password change endpoint
-    apiClient.setToken(response.token || response.accessToken);
+    apiClient.setToken(response.token || response.accessToken || null);
     if (response.refreshToken) {
       apiClient.setRefreshToken(response.refreshToken);
     }
-    
+
     // Set user state (include mustChangePassword if present)
     setUser({
       ...response.user,
       mustChangePassword: response.mustChangePassword
     });
     setKeepLoggedIn(keepLoggedInFlag);
-    
+
     // Store preference
     localStorage.setItem('keep_logged_in', keepLoggedInFlag.toString());
-    
+
     if (!keepLoggedInFlag) {
       // Set session expiry time for regular sessions
       const expiry = Date.now() + ACCESS_TOKEN_DURATION;
@@ -264,11 +259,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSessionExpiresAt(null);
       localStorage.removeItem('session_expires_at');
     }
-    
+
     // Return user info so login page can redirect based on role
-    return { 
+    return {
       user: response.user,
-      mustChangePassword: response.mustChangePassword 
+      mustChangePassword: response.mustChangePassword
     };
   };
 
@@ -294,10 +289,3 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}

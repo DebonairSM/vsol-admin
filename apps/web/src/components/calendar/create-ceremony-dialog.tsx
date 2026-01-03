@@ -240,8 +240,8 @@ export function CreateCeremonyDialog({ open, onOpenChange, trigger }: CreateCere
                   <Label htmlFor="recurrenceFrequency">Frequency</Label>
                   <Select
                     value={formData.recurrenceFrequency}
-                    onValueChange={(value: RecurrenceFrequency) => 
-                      setFormData({ ...formData, recurrenceFrequency: value, recurrenceDaysOfWeek: [] })
+                    onValueChange={(value) => 
+                      setFormData({ ...formData, recurrenceFrequency: value as RecurrenceFrequency, recurrenceDaysOfWeek: [] })
                     }
                   >
                     <SelectTrigger>

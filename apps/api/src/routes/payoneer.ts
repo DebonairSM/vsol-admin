@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { PayoneerService } from '../services/payoneer-service';
 import { authenticateToken } from '../middleware/auth';
 
-const router = Router();
+const router: Router = Router();
 
 // All Payoneer routes require authentication
 router.use(authenticateToken);

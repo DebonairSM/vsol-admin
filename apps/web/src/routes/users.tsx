@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Key, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, Key } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import {
@@ -37,7 +37,7 @@ export default function UsersPage() {
     onSuccess: (data) => {
       toast({
         title: 'Password Reset',
-        description: `Password reset successfully. New password: ${data.newPassword}`,
+        description: `Password reset successfully. New password: ${(data as any).newPassword}`,
       });
       setShowResetDialog(false);
       setResetUserId(null);
@@ -102,7 +102,7 @@ export default function UsersPage() {
         <CardContent>
           {isLoading ? (
             <p className="text-sm text-gray-500">Loading...</p>
-          ) : consultantUsers && consultantUsers.length > 0 ? (
+          ) : consultantUsers && Array.isArray(consultantUsers) && consultantUsers.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -114,7 +114,7 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {consultantUsers.map((user) => (
+                {consultantUsers.map((user: any) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       {user.consultant ? (

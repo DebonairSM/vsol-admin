@@ -15,21 +15,19 @@ pnpm db:seed
 
 ### Environment Variables
 
-Create `apps/api/.env`:
+Default `.env` files have been created in `apps/api/.env` and `apps/web/.env` with development defaults.
 
-```env
-PORT=2020
-JWT_SECRET=change-me
-DATABASE_URL=file:./dev.db
-RESEND_KEY=your-resend-api-key
-RESEND_ADMIN_EMAIL=apmailbox@omnigo.com
-```
+For production or additional configuration, see `.env.example` in the root directory for all available options.
 
-Create `apps/web/.env`:
+Minimum required configuration in `apps/api/.env`:
+- `JWT_SECRET` - Change the default value to a secure random string (minimum 32 characters)
 
-```env
-VITE_API_URL=http://localhost:2020/api
-```
+Optional configuration:
+- `RESEND_KEY` - For email functionality (notifications, invoices)
+- `TIME_DOCTOR_API_KEY` - For Time Doctor integration
+- `CORS_ORIGIN` - For remote access (ngrok, Cloudflare Tunnel)
+
+For local development, the default values work out of the box.
 
 ## Running the Application
 

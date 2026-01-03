@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import type { CreateSprintCeremonyRequest, UpdateSprintCeremonyRequest, SprintCeremony } from '@vsol-admin/shared';
+import type { CreateSprintCeremonyRequest, UpdateSprintCeremonyRequest } from '@vsol-admin/shared';
 import { useToast } from '@/hooks/use-toast';
 
 export function useSprintCeremonies(startDate?: string, endDate?: string) {

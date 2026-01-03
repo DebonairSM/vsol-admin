@@ -14,7 +14,8 @@ import {
   updateConsultantSchema,
   createEquipmentSchema,
   updateEquipmentSchema,
-  initiateTerminationSchema
+  initiateTerminationSchema,
+  Consultant
 } from '@vsol-admin/shared';
 
 const router: Router = Router();
@@ -54,8 +55,9 @@ router.get('/:id/contract',
       const consultant = await ConsultantService.getById(consultantId);
       
       // Generate contract text (service will validate required fields)
-      const contractText = ContractService.generateContract(consultant);
-      const filename = ContractService.generateContractFilename(consultant);
+      // Note: Drizzle returns string literals for enum fields, but Consultant type expects enum
+      const contractText = ContractService.generateContract(consultant as any);
+      const filename = ContractService.generateContractFilename(consultant as any);
       
       // Set headers for text file download
       res.setHeader('Content-Type', 'text/plain');

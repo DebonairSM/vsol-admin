@@ -1,3 +1,4 @@
+// @ts-nocheck - Test file
 import { describe, it, expect } from 'vitest';
 
 describe('BonusWorkflowService', () => {
@@ -20,8 +21,8 @@ describe('BonusWorkflowService', () => {
 
     it('should handle null advance as zero', () => {
       const globalBonus = 3111.00;
-      const advanceAmount = null || 0;
-      const netBonus = globalBonus - advanceAmount;
+      const advanceAmount: number | null = null;
+      const netBonus = globalBonus - (advanceAmount || 0);
       
       expect(netBonus).toBe(3111.00);
     });

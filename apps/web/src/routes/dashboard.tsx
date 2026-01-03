@@ -95,21 +95,9 @@ export default function DashboardPage() {
       });
   }, [calendarEvents]);
 
-  // Group vacation events by date (for existing popover functionality)
-  const vacationsByDate = useMemo(() => {
-    if (!vacationEvents) return new Map<string, VacationCalendarEvent[]>();
-    
-    const map = new Map<string, VacationCalendarEvent[]>();
-    vacationEvents.forEach((event: VacationCalendarEvent) => {
-      const existing = map.get(event.date) || [];
-      map.set(event.date, [...existing, event]);
-    });
-    return map;
-  }, [vacationEvents]);
-  
   // Get upcoming vacations (next 30 days)
   const upcomingVacations = useMemo(() => {
-    if (!vacationEvents) return [];
+    if (!vacationEvents || !Array.isArray(vacationEvents)) return [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const thirtyDaysLater = new Date(today);
@@ -128,7 +116,7 @@ export default function DashboardPage() {
   
   // Get consultants with low vacation balance
   const lowBalanceConsultants = useMemo(() => {
-    if (!vacationBalances) return [];
+    if (!vacationBalances || !Array.isArray(vacationBalances)) return [];
     return vacationBalances
       .filter((balance: any) => balance.daysRemaining < 5 && balance.daysRemaining > 0)
       .sort((a: any, b: any) => a.daysRemaining - b.daysRemaining)

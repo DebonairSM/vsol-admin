@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { TimeDoctorService } from '../services/timedoctor-service';
 import { authenticateToken } from '../middleware/auth';
 
-const router = Router();
+const router: Router = Router();
 
 // All Time Doctor routes require authentication
 router.use(authenticateToken);

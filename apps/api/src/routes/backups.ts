@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { authenticateToken } from '../middleware/auth';
@@ -9,7 +9,7 @@ import { sqliteDb } from '../db';
 import { createBackup } from '../services/backup-service';
 import { getBackupsDirectory, getDatabasePath, parseTimestampFromFilename } from '../services/backup-service';
 
-const router = Router();
+const router: Router = Router();
 
 // All backup routes require authentication and rate limiting
 router.use(authenticateToken);

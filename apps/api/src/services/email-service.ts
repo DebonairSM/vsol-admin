@@ -7,10 +7,13 @@ import fs from 'fs/promises';
 import path from 'path';
 import { PDFService } from './pdf-service';
 
-const resend = new Resend(process.env.RESEND_KEY);
+// Initialize Resend only if API key is available
+let resend: Resend | null = null;
 
-if (!process.env.RESEND_KEY) {
-  console.warn('RESEND_KEY not found in environment variables. Email functionality will not work.');
+if (process.env.RESEND_KEY) {
+  resend = new Resend(process.env.RESEND_KEY);
+} else {
+  console.warn('⚠️  RESEND_KEY not found in environment variables. Email functionality will not work.');
 }
 
 const DEFAULT_RECIPIENT_EMAIL = process.env.RESEND_ADMIN_EMAIL || 'apmailbox@omnigo.com';
@@ -219,6 +222,10 @@ Email: admin@vsol.software
 Website: www.vsol.software
     `.trim();
 
+    if (!resend) {
+      throw new ValidationError('Email service is not configured. RESEND_KEY is missing.');
+    }
+
     try {
       const result = await resend.emails.send({
         from: 'VSol Software <noreply@notifications.vsol.software>',
@@ -384,6 +391,10 @@ Website: www.vsol.software
     
     console.log(`Sending invoice email with PDF attachment: ${pdfFileName} (${attachmentContent.length} chars base64)`);
 
+    if (!resend) {
+      throw new ValidationError('Email service is not configured. RESEND_KEY is missing.');
+    }
+
     const result = await resend.emails.send({
       from: 'VSol Software <noreply@notifications.vsol.software>',
       to: recipientEmail,
@@ -500,6 +511,10 @@ Phone: (407) 409-0874
 Email: admin@vsol.software
 Website: www.vsol.software
     `.trim();
+
+    if (!resend) {
+      throw new ValidationError('Email service is not configured. RESEND_KEY is missing.');
+    }
 
     try {
       const result = await resend.emails.send({
