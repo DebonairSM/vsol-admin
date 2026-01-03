@@ -277,8 +277,8 @@ export interface PaymentCalculationResult {
   // Cycle summary info
   totalHourlyValue: number;
   globalWorkHours: number;
-  // Payment calculation uses next month's hours
-  paymentMonthWorkHours: number; // Work hours from the month after cycle month
+  // Payment calculation uses the cycle month's hours (cycle.monthLabel)
+  paymentMonthWorkHours: number; // Work hours for the cycle month
   paymentMonthLabel: string; // Label of the month whose hours were used (e.g., "December 2025")
   usdTotal: number; // Final cycle total after PIX/Inter deductions
   anomalies: string[];

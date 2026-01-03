@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import fs from 'fs/promises';
 import path from 'path';
 import { PDFService } from './pdf-service';
+import { formatMonthLabel, parseMonthLabel } from '@vsol-admin/shared';
 
 // Initialize Resend only if API key is available
 let resend: Resend | null = null;
@@ -90,36 +91,13 @@ export interface ClientInvoiceEmailData {
 }
 
 /**
- * Calculate the work period (next month) from a cycle month label
- * Example: "November 2025" -> "December 2025"
+ * Calculate the work period (cycle month) from a cycle month label
+ * Example: "November 2025" -> "November 2025"
  */
 function getWorkPeriodFromCycle(monthLabel: string): string | null {
-  const match = monthLabel.match(/^(\w+)\s+(\d{4})$/);
-  if (!match) {
-    return null;
-  }
-  
-  const [, monthName, yearStr] = match;
-  const year = parseInt(yearStr, 10);
-  
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  
-  const month = monthNames.indexOf(monthName) + 1;
-  if (month === 0) {
-    return null;
-  }
-  
-  let nextMonth = month + 1;
-  let nextYear = year;
-  if (nextMonth > 12) {
-    nextMonth = 1;
-    nextYear++;
-  }
-  
-  return `${monthNames[nextMonth - 1]} ${nextYear}`;
+  const parsed = parseMonthLabel(monthLabel);
+  if (!parsed) return null;
+  return formatMonthLabel(parsed.year, parsed.month);
 }
 
 export class EmailService {
@@ -153,7 +131,7 @@ export class EmailService {
       day: 'numeric'
     });
 
-    // Calculate work period (next month after cycle month)
+    // Calculate work period (cycle month)
     const workPeriod = getWorkPeriodFromCycle(cycle.monthLabel);
     const workPeriodText = workPeriod || 'the upcoming period';
 

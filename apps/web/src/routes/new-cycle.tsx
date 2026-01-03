@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
+import { addMonthsToYearMonth } from '@vsol-admin/shared';
 
 export default function NewCyclePage() {
   const navigate = useNavigate();
@@ -19,16 +20,20 @@ export default function NewCyclePage() {
   // Get defaults from the latest cycle (for globalWorkHours) and global settings (for omnigoBonus)
   const latestCycle = cycles?.[0];
   
-  // Get current month for defaulting
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
+  // Default new cycles to the next month (worked-hours month is always one month after creation)
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+  const defaultWorkedMonth = addMonthsToYearMonth(currentYear, currentMonth, 1);
   
-  // Fetch work hours from API for current year
-  const { data: apiWorkHours = [], isLoading: isLoadingWorkHours, error: workHoursError } = useWorkHoursByYear(currentYear);
+  const [selectedYear] = useState<number>(defaultWorkedMonth.year);
+  const [selectedMonthNumber, setSelectedMonthNumber] = useState<string>(defaultWorkedMonth.month.toString());
+  
+  // Fetch work hours from API for selected year
+  const { data: apiWorkHours = [], isLoading: isLoadingWorkHours, error: workHoursError } = useWorkHoursByYear(selectedYear);
   
   // Fallback to calculated work hours if API returns empty (for backwards compatibility)
-  const calculatedWorkHours = useMemo(() => getMonthlyWorkHoursForYear(currentYear), [currentYear]);
+  const calculatedWorkHours = useMemo(() => getMonthlyWorkHoursForYear(selectedYear), [selectedYear]);
   
   // Use API data if available, otherwise fall back to calculated
   const monthlyWorkHours = apiWorkHours.length > 0 ? apiWorkHours : calculatedWorkHours;
@@ -41,7 +46,6 @@ export default function NewCyclePage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedMonthNumber, setSelectedMonthNumber] = useState<string>(currentMonth.toString());
   const hasSetOmnigoBonus = useRef(false);
 
   // Update form data when settings load (to populate omnigoBonus default)
@@ -85,11 +89,11 @@ export default function NewCyclePage() {
         // Always update the month label when month selection changes
         setFormData(prev => ({
           ...prev,
-          monthLabel: `${selected.month} ${currentYear}`
+          monthLabel: `${selected.month} ${selectedYear}`
         }));
       }
     }
-  }, [selectedMonthNumber, monthlyWorkHours, currentYear]);
+  }, [selectedMonthNumber, monthlyWorkHours, selectedYear]);
 
   const handleMonthChange = (value: string) => {
     setSelectedMonthNumber(value);

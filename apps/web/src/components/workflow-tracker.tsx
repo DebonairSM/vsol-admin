@@ -57,20 +57,13 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     }
   }, [invoiceData, receiptAmount]);
 
-  // Helper function to get next month's work hours data
-  const getNextMonthInfo = () => {
+  // Helper function to get the cycle month's work hours data
+  const getCycleMonthInfo = () => {
     const parsed = parseMonthLabel(cycle.monthLabel);
     if (!parsed) return null;
     
-    let nextMonth = parsed.month + 1;
-    let nextYear = parsed.year;
-    if (nextMonth > 12) {
-      nextMonth = 1;
-      nextYear++;
-    }
-    
-    const monthName = getMonthName(nextMonth);
-    const workHours = getWorkHoursForMonthByNumber(nextYear, nextMonth);
+    const monthName = getMonthName(parsed.month);
+    const workHours = getWorkHoursForMonthByNumber(parsed.year, parsed.month);
     
     if (!monthName || workHours === null) {
       return null;
@@ -78,7 +71,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
     
     return {
       month: monthName,
-      year: nextYear,
+      year: parsed.year,
       data: {
         workHours,
         weekdays: Math.floor(workHours / 8)
@@ -370,21 +363,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
       day: 'numeric'
     });
 
-    // Calculate work period (next month after cycle month)
-    const parsed = parseMonthLabel(cycle.monthLabel);
-    let workPeriodText = 'the upcoming period';
-    if (parsed) {
-      let nextMonth = parsed.month + 1;
-      let nextYear = parsed.year;
-      if (nextMonth > 12) {
-        nextMonth = 1;
-        nextYear++;
-      }
-      const monthName = getMonthName(nextMonth);
-      if (monthName) {
-        workPeriodText = `${monthName} ${nextYear}`;
-      }
-    }
+    const workPeriodText = cycle.monthLabel || 'the upcoming period';
 
     return `
 <!DOCTYPE html>
@@ -694,7 +673,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                         )}>
                           {step.id === 'hours-limit-changed' ? (
                             (() => {
-                              const nextMonthInfo = getNextMonthInfo();
+                              const nextMonthInfo = getCycleMonthInfo();
                               if (!nextMonthInfo) {
                                 return step.description; // Fallback if can't parse
                               }
@@ -740,7 +719,7 @@ export default function WorkflowTracker({ cycle, onUpdateWorkflowDate }: Workflo
                           </div>
                         )}
                         {step.id === 'hours-limit-changed' && (() => {
-                          const nextMonthInfo = getNextMonthInfo();
+                          const nextMonthInfo = getCycleMonthInfo();
                           return nextMonthInfo && !nextMonthInfo.data && (
                             <div className="mt-2">
                               <Link to="/work-hours">

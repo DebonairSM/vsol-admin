@@ -2,6 +2,12 @@
  * Business days calculation utilities for payment deadline alerts
  */
 
+import {
+  addMonthsToYearMonth,
+  formatMonthLabel,
+  parseMonthLabel as parseSharedMonthLabel
+} from '@vsol-admin/shared';
+
 /**
  * Check if a date falls on a weekend (Saturday or Sunday)
  */
@@ -117,25 +123,7 @@ export function getOmnigoDepositDeadline(consultantPaymentDate: Date): Date {
  * Parse month label (e.g., "January 2025") to get year and month number
  */
 export function parseMonthLabel(monthLabel: string): { year: number; month: number } | null {
-  const match = monthLabel.match(/^(\w+)\s+(\d{4})$/);
-  if (!match) {
-    return null;
-  }
-  
-  const [, monthName, yearStr] = match;
-  const year = parseInt(yearStr, 10);
-  
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  
-  const month = monthNames.indexOf(monthName) + 1;
-  if (month === 0) {
-    return null;
-  }
-  
-  return { year, month };
+  return parseSharedMonthLabel(monthLabel);
 }
 
 /**
@@ -144,26 +132,10 @@ export function parseMonthLabel(monthLabel: string): { year: number; month: numb
  * Example: "January 2025" -> "December 2024"
  */
 export function getPreviousMonthLabel(monthLabel: string): string | null {
-  const parsed = parseMonthLabel(monthLabel);
-  if (!parsed) {
-    return null;
-  }
-  
-  const { year, month } = parsed;
-  let previousMonth = month - 1;
-  let previousYear = year;
-  
-  if (previousMonth < 1) {
-    previousMonth = 12;
-    previousYear = year - 1;
-  }
-  
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  
-  return `${monthNames[previousMonth - 1]} ${previousYear}`;
+  const parsed = parseSharedMonthLabel(monthLabel);
+  if (!parsed) return null;
+  const previous = addMonthsToYearMonth(parsed.year, parsed.month, -1);
+  return formatMonthLabel(previous.year, previous.month);
 }
 
 export type DeadlineAlertStatus = 'normal' | 'warning' | 'critical';

@@ -1,7 +1,14 @@
 import { eq, isNull, sum, desc } from 'drizzle-orm';
 import { db, payrollCycles, cycleLineItems, consultants } from '../db';
 import { WorkHoursService } from './work-hours-service';
-import { CreateCycleRequest, UpdateCycleRequest, CycleSummary, PaymentCalculationResult, ConsultantPaymentDetail } from '@vsol-admin/shared';
+import {
+  parseMonthLabel,
+  CreateCycleRequest,
+  UpdateCycleRequest,
+  CycleSummary,
+  PaymentCalculationResult,
+  ConsultantPaymentDetail
+} from '@vsol-admin/shared';
 import { NotFoundError, ValidationError } from '../middleware/errors';
 
 export class CycleService {
@@ -282,27 +289,28 @@ export class CycleService {
   static async calculatePayment(id: number, noBonus: boolean = false): Promise<PaymentCalculationResult> {
     const cycle = await this.getById(id);
 
-    const parsedMonth = this.parseMonthLabel(cycle.monthLabel);
+    const parsedMonth = parseMonthLabel(cycle.monthLabel);
     if (!parsedMonth) {
       throw new ValidationError('Invalid month label format. Expected "Month YYYY".');
     }
 
-    const { year: nextYear, month: nextMonth } = this.getNextMonth(parsedMonth.year, parsedMonth.month);
-    const nextMonthWorkHoursRef = await WorkHoursService.getByYearMonth(nextYear, nextMonth);
+    const paymentYear = parsedMonth.year;
+    const paymentMonth = parsedMonth.month;
+    const paymentMonthWorkHoursRef = await WorkHoursService.getByYearMonth(paymentYear, paymentMonth);
 
     let paymentWorkHours: number;
     let usingCalculatedFallback = false;
 
-    if (!nextMonthWorkHoursRef || !nextMonthWorkHoursRef.workHours || nextMonthWorkHoursRef.workHours <= 0) {
-      // Calculate work hours on the fly for the next month (matches UI calculation logic)
-      // This ensures we use the correct hours (e.g., 184 for December 2025) even if not in DB yet
-      paymentWorkHours = this.calculateWorkHoursForMonth(nextYear, nextMonth);
+    if (!paymentMonthWorkHoursRef || !paymentMonthWorkHoursRef.workHours || paymentMonthWorkHoursRef.workHours <= 0) {
+      // Calculate work hours on the fly for the cycle month (matches UI calculation logic)
+      // This ensures we use the correct hours even if not in DB yet
+      paymentWorkHours = this.calculateWorkHoursForMonth(paymentYear, paymentMonth);
       usingCalculatedFallback = true;
     } else {
-      paymentWorkHours = nextMonthWorkHoursRef.workHours;
+      paymentWorkHours = paymentMonthWorkHoursRef.workHours;
     }
 
-    const paymentMonthLabel = `${this.getMonthName(nextMonth)} ${nextYear}`;
+    const paymentMonthLabel = cycle.monthLabel;
 
     // Calculate individual consultant payment details
     const consultantPayments: ConsultantPaymentDetail[] = cycle.lines.map(line => {
@@ -367,48 +375,6 @@ export class CycleService {
     };
 
     return result;
-  }
-
-  private static parseMonthLabel(monthLabel: string): { year: number; month: number } | null {
-    const match = monthLabel.match(/^(\w+)\s+(\d{4})$/);
-    if (!match) {
-      return null;
-    }
-
-    const [, monthName, yearStr] = match;
-    const year = parseInt(yearStr, 10);
-
-    const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-
-    const month = monthNames.indexOf(monthName) + 1;
-    if (month === 0) {
-      return null;
-    }
-
-    return { year, month };
-  }
-
-  private static getNextMonth(year: number, month: number): { year: number; month: number } {
-    let nextMonth = month + 1;
-    let nextYear = year;
-
-    if (nextMonth > 12) {
-      nextMonth = 1;
-      nextYear = year + 1;
-    }
-    return { year: nextYear, month: nextMonth };
-  }
-
-  private static getMonthName(monthNumber: number): string {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-
-    return months[monthNumber - 1] || '';
   }
 
   /**

@@ -27,43 +27,29 @@ export default function BonusWorkflowSection({ cycleId }: BonusWorkflowSectionPr
   const generateEmail = useGenerateBonusEmail(cycleId);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Calculate the work payment month (next month after cycle start) and bonus payment month (one month after)
+  // Calculate the work payment month (cycle month) and bonus payment month (cycle month)
   const workPaymentMonth = useMemo(() => {
     if (!cycle?.monthLabel) return null;
     const parsed = parseMonthLabel(cycle.monthLabel);
     if (!parsed) return null;
-    
-    let nextMonth = parsed.month + 1;
-    let nextYear = parsed.year;
-    if (nextMonth > 12) {
-      nextMonth = 1;
-      nextYear++;
-    }
-    
+
     return {
-      month: nextMonth,
-      year: nextYear,
-      monthName: getMonthName(nextMonth)
+      month: parsed.month,
+      year: parsed.year,
+      monthName: getMonthName(parsed.month)
     };
   }, [cycle?.monthLabel]);
 
-  // Bonus is paid one month after cycle start
+  // Bonus is associated with the cycle month
   const bonusPaymentMonth = useMemo(() => {
     if (!cycle?.monthLabel) return null;
     const parsed = parseMonthLabel(cycle.monthLabel);
     if (!parsed) return null;
-    
-    let bonusMonth = parsed.month + 1;
-    let bonusYear = parsed.year;
-    if (bonusMonth > 12) {
-      bonusMonth = bonusMonth - 12;
-      bonusYear++;
-    }
-    
+
     return {
-      month: bonusMonth,
-      year: bonusYear,
-      monthName: getMonthName(bonusMonth)
+      month: parsed.month,
+      year: parsed.year,
+      monthName: getMonthName(parsed.month)
     };
   }, [cycle?.monthLabel]);
 
