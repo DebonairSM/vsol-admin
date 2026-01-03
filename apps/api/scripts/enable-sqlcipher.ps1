@@ -11,7 +11,7 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "🔐 Company Portal - Enable SQLCipher Encryption" -ForegroundColor Cyan
+Write-Host "🔐 VSol Portal - Enable SQLCipher Encryption" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 

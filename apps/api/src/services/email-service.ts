@@ -480,7 +480,7 @@ Website: www.vsol.software
     </div>
     
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${data.loginUrl}" style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Log In to Portal</a>
+      <a href="${data.loginUrl}" style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Log In</a>
     </div>
     
     <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">

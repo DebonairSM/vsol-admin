@@ -160,7 +160,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm sm:text-base text-gray-600">Portal - Golden Sheet Management</p>
+          <p className="text-sm sm:text-base text-gray-600">Let's keep it Agile!</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Button variant="outline" asChild className="w-full sm:w-auto">
