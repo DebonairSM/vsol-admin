@@ -3,6 +3,7 @@ import { db, users, consultants } from '../db';
 import { hashPassword } from '../lib/password';
 import { ValidationError, NotFoundError } from '../middleware/errors';
 import { EmailService } from './email-service';
+import { generateStrongPassword } from '../lib/password-generator';
 
 const DEFAULT_CONSULTANT_PASSWORD = process.env.CONSULTANT_DEFAULT_PASSWORD || 'ChangeMe123!';
 
@@ -91,6 +92,154 @@ export class UserManagementService {
     }
 
     return newPassword;
+  }
+
+  /**
+   * Reset (or create) a consultant account by consultantId with a strong temporary password.
+   * - Creates the user account if missing (role=consultant)
+   * - Sets mustChangePassword=true
+   * - Returns an email preview payload; optionally sends when configured
+   */
+  static async resetConsultantPasswordByConsultantId(
+    consultantId: number,
+    sendEmail: boolean = false
+  ): Promise<{
+    userId: number;
+    username: string;
+    consultantEmail: string | null;
+    newPassword: string;
+    mustChangePassword: true;
+    emailPreview: { to: string; subject: string; html: string; text: string } | null;
+    emailSent: boolean;
+  }> {
+    const consultant = await db.query.consultants.findFirst({
+      where: eq(consultants.id, consultantId)
+    });
+
+    if (!consultant) {
+      throw new NotFoundError('Consultant not found');
+    }
+
+    // Find existing user by consultantId
+    let user = await db.query.users.findFirst({
+      where: eq(users.consultantId, consultantId)
+    });
+
+    const newPassword = generateStrongPassword();
+    const passwordHash = await hashPassword(newPassword);
+
+    // Create user if missing
+    if (!user) {
+      const baseUsername = this.generateUsernameFromName(consultant.name);
+      const username = await this.findAvailableUsername(baseUsername);
+
+      const created = await db
+        .insert(users)
+        .values({
+          username,
+          passwordHash,
+          role: 'consultant',
+          mustChangePassword: true,
+          consultantId
+        })
+        .returning();
+
+      user = created[0] as any;
+    }
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (user.role !== 'consultant') {
+      throw new ValidationError('Can only reset passwords for consultant accounts');
+    }
+
+    await db
+      .update(users)
+      .set({
+        passwordHash,
+        mustChangePassword: true
+      })
+      .where(eq(users.id, user.id));
+
+    const loginUrl = getLoginUrl();
+    const consultantEmail = consultant.email ?? null;
+
+    let emailPreview: { to: string; subject: string; html: string; text: string } | null = null;
+    let emailSent = false;
+
+    if (consultantEmail && consultantEmail.includes('@')) {
+      const content = await EmailService.buildAccountCredentialsEmail({
+        username: user.username,
+        password: newPassword,
+        email: consultantEmail,
+        consultantName: consultant.name,
+        loginUrl
+      });
+
+      emailPreview = {
+        to: consultantEmail,
+        subject: content.subject,
+        html: content.html,
+        text: content.text
+      };
+    }
+
+    if (sendEmail) {
+      if (!consultantEmail || !consultantEmail.includes('@')) {
+        throw new ValidationError('Consultant email address is required to send credentials');
+      }
+      if (process.env.RESEND_KEY) {
+        await EmailService.sendAccountCredentials({
+          username: user.username,
+          password: newPassword,
+          email: consultantEmail,
+          consultantName: consultant.name,
+          loginUrl
+        });
+        emailSent = true;
+      } else {
+        emailSent = false;
+      }
+    }
+
+    return {
+      userId: user.id,
+      username: user.username,
+      consultantEmail,
+      newPassword,
+      mustChangePassword: true,
+      emailPreview,
+      emailSent
+    };
+  }
+
+  private static generateUsernameFromName(name: string): string {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) {
+      throw new ValidationError('Consultant name cannot be empty');
+    }
+    const firstName = parts[0];
+    const lastInitial = parts.length > 1 ? parts[parts.length - 1][0].toUpperCase() : '';
+    return `${firstName}${lastInitial}`;
+  }
+
+  private static async usernameExists(username: string): Promise<boolean> {
+    const existing = await db.query.users.findFirst({
+      where: eq(users.username, username)
+    });
+    return Boolean(existing);
+  }
+
+  private static async findAvailableUsername(baseUsername: string): Promise<string> {
+    let candidate = baseUsername;
+    let suffix = 1;
+    while (await this.usernameExists(candidate)) {
+      suffix += 1;
+      candidate = `${baseUsername}${suffix}`;
+    }
+    return candidate;
   }
 
   /**

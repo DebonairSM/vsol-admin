@@ -85,6 +85,12 @@ export interface AccountCredentialsData {
   loginUrl: string;
 }
 
+export interface AccountCredentialsEmailContent {
+  subject: string;
+  html: string;
+  text: string;
+}
+
 export interface ClientInvoiceEmailData {
   clientInvoiceId: number;
   recipientEmail?: string;
@@ -400,6 +406,8 @@ Website: www.vsol.software
    * Reusable for account creation, password resets, and credential reminders
    */
   static async sendAccountCredentials(data: AccountCredentialsData): Promise<{ success: boolean; messageId?: string }> {
+    const emailContent = await this.buildAccountCredentialsEmail(data);
+
     if (!process.env.RESEND_KEY) {
       throw new ValidationError('Email service is not configured. RESEND_KEY is missing.');
     }
@@ -408,17 +416,50 @@ Website: www.vsol.software
       throw new ValidationError('Valid email address is required');
     }
 
+    if (!resend) {
+      throw new ValidationError('Email service is not configured. RESEND_KEY is missing.');
+    }
+
+    try {
+      const result = await resend.emails.send({
+        from: 'VSol Software <noreply@notifications.vsol.software>',
+        to: data.email,
+        bcc: ADMIN_BCC_EMAIL,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text
+      });
+
+      if (result.error) {
+        throw new ValidationError(`Failed to send email: ${result.error.message}`);
+      }
+
+      return {
+        success: true,
+        messageId: result.data?.id
+      };
+    } catch (error: any) {
+      console.error('Error sending account credentials email:', error);
+      throw new ValidationError(`Failed to send email: ${error.message || 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Builds the subject/html/text for the account credentials email without sending it.
+   * This enables "preview" workflows where we show the email content in the UI.
+   */
+  static async buildAccountCredentialsEmail(data: AccountCredentialsData): Promise<AccountCredentialsEmailContent> {
     // Generate email subject
     const subject = `VSol Software - Your Portal Account - ${data.consultantName}`;
 
-    // Get logo for email body
+    // Get logo for email body (graceful fallback to empty)
     const logoBase64 = await getLogoBase64();
-    const logoHtml = logoBase64 
+    const logoHtml = logoBase64
       ? `<div style="text-align: center; margin-bottom: 20px;"><img src="${logoBase64}" alt="VSol Software" style="max-width: 200px; height: auto;" /></div>`
       : '';
 
     // Generate HTML email body
-    const htmlBody = `
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -465,7 +506,7 @@ Website: www.vsol.software
     `.trim();
 
     // Plain text version for email clients that don't support HTML
-    const textBody = `
+    const text = `
 Welcome to Portal
 
 Dear ${data.consultantName},
@@ -490,32 +531,7 @@ Email: admin@vsol.software
 Website: www.vsol.software
     `.trim();
 
-    if (!resend) {
-      throw new ValidationError('Email service is not configured. RESEND_KEY is missing.');
-    }
-
-    try {
-      const result = await resend.emails.send({
-        from: 'VSol Software <noreply@notifications.vsol.software>',
-        to: data.email,
-        bcc: ADMIN_BCC_EMAIL,
-        subject: subject,
-        html: htmlBody,
-        text: textBody
-      });
-
-      if (result.error) {
-        throw new ValidationError(`Failed to send email: ${result.error.message}`);
-      }
-
-      return {
-        success: true,
-        messageId: result.data?.id
-      };
-    } catch (error: any) {
-      console.error('Error sending account credentials email:', error);
-      throw new ValidationError(`Failed to send email: ${error.message || 'Unknown error'}`);
-    }
+    return { subject, html, text };
   }
 }
 

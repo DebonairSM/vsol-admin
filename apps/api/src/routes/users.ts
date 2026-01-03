@@ -51,6 +51,33 @@ router.post('/:id/reset-password', requireAdmin, validateBody(resetPasswordSchem
   }
 });
 
+// POST /api/users/consultants/:consultantId/reset-password - Create (if missing) and reset consultant password
+const resetConsultantPasswordSchema = z.object({
+  sendEmail: z.boolean().optional().default(false)
+});
+
+router.post(
+  '/consultants/:consultantId/reset-password',
+  requireAdmin,
+  validateBody(resetConsultantPasswordSchema),
+  async (req, res, next) => {
+    try {
+      const consultantId = parseInt(req.params.consultantId);
+      const { sendEmail } = req.body;
+
+      const result = await UserManagementService.resetConsultantPasswordByConsultantId(consultantId, sendEmail);
+
+      res.json({
+        success: true,
+        message: 'Password reset successfully',
+        ...result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // POST /api/users/:id/send-credentials - Send account credentials via email
 router.post('/:id/send-credentials', requireAdmin, async (req, res, next) => {
   try {

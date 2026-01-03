@@ -1370,6 +1370,13 @@ class ApiClient {
     });
   }
 
+  async resetConsultantPassword(consultantId: number, sendEmail: boolean = false) {
+    return this.request(`/users/consultants/${consultantId}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ sendEmail }),
+    });
+  }
+
   async sendUserCredentials(userId: number) {
     return this.request(`/users/${userId}/send-credentials`, {
       method: 'POST',
