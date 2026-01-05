@@ -466,7 +466,7 @@ export interface VacationBalance {
   consultantName: string;
   currentYearStart: Date;
   currentYearEnd: Date;
-  totalAllocated: number; // Always 20
+  totalAllocated: number; // Always 30
   daysUsed: number;
   daysRemaining: number;
   expiredDays: number; // Days from previous periods that expired

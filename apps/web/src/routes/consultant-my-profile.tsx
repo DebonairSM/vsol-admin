@@ -537,7 +537,15 @@ export default function ConsultantMyProfilePage() {
                   id="birthDate"
                   type="date"
                   value={formData.birthDate ? formatDateForInput(formData.birthDate) : ''}
-                  onChange={(e) => handleFieldChange('birthDate', e.target.value ? new Date(e.target.value).toISOString() : null)}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      // Preserve the selected date by appending local midnight time
+                      const dateStr = e.target.value; // YYYY-MM-DD format
+                      handleFieldChange('birthDate', `${dateStr}T00:00:00.000Z`);
+                    } else {
+                      handleFieldChange('birthDate', null);
+                    }
+                  }}
                 />
                 {errors.birthDate && (
                   <p className="text-xs text-red-500 mt-1">{errors.birthDate}</p>

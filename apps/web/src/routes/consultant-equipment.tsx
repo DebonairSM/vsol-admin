@@ -297,8 +297,8 @@ export default function ConsultantEquipmentPage() {
                 onChange={(e) => {
                   const dateValue = e.target.value;
                   if (dateValue) {
-                    // Convert YYYY-MM-DD to ISO datetime string (midnight UTC)
-                    const date = new Date(dateValue + 'T00:00:00Z');
+                    // Convert YYYY-MM-DD to ISO datetime string (midnight local time)
+                    const date = new Date(dateValue + 'T00:00:00');
                     setFormData({
                       ...formData,
                       purchaseDate: date.toISOString()
@@ -401,8 +401,8 @@ export default function ConsultantEquipmentPage() {
                 onChange={(e) => {
                   const dateValue = e.target.value;
                   if (dateValue) {
-                    // Convert YYYY-MM-DD to ISO datetime string (midnight UTC)
-                    const date = new Date(dateValue + 'T00:00:00Z');
+                    // Convert YYYY-MM-DD to ISO datetime string (midnight local time)
+                    const date = new Date(dateValue + 'T00:00:00');
                     setFormData({
                       ...formData,
                       purchaseDate: date.toISOString()

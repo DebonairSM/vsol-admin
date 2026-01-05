@@ -300,7 +300,7 @@ export class VacationService {
     });
 
     const daysUsed = vacations.length;
-    const daysRemaining = Math.max(0, 20 - daysUsed);
+    const daysRemaining = Math.max(0, 30 - daysUsed);
 
     // Calculate expired days from previous periods
     // Get all vacations before the current period
@@ -321,7 +321,7 @@ export class VacationService {
       consultantName: consultant.name,
       currentYearStart: period.start,
       currentYearEnd: period.end,
-      totalAllocated: 20,
+      totalAllocated: 30,
       daysUsed,
       daysRemaining,
       expiredDays
