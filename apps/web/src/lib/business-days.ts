@@ -81,17 +81,16 @@ export function countBusinessDays(startDate: Date, endDate: Date): number {
 /**
  * Calculate the consultant payment date for a given month/year
  * 
- * The cycle represents the work month and follows a 3-month timeline:
- * - Month 1 (e.g., October): Invoice sent for October work (based on fixed Work Hours)
- * - Month 2 (e.g., November): Omnigo processes and schedules payment
- * - Month 3 (e.g., December): Consultants paid for October work on the 1st (or next Monday if weekend)
+ * The cycle represents the work month and follows a 2-month timeline:
+ * - Month 1 (e.g., January): Work performed in January
+ * - Month 2 (e.g., February): Consultants paid for January work on the 1st (or next Monday if weekend)
  * 
- * Example: "October 2025" cycle → October work billed in advance → consultants paid December 1, 2025
+ * Example: "January 2026" cycle → January work performed → consultants paid February 1, 2026
  */
 export function getConsultantPaymentDate(year: number, month: number): Date {
   // month is 1-indexed (1 = January, 12 = December)
-  // Payment happens on the 1st TWO MONTHS after the cycle month
-  let paymentMonth = month + 2;
+  // Payment happens on the 1st ONE MONTH after the cycle month
+  let paymentMonth = month + 1;
   let paymentYear = year;
   
   // Handle year rollover
