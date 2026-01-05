@@ -25,7 +25,7 @@ Minimum required configuration in `apps/api/.env`:
 Optional configuration:
 - `RESEND_KEY` - For email functionality (notifications, invoices)
 - `TIME_DOCTOR_API_KEY` - For Time Doctor integration
-- `CORS_ORIGIN` - For remote access (ngrok, Cloudflare Tunnel)
+- `CORS_ORIGIN` - For remote access (Cloudflare Tunnel)
 
 For local development, the default values work out of the box.
 
@@ -115,22 +115,3 @@ For production access via `portal.vsol.software`:
    - Start the tunnel with the correct configuration file
 
 The application will be accessible at https://portal.vsol.software
-
-### ngrok (Development/Testing)
-
-For quick testing with ngrok:
-
-1. Start ngrok tunnels:
-   ```powershell
-   # Terminal 1: API tunnel
-   ngrok http 2020
-   
-   # Terminal 2: Web tunnel
-   ngrok http 5173
-   ```
-
-2. Update environment variables:
-   - `apps/api/.env`: Add `CORS_ORIGIN=https://your-web-ngrok-url.ngrok.io`
-   - `apps/web/.env`: Add `VITE_API_URL=https://your-api-ngrok-url.ngrok.io/api`
-
-3. Restart servers and access via ngrok URLs
