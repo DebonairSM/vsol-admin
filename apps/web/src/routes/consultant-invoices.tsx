@@ -38,6 +38,11 @@ export default function ConsultantInvoicesPage() {
     queryFn: () => apiClient.getConsultantInvoices(),
   });
 
+  const selectedCycleLabel =
+    Array.isArray(cycles) && selectedCycleId
+      ? cycles.find((c) => c.id.toString() === selectedCycleId)?.monthLabel
+      : undefined;
+
   const uploadMutation = useMutation({
     mutationFn: async ({ cycleId, file }: { cycleId: number; file: File }) => {
       return apiClient.uploadInvoice(cycleId, file);
@@ -237,7 +242,9 @@ export default function ConsultantInvoicesPage() {
                 onValueChange={setSelectedCycleId}
               >
                 <SelectTrigger id="cycle" disabled={cyclesLoading}>
-                  <SelectValue placeholder="Select a cycle" />
+                  <SelectValue placeholder="Select a cycle">
+                    {selectedCycleLabel}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {Array.isArray(cycles) && cycles.map((cycle) => (

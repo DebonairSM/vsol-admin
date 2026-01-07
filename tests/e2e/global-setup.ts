@@ -1,11 +1,40 @@
 import { chromium, FullConfig } from '@playwright/test';
 import * as path from 'path';
 import * as fs from 'fs';
+import { execSync } from 'child_process';
+
+function ensureDefaultTestConsultantUser(username: string, password: string) {
+  // Only auto-seed when using the default test credentials.
+  // If a developer overrides env vars, we assume they manage the account themselves.
+  if (username !== 'test-consultant-portal' || password !== 'ChangeMe123!') return;
+
+  // Allow opting out (useful when pointing tests at a remote environment).
+  if (process.env.PLAYWRIGHT_SKIP_TEST_USER_SEED === 'true') return;
+
+  console.log('Seeding test consultant portal user (if missing)...');
+  // `tsx` is a package binary, not a pnpm script, so we must use `pnpm exec`.
+  execSync('pnpm --filter @vsol-admin/api exec tsx scripts/create-test-consultant-portal.ts', {
+    stdio: 'inherit'
+  });
+}
+
+function ensureDefaultE2EAdminUser() {
+  if (process.env.PLAYWRIGHT_SKIP_TEST_USER_SEED === 'true') return;
+
+  // Always ensure an admin exists unless explicitly skipped; tests use this for setup.
+  console.log('Seeding E2E admin user (if missing)...');
+  execSync('pnpm --filter @vsol-admin/api exec tsx scripts/ensure-e2e-admin.ts', {
+    stdio: 'inherit'
+  });
+}
 
 async function globalSetup(config: FullConfig) {
-  const username = process.env.TEST_CONSULTANT_USERNAME || 'test-consultant';
+  const username = process.env.TEST_CONSULTANT_USERNAME || 'test-consultant-portal';
   const password = process.env.TEST_CONSULTANT_PASSWORD || 'ChangeMe123!';
   const baseURL = config.projects[0].use.baseURL || 'http://localhost:5173';
+
+  ensureDefaultE2EAdminUser();
+  ensureDefaultTestConsultantUser(username, password);
 
   const browser = await chromium.launch();
   const page = await browser.newPage();

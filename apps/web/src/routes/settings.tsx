@@ -8,16 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useGetSetting, useUpdateSetting, useTestPayoneerConnection, useTestTimeDoctorConnection } from '@/hooks/use-settings';
 import { useBackups, useRestoreBackup, useBackupStatus, useTriggerBackup } from '@/hooks/use-backups';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, AlertTriangle, Database, RefreshCw, Package } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Loader2, AlertTriangle, Database, RefreshCw, Package, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/api-client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import type { ShippingAddress } from '@vsol-admin/shared';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   
   const [defaultOmnigoBonus, setDefaultOmnigoBonus] = useState<number>(0);
   const [payoneerConfig, setPayoneerConfig] = useState({
@@ -44,6 +47,15 @@ export default function SettingsPage() {
   // Backup restore dialog state
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
+
+  // Change password state (admin account)
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   // Load system settings
   const { data: systemSettings } = useQuery({
@@ -82,6 +94,63 @@ export default function SettingsPage() {
   const restoreBackup = useRestoreBackup();
   const { data: backupStatus, isLoading: isLoadingStatus, refetch: refetchStatus } = useBackupStatus();
   const triggerBackup = useTriggerBackup();
+
+  const changePassword = useMutation({
+    mutationFn: async ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => {
+      return apiClient.changePassword(currentPassword, newPassword);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Password Changed',
+        description: 'Your password has been changed successfully. Please log in again.',
+      });
+
+      // Clear tokens/session and redirect to login
+      logout('manual');
+      apiClient.setToken(null);
+      apiClient.setRefreshToken(null);
+
+      navigate('/login', {
+        state: {
+          message: 'Password changed successfully. Please log in with your new password.',
+        },
+      });
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Failed to change password';
+      setPasswordError(errorMessage);
+    },
+  });
+
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+    return null;
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    const newPasswordError = validatePassword(newPassword);
+    if (newPasswordError) {
+      setPasswordError(newPasswordError);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordError('New password must be different from current password');
+      return;
+    }
+
+    await changePassword.mutateAsync({ currentPassword, newPassword });
+  };
 
   // Set default backup to latest when backups load
   useEffect(() => {
@@ -376,6 +445,117 @@ export default function SettingsPage() {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-600">Configure application settings and integrations</p>
       </div>
+
+      {user?.role === 'admin' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Account Security</CardTitle>
+            <CardDescription>Change your admin account password</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div>
+                <Label htmlFor="adminCurrentPassword">Current Password</Label>
+                <div className="relative">
+                  <Input
+                    id="adminCurrentPassword"
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter your current password"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    aria-label={showCurrentPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showCurrentPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-500" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="adminNewPassword">New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="adminNewPassword"
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter your new password (min 8 characters)"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showNewPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-500" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters long</p>
+              </div>
+
+              <div>
+                <Label htmlFor="adminConfirmPassword">Confirm New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="adminConfirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your new password"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-500" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {passwordError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-md">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{passwordError}</span>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={changePassword.isPending || !currentPassword || !newPassword || !confirmPassword}
+              >
+                {changePassword.isPending ? 'Changing Password...' : 'Change Password'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

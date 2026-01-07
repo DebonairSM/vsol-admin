@@ -10,6 +10,8 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:5173',
+    locale: 'pt-BR',
+    timezoneId: 'America/Sao_Paulo',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     storageState: './tests/.auth/consultant-auth.json',
