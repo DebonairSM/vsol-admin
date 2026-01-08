@@ -128,7 +128,8 @@ export default function ConsultantVacationsPage() {
     
     try {
       await createDay.mutateAsync({
-        vacationDate: new Date(dayForm.vacationDate).toISOString(),
+        // Store as noon UTC to prevent off-by-one day shifts when viewed in different timezones
+        vacationDate: `${dayForm.vacationDate}T12:00:00.000Z`,
         notes: dayForm.notes || undefined
       });
       
@@ -160,8 +161,9 @@ export default function ConsultantVacationsPage() {
     
     try {
       await createRange.mutateAsync({
-        startDate: new Date(rangeForm.startDate).toISOString(),
-        endDate: new Date(rangeForm.endDate).toISOString(),
+        // Store as noon UTC to prevent off-by-one day shifts when viewed in different timezones
+        startDate: `${rangeForm.startDate}T12:00:00.000Z`,
+        endDate: `${rangeForm.endDate}T12:00:00.000Z`,
         notes: rangeForm.notes || undefined
       });
       

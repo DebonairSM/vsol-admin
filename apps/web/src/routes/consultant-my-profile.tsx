@@ -19,13 +19,22 @@ const formatDateForInput = (dateValue: any): string | undefined => {
     const date = new Date(dateValue);
     if (isNaN(date.getTime())) return undefined;
     
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    // Use UTC components so stored UTC timestamps don't shift by local timezone
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   } catch {
     return undefined;
   }
+};
+
+// Convert YYYY-MM-DD (date-only) into a stable UTC timestamp (noon UTC) to avoid off-by-one shifts
+const dateOnlyToUtcNoonIso = (dateStr: string): string => {
+  // dateStr is expected to be YYYY-MM-DD from <input type="date">
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (!y || !m || !d) return `${dateStr}T12:00:00.000Z`;
+  return new Date(Date.UTC(y, m - 1, d, 12, 0, 0, 0)).toISOString();
 };
 
 export default function ConsultantMyProfilePage() {
@@ -539,9 +548,9 @@ export default function ConsultantMyProfilePage() {
                   value={formData.birthDate ? formatDateForInput(formData.birthDate) : ''}
                   onChange={(e) => {
                     if (e.target.value) {
-                      // Preserve the selected date by appending local midnight time
+                      // Preserve the selected date without timezone shift by storing noon UTC
                       const dateStr = e.target.value; // YYYY-MM-DD format
-                      handleFieldChange('birthDate', `${dateStr}T00:00:00.000Z`);
+                      handleFieldChange('birthDate', dateOnlyToUtcNoonIso(dateStr));
                     } else {
                       handleFieldChange('birthDate', null);
                     }

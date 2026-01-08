@@ -4,24 +4,14 @@ import fs from 'fs';
 import { archiveCycleAsAdmin, createCycleAsAdmin } from './helpers/admin-api';
 
 test.describe('Consultant Portal Capabilities', () => {
-  // This suite shares server-side state (admin-created cycle) and hits auth endpoints.
-  // Run serially to avoid triggering the auth rate limiter when Playwright runs tests fully-parallel.
+  // These tests mutate shared account state (profile fields, vacations).
+  // Run serially to avoid cross-test interference.
   test.describe.configure({ mode: 'serial' });
 
-  let cycleId: number | null = null;
-  let monthLabel: string | null = null;
-
-  test.beforeAll(async ({ request }) => {
-    const created = await createCycleAsAdmin(request);
-    cycleId = created.cycleId;
-    monthLabel = created.monthLabel;
-  });
-
-  test.afterAll(async ({ request }) => {
-    if (cycleId) {
-      await archiveCycleAsAdmin(request, cycleId);
-    }
-  });
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
+  const isLocalBaseURL =
+    baseURL.includes('localhost') || baseURL.includes('127.0.0.1');
+  const allowAdminMutations = isLocalBaseURL || process.env.E2E_ALLOW_ADMIN_MUTATIONS === 'true';
 
   test('portal dashboard renders and navigation entry points exist', async ({ page }) => {
     await page.goto('/consultant', { waitUntil: 'networkidle', timeout: 60000 });
@@ -34,6 +24,11 @@ test.describe('Consultant Portal Capabilities', () => {
   });
 
   test('invoice upload works end-to-end for a newly created cycle', async ({ page }) => {
+    test.skip(!allowAdminMutations, 'Skipping invoice upload: requires admin mutations (cycle creation). Set E2E_ALLOW_ADMIN_MUTATIONS=true to enable on remote baseURL.');
+
+    // Create a cycle for this test run (so invoice upload has something to attach to)
+    const { cycleId, monthLabel } = await createCycleAsAdmin(page.request);
+
     await page.goto('/consultant/invoices', { waitUntil: 'networkidle', timeout: 60000 });
     await page.waitForSelector('text=Upload Invoice', { state: 'visible', timeout: 30000 });
 
@@ -77,6 +72,9 @@ test.describe('Consultant Portal Capabilities', () => {
     const invoiceRow = page.locator(`div:has-text("${monthLabel}")`).first();
     await invoiceRow.locator('button:has-text("View")').first().click();
     await invoiceRow.locator('button:has-text("Download")').first().click();
+
+    // Best-effort cleanup: archive the test cycle
+    await archiveCycleAsAdmin(page.request, cycleId);
   });
 
   test('profile updates persist', async ({ page }) => {
@@ -107,27 +105,32 @@ test.describe('Consultant Portal Capabilities', () => {
       );
     }
 
+    const reloadProfileResp = page.waitForResponse(
+      (r) =>
+        r.url().includes('/consultant/profile') &&
+        r.request().method() === 'GET',
+      { timeout: 30000 }
+    );
     await page.reload({ waitUntil: 'networkidle' });
+    await reloadProfileResp;
     await page.waitForSelector('text=My Profile', { state: 'visible', timeout: 30000 });
-    await expect(page.locator('#phone')).toHaveValue(newPhone);
+    await expect(page.locator('#phone')).toHaveValue(newPhone, { timeout: 15000 });
   });
 
   test('birthDate typed input does not shift by timezone (regression)', async ({ page }) => {
-    // Known issue: typing into <input type="date"> currently shifts by timezone (off-by-one).
-    // Keep this as an expected failure until the underlying bug is fixed.
-    test.fail(true, 'Known issue: typed birthDate shifts by timezone (off-by-one)');
-
     await page.goto('/consultant/profile', { waitUntil: 'networkidle', timeout: 60000 });
     await page.waitForSelector('text=My Profile', { state: 'visible', timeout: 30000 });
 
     const birthDateInput = page.locator('#birthDate');
     await expect(birthDateInput).toBeVisible();
 
-    const expectedBirthDate = '1990-01-15';
-    await birthDateInput.fill(expectedBirthDate);
+    // Ensure we actually change the value so the Save button becomes enabled.
+    const currentBirthDate = await birthDateInput.inputValue();
+    const desiredBirthDate = currentBirthDate === '1990-01-15' ? '1990-01-16' : '1990-01-15';
+    await birthDateInput.fill(desiredBirthDate);
 
     const saveButton = page.locator('button[type="submit"]:has-text("Save Changes")');
-    await expect(saveButton).toBeEnabled();
+    await expect(saveButton).toBeEnabled({ timeout: 15000 });
 
     const saveBirthDateResp = page.waitForResponse(
       (r) =>
@@ -145,7 +148,7 @@ test.describe('Consultant Portal Capabilities', () => {
 
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForSelector('text=My Profile', { state: 'visible', timeout: 30000 });
-    await expect(page.locator('#birthDate')).toHaveValue(expectedBirthDate);
+    await expect(page.locator('#birthDate')).toHaveValue(desiredBirthDate);
   });
 
   test('equipment can be created and edited', async ({ page }) => {
@@ -178,9 +181,6 @@ test.describe('Consultant Portal Capabilities', () => {
   test('vacation day created by typing date should not shift to previous day (regression)', async ({
     page,
   }) => {
-    // Known issue: typed dates can shift by timezone (off-by-one). Keep this as expected-fail until fixed.
-    test.fail(true, 'Known issue: typed vacation date shifts by timezone (off-by-one)');
-
     await page.goto('/consultant/vacations', { waitUntil: 'networkidle', timeout: 60000 });
     await page.waitForSelector('text=My Vacations', { state: 'visible', timeout: 30000 });
 
@@ -192,14 +192,25 @@ test.describe('Consultant Portal Capabilities', () => {
 
     await page.locator('#day-date').fill(vacationDate);
     await page.locator('#day-notes').fill(vacationNotes);
+    const createVacationResp = page.waitForResponse(
+      (r) =>
+        r.url().includes('/consultant/vacations') &&
+        r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
     await page.locator('button:has-text("Create")').click();
-    await page.waitForSelector('text=Success', { timeout: 15000 });
+    const vacResp = await createVacationResp;
+    if (!vacResp.ok()) {
+      throw new Error(
+        `[E2E] Create vacation failed (status ${vacResp.status()}). Body: ${await vacResp.text()}`
+      );
+    }
 
     // Table shows formatted date; current formatDate() uses en-US with UTC components.
     // This assertion is expected to FAIL if the bug reproduces (showing Apr 20 instead of Apr 21).
     const vacationsTable = page.locator('table.w-full.caption-bottom.text-sm');
-    await expect(vacationsTable).toContainText('Apr 21, 2025');
-    await expect(vacationsTable).toContainText(vacationNotes);
+    await expect(vacationsTable).toContainText('Apr 21, 2025', { timeout: 15000 });
+    await expect(vacationsTable).toContainText(vacationNotes, { timeout: 15000 });
   });
 });
 
