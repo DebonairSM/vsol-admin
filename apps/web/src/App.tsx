@@ -6,6 +6,7 @@ import DashboardPage from './routes/dashboard';
 import NewCyclePage from './routes/new-cycle';
 import GoldenSheetPage from './routes/golden-sheet';
 import ConsultantsPage from './routes/consultants';
+import ConsultantNewPage from './routes/consultant-new';
 import ConsultantProfilePage from './routes/consultant-profile';
 import ConsultantEditPage from './routes/consultant-edit';
 import ConsultantShippingLabelPage from './routes/consultant-shipping-label';
@@ -134,6 +135,7 @@ function App() {
                   <Route path="/cycles/new" element={<NewCyclePage />} />
                   <Route path="/cycles/:id" element={<GoldenSheetPage />} />
                   <Route path="/consultants" element={<ConsultantsPage />} />
+                  <Route path="/consultants/new" element={<ConsultantNewPage />} />
                   <Route path="/consultants/:id" element={<ConsultantProfilePage />} />
                   <Route path="/consultants/:id/edit" element={<ConsultantEditPage />} />
                   <Route path="/equipment" element={<EquipmentPage />} />

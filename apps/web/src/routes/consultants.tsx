@@ -140,10 +140,17 @@ export default function ConsultantsPage() {
           )}
           <Card>
             <CardHeader>
-              <CardTitle>All Consultants</CardTitle>
-              <CardDescription>
-                View and manage consultant profiles, rates, and status
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>All Consultants</CardTitle>
+                  <CardDescription>
+                    View and manage consultant profiles, rates, and status
+                  </CardDescription>
+                </div>
+                <Link to="/consultants/new">
+                  <Button>Add Consultant</Button>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto -mx-6 px-6">

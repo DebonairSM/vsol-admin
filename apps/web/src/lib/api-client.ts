@@ -132,6 +132,12 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     
+    // Reload token from localStorage before each request in case it was updated
+    const token = localStorage.getItem('auth_token') || this.token;
+    if (token && token !== this.token) {
+      this.token = token;
+    }
+    
     const headers: Record<string, string> = {
       ...(options.headers as Record<string, string>),
     };
@@ -141,8 +147,8 @@ class ApiClient {
       headers['Content-Type'] = 'application/json';
     }
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const config: RequestInit = {
