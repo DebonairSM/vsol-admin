@@ -1,8 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
 const isLocalBaseURL =
   baseURL.includes('localhost') || baseURL.includes('127.0.0.1');
+
+// Storage state paths (global setup will create these)
+const consultantStorageState = path.join(__dirname, 'tests/.auth/consultant-auth.json');
+const adminStorageState = path.join(__dirname, 'tests/.auth/admin-auth.json');
+const hasConsultantStorage = fs.existsSync(consultantStorageState);
+const hasAdminStorage = fs.existsSync(adminStorageState);
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -18,13 +26,24 @@ export default defineConfig({
     timezoneId: 'America/Sao_Paulo',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    storageState: './tests/.auth/consultant-auth.json',
   },
 
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'consultant',
+      testMatch: /^.*consultant.*\.spec\.ts$/,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(hasConsultantStorage ? { storageState: consultantStorageState } : {}),
+      },
+    },
+    {
+      name: 'admin',
+      testMatch: /^(admin|auth).*\.spec\.ts$/,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(hasAdminStorage ? { storageState: adminStorageState } : {}),
+      },
     },
   ],
 

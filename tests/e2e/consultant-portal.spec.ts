@@ -43,15 +43,15 @@ test.describe('Consultant Portal Page', () => {
 
   test('should display all portal cards', async ({ page }) => {
     // Check for Upload Invoice card
-    await expect(page.locator('text=Upload Invoice')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Upload Invoice' })).toBeVisible();
     await expect(page.locator('text=Upload your monthly invoice for payroll processing')).toBeVisible();
     
     // Check for Available Cycles card
-    await expect(page.locator('text=Available Cycles')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Available Cycles' })).toBeVisible();
     await expect(page.locator('text=Payroll cycles available for invoice upload')).toBeVisible();
     
     // Check for Profile card
-    await expect(page.locator('text=Profile')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible();
     await expect(page.locator('text=View and update your profile information')).toBeVisible();
   });
 
@@ -60,7 +60,7 @@ test.describe('Consultant Portal Page', () => {
     await page.waitForTimeout(2000);
     
     // The cycles card should show a number (0 or more)
-    const cyclesCard = page.locator('text=Available Cycles').locator('..').locator('..');
+    const cyclesCard = page.getByRole('heading', { name: 'Available Cycles' }).locator('..').locator('..');
     const cycleCount = await cyclesCard.locator('p.text-2xl').textContent();
     
     // Should be a valid number

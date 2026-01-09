@@ -33,6 +33,7 @@ function isLocalRequest(req: Request): boolean {
  * General rate limiter for all API endpoints
  * Limits: 1000 requests per 15 minutes per IP (local) or 100 requests (remote)
  * More lenient for local-first applications
+ * Skips rate limiting entirely for localhost in development to allow E2E testing
  */
 export const generalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -43,6 +44,16 @@ export const generalRateLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Skip rate limiting entirely for localhost in development to allow E2E testing
+  // Also skip if NODE_ENV is not set (defaults to development for local testing)
+  skip: (req: Request) => {
+    const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+    const isLocal = isLocalRequest(req);
+    if (isDev && isLocal) {
+      return true; // Skip rate limiting for localhost in development
+    }
+    return false;
+  },
   handler: (req: Request, res: Response) => {
     res.status(429).json({
       error: 'Too many requests from this IP, please try again later.'
@@ -50,14 +61,17 @@ export const generalRateLimiter = rateLimit({
   }
 });
 
+
 /**
  * Strict rate limiter for authentication endpoints
  * Limits: 10 requests per 15 minutes per IP (local) or 5 requests (remote)
- * Prevents brute force attacks while allowing reasonable local usage
+ * Much more lenient for localhost in development to allow E2E testing
+ * Prevents brute force attacks while allowing reasonable local usage and E2E testing
  */
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: (req: Request) => {
+    // This function is only called if skip() returns false
     // Slightly more lenient for local requests, but still strict
     return isLocalRequest(req) ? 10 : 5;
   },
@@ -65,6 +79,13 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Don't count successful requests
+  // Skip rate limiting entirely for localhost in development to allow E2E testing
+  // Also skip if NODE_ENV is not set (defaults to development for local testing)
+  skip: (req: Request) => {
+    const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+    const isLocal = isLocalRequest(req);
+    return isDev && isLocal;
+  },
   handler: (req: Request, res: Response) => {
     res.status(429).json({
       error: 'Too many login attempts from this IP, please try again in 15 minutes.'

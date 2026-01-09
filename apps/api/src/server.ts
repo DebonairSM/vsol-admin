@@ -90,9 +90,6 @@ function getCorsOrigin(): string | string[] | ((origin: string | undefined) => b
       
       // Always allow localhost and local network IPs
       if (isLocalOrigin(origin)) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`✅ CORS: Allowing local origin: ${origin}`);
-        }
         return true;
       }
       
@@ -113,23 +110,14 @@ function getCorsOrigin(): string | string[] | ((origin: string | undefined) => b
       
       // Always allow ngrok domains even when CORS_ORIGIN is set
       if (origin.match(/^https:\/\/[a-z0-9-]+\.ngrok\.(io|app)$/)) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`✅ CORS: Allowing ngrok origin: ${origin}`);
-        }
         return true;
       }
       if (origin.match(/^https:\/\/[a-z0-9-]+\.ngrok-free\.(io|app)$/)) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`✅ CORS: Allowing ngrok-free origin: ${origin}`);
-        }
         return true;
       }
       
       // Always allow Cloudflare Tunnel domains (portal.vsol.software, api.portal.vsol.software)
       if (origin.match(/^https:\/\/(portal|api\.portal)\.vsol\.software$/)) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`✅ CORS: Allowing Cloudflare Tunnel origin: ${origin}`);
-        }
         return true;
       }
       
@@ -144,58 +132,52 @@ function getCorsOrigin(): string | string[] | ((origin: string | undefined) => b
     
     // Allow localhost and local network IPs
     if (isLocalOrigin(origin)) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ CORS: Allowing local origin: ${origin}`);
-      }
       return true;
     }
     
     // Always allow ngrok domains (common patterns: *.ngrok.io, *.ngrok.app, *.ngrok-free.app, *.ngrok-free.io)
     // Match patterns like: https://vsol-admin.ngrok.app, https://abc123.ngrok.io, etc.
     if (origin.match(/^https:\/\/[a-z0-9-]+\.ngrok\.(io|app)$/)) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ CORS: Allowing ngrok origin: ${origin}`);
-      }
       return true;
     }
     if (origin.match(/^https:\/\/[a-z0-9-]+\.ngrok-free\.(io|app)$/)) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ CORS: Allowing ngrok-free origin: ${origin}`);
-      }
       return true;
     }
     
     // Always allow Cloudflare Tunnel domains (portal.vsol.software, api.portal.vsol.software)
     if (origin.match(/^https:\/\/(portal|api\.portal)\.vsol\.software$/)) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`✅ CORS: Allowing Cloudflare Tunnel origin: ${origin}`);
-      }
       return true;
     }
     
     // SECURITY: Removed development mode bypass - require explicit CORS_ORIGIN configuration
     // If CORS_ORIGIN is not set, only allow localhost, local network IPs, and ngrok domains
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`❌ CORS: Rejecting origin (development mode requires explicit CORS_ORIGIN): ${origin}`);
-    }
     return false;
   };
 }
 
-// CORS configuration with debug logging
+// CORS configuration with minimal logging
 const corsOriginFunction = getCorsOrigin();
+// Track seen origins to reduce log spam
+const seenOrigins = new Set<string>();
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    // Log all CORS requests in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 CORS preflight check - Origin: ${origin || 'no origin'}`);
-    }
-    
     const originFunction = corsOriginFunction as (origin: string | undefined) => boolean;
     const isAllowed = originFunction(origin);
     
+    // Only log in development and only for blocked requests or first-time origins
     if (process.env.NODE_ENV === 'development') {
-      console.log(`   ${isAllowed ? '✅' : '❌'} CORS ${isAllowed ? 'ALLOWED' : 'BLOCKED'}: ${origin || 'no origin'}`);
+      const originKey = origin || 'no origin';
+      
+      // Always log blocked requests
+      if (!isAllowed) {
+        console.log(`❌ CORS BLOCKED: ${originKey}`);
+      }
+      // Log allowed origins only on first occurrence
+      else if (origin && !seenOrigins.has(origin)) {
+        seenOrigins.add(origin);
+        console.log(`✅ CORS: Allowing origin: ${origin}`);
+      }
+      // Skip logging "no origin" requests (common and expected)
     }
     
     callback(null, isAllowed);
@@ -212,9 +194,6 @@ app.use(cors(corsOptions));
 
 // Explicitly handle OPTIONS requests for all routes (backup for ngrok)
 app.options('*', (req, res) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`🔍 OPTIONS request received: ${req.method} ${req.path} from origin: ${req.headers.origin || 'no origin'}`);
-  }
   cors(corsOptions)(req, res, () => {
     res.status(204).end();
   });

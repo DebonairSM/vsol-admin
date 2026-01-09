@@ -16,6 +16,7 @@ const router: Router = Router();
 
 // POST /api/auth/login
 // Apply strict rate limiting to prevent brute force attacks
+// Note: In development, rate limiting is skipped for localhost to allow E2E testing
 router.post('/login', authRateLimiter, validateBody(loginSchema), async (req, res, next) => {
   try {
     const { username, password } = req.body;

@@ -31,12 +31,16 @@ jspm_packages/
 *-shm
 *.db-journal
 
-# Database backups
+# Database backups and exports
 backups/
 *.backup
 *.db.backup
 *.db.bak-*
 *.db.bak*
+# Timestamped database backup files (e.g., vsol-admin-dev-2025-12-30_22-00-00-727Z.db)
+# Note: *.db pattern above already covers all .db files, this is just for clarity
+# Keep example database files if needed
+!*.db.example
 
 # =============================================================================
 # Build Outputs
