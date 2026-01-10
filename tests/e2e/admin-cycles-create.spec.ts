@@ -215,7 +215,7 @@ test.describe('Cycle Creation', () => {
     expect(value).toBeTruthy();
   });
 
-  test('should show loading state during submission', async ({ page }) => {
+  test('should show loading state during submission', async ({ page, request }) => {
     test.skip(!allowAdminMutations, 'Requires admin mutations (set E2E_ALLOW_ADMIN_MUTATIONS=true for remote)');
 
     // Fill in required fields
@@ -224,6 +224,12 @@ test.describe('Cycle Creation', () => {
     await monthLabelInput.fill(uniqueLabel);
 
     const submitButton = page.locator('button[type="submit"]');
+    
+    // Wait for response to track cycle creation
+    const createResponse = page.waitForResponse(
+      (r) => r.url().includes('/api/cycles') && r.request().method() === 'POST',
+      { timeout: 30000 }
+    );
     
     // Click and check for loading state
     await submitButton.click();
@@ -234,6 +240,18 @@ test.describe('Cycle Creation', () => {
 
     // Either disabled or shows "Creating..."
     expect(isDisabled || buttonText?.includes('Creating')).toBeTruthy();
+
+    // Wait for response and extract cycle ID for cleanup
+    const response = await createResponse;
+    if (response.ok()) {
+      const json = await response.json();
+      const cycleId = json.id;
+      
+      // Cleanup: delete the cycle we just created
+      if (cycleId) {
+        await archiveCycleAsAdmin(request, cycleId);
+      }
+    }
   });
 
   test('should have cancel button that navigates back', async ({ page }) => {

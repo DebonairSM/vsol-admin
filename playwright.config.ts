@@ -15,6 +15,7 @@ const hasAdminStorage = fs.existsSync(adminStorageState);
 export default defineConfig({
   testDir: './tests/e2e',
   globalSetup: require.resolve('./tests/e2e/global-setup.ts'),
+  globalTeardown: require.resolve('./tests/e2e/global-teardown.ts'),
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

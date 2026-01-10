@@ -113,6 +113,29 @@ export async function createTestCycle(
 }
 
 /**
+ * Delete/archive a test cycle via API
+ */
+export async function deleteTestCycle(
+  request: APIRequestContext,
+  cycleId: number
+): Promise<void> {
+  const token = await loginAsAdmin(request);
+  const resp = await request.delete(`/api/cycles/${cycleId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!resp.ok()) {
+    // Best-effort cleanup: don't hard fail on cleanup
+    const body = await resp.text().catch(() => '');
+    console.warn(
+      `[E2E] Failed to delete cycle ${cycleId} (status ${resp.status()}). Body: ${body}`
+    );
+  }
+}
+
+/**
  * Generate a unique test consultant name
  */
 export function generateTestConsultantName(prefix = 'E2E Consultant'): string {
