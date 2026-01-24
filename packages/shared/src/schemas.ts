@@ -128,6 +128,7 @@ export const createConsultantSchema = z.object({
 export const updateConsultantSchema = z.object({
   name: z.string().min(1).optional(),
   hourlyRate: z.number().positive().optional(),
+  startDate: z.string().datetime().optional(),
   terminationDate: z.string().datetime().nullable().optional(),
   evaluationNotes: z.string().nullable().optional(),
   // Personal Data

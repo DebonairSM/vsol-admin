@@ -192,3 +192,53 @@ export async function archiveCycleAsAdmin(
   }
 }
 
+/**
+ * Cleanup all E2E test cycles (cycles with "E2E" in monthLabel)
+ * This is a safety net to catch any cycles that weren't cleaned up by individual tests
+ */
+export async function cleanupAllE2ETestCycles(
+  request: APIRequestContext
+): Promise<void> {
+  try {
+    const token = await loginAsAdmin(request);
+    const resp = await request.get('/api/cycles', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!resp.ok()) {
+      console.warn('[E2E] Failed to fetch cycles for cleanup');
+      return;
+    }
+
+    const cycles = (await resp.json()) as Array<{ id: number; monthLabel: string; archivedAt: string | null }>;
+    
+    // Filter for E2E test cycles that are not already archived
+    const e2eCycles = cycles.filter(
+      (cycle) => 
+        (cycle.monthLabel.includes('E2E') || cycle.monthLabel.startsWith('E2E Test')) &&
+        !cycle.archivedAt
+    );
+
+    if (e2eCycles.length === 0) {
+      return;
+    }
+
+    console.log(`[E2E] Found ${e2eCycles.length} unarchived E2E test cycles, cleaning up...`);
+
+    // Archive each E2E test cycle
+    for (const cycle of e2eCycles) {
+      try {
+        await archiveCycleAsAdmin(request, cycle.id);
+      } catch (error) {
+        console.warn(`[E2E] Failed to cleanup cycle ${cycle.id} (${cycle.monthLabel}):`, error);
+      }
+    }
+
+    console.log(`[E2E] Cleaned up ${e2eCycles.length} E2E test cycles`);
+  } catch (error) {
+    // Don't fail tests on cleanup errors
+    console.warn('[E2E] Error during E2E cycle cleanup:', error);
+  }
+}

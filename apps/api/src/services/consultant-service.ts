@@ -103,6 +103,9 @@ export class ConsultantService {
     // Basic fields
     if (data.name !== undefined) updateData.name = data.name;
     if (data.hourlyRate !== undefined) updateData.hourlyRate = data.hourlyRate;
+    if (data.startDate !== undefined) {
+      updateData.startDate = new Date(data.startDate);
+    }
     if (data.terminationDate !== undefined) {
       updateData.terminationDate = data.terminationDate ? new Date(data.terminationDate) : null;
     }

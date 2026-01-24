@@ -36,9 +36,10 @@ export default function ConsultantEditPage() {
       const date = new Date(dateValue);
       if (isNaN(date.getTime())) return undefined;
       
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      // Use UTC components to avoid timezone shifts when displaying date-only inputs
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     } catch {
       return undefined;
@@ -51,6 +52,7 @@ export default function ConsultantEditPage() {
       setFormState({
         name: consultant.name,
         hourlyRate: consultant.hourlyRate,
+        startDate: formatDateForInput(consultant.startDate),
         terminationDate: consultant.terminationDate,
         evaluationNotes: consultant.evaluationNotes,
         // Personal Data
@@ -172,6 +174,13 @@ export default function ConsultantEditPage() {
       // Basic fields
       if (formState.name !== undefined) dataToUpdate.name = formState.name;
       if (formState.hourlyRate !== undefined) dataToUpdate.hourlyRate = formState.hourlyRate;
+      if (formState.startDate !== undefined) {
+        const startDateStr = String(formState.startDate || '').trim();
+        // Required field; send as UTC midnight ISO to avoid timezone shifts
+        if (startDateStr) {
+          dataToUpdate.startDate = new Date(`${startDateStr}T00:00:00.000Z`).toISOString();
+        }
+      }
       if (formState.terminationDate !== undefined) {
         dataToUpdate.terminationDate = formState.terminationDate ? new Date(formState.terminationDate).toISOString() : null;
       }
@@ -196,7 +205,8 @@ export default function ConsultantEditPage() {
       if (formState.cep !== undefined) dataToUpdate.cep = toNullIfEmpty(formState.cep);
       if (formState.phone !== undefined) dataToUpdate.phone = toNullIfEmpty(formState.phone);
       if (formState.birthDate !== undefined) {
-        dataToUpdate.birthDate = formState.birthDate ? new Date(formState.birthDate).toISOString() : null;
+        // Date input provides YYYY-MM-DD; send as UTC midnight ISO to avoid timezone shifts
+        dataToUpdate.birthDate = formState.birthDate ? new Date(`${formState.birthDate}T00:00:00.000Z`).toISOString() : null;
       }
       if (formState.shirtSize !== undefined) dataToUpdate.shirtSize = formState.shirtSize || null;
       
@@ -389,6 +399,16 @@ export default function ConsultantEditPage() {
                   type="date"
                   value={formState.birthDate || ''}
                   onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="startDate">Start Date *</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formState.startDate || ''}
+                  onChange={(e) => handleInputChange('startDate', e.target.value)}
+                  required
                 />
               </div>
               <div>
