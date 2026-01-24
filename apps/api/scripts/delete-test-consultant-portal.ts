@@ -46,10 +46,34 @@ async function deleteTestConsultantPortal(consultantId: number) {
       return;
     }
 
-    // Delete user account
+    // Delete user account (remove dependencies first)
     console.log('\n👤 Deleting user account...');
     const user = sqliteDb.prepare('SELECT id, username FROM users WHERE consultant_id = ?').get(consultantId) as any;
     if (user) {
+      const auditCount = sqliteDb.prepare('SELECT COUNT(*) as count FROM audit_logs WHERE user_id = ?').get(user.id) as any;
+      sqliteDb.prepare('DELETE FROM audit_logs WHERE user_id = ?').run(user.id);
+      console.log(`   ✅ Deleted ${auditCount?.count || 0} audit log(s)`);
+
+      const tokenCount = sqliteDb.prepare('SELECT COUNT(*) as count FROM refresh_tokens WHERE user_id = ?').get(user.id) as any;
+      sqliteDb.prepare('DELETE FROM refresh_tokens WHERE user_id = ?').run(user.id);
+      console.log(`   ✅ Deleted ${tokenCount?.count || 0} refresh token(s)`);
+
+      const settingsCount = sqliteDb.prepare('SELECT COUNT(*) as count FROM settings WHERE updated_by = ?').get(user.id) as any;
+      sqliteDb.prepare('UPDATE settings SET updated_by = NULL WHERE updated_by = ?').run(user.id);
+      console.log(`   ✅ Cleared updated_by on ${settingsCount?.count || 0} setting(s)`);
+
+      const invoiceCount = sqliteDb.prepare('SELECT COUNT(*) as count FROM invoices WHERE uploaded_by = ?').get(user.id) as any;
+      sqliteDb.prepare('UPDATE invoices SET uploaded_by = NULL WHERE uploaded_by = ?').run(user.id);
+      console.log(`   ✅ Cleared uploaded_by on ${invoiceCount?.count || 0} invoice(s)`);
+
+      const vacationCount = sqliteDb.prepare('SELECT COUNT(*) as count FROM vacation_days WHERE created_by = ?').get(user.id) as any;
+      sqliteDb.prepare('UPDATE vacation_days SET created_by = NULL WHERE created_by = ?').run(user.id);
+      console.log(`   ✅ Cleared created_by on ${vacationCount?.count || 0} vacation day(s)`);
+
+      const sprintCount = sqliteDb.prepare('SELECT COUNT(*) as count FROM sprint_ceremonies WHERE created_by = ?').get(user.id) as any;
+      sqliteDb.prepare('DELETE FROM sprint_ceremonies WHERE created_by = ?').run(user.id);
+      console.log(`   ✅ Deleted ${sprintCount?.count || 0} sprint ceremony(ies)`);
+
       sqliteDb.prepare('DELETE FROM users WHERE consultant_id = ?').run(consultantId);
       console.log(`   ✅ Deleted user: ${user.username}`);
     } else {

@@ -120,7 +120,8 @@ export class CycleService {
         bonusAdvance: consultant.yearlyBonus || null // Pre-fill yearly bonus if set
       }));
 
-      tx.insert(cycleLineItems).values(lineItemsData);
+      // Drizzle query builders are lazy in better-sqlite3; call .run() to execute.
+      tx.insert(cycleLineItems).values(lineItemsData).run();
 
       return cycle;
     });

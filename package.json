@@ -19,7 +19,8 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
-    "baseline-browser-mapping": "^2.9.11"
+    "baseline-browser-mapping": "^2.9.11",
+    "tsx": "^4.6.2"
   },
   "packageManager": "pnpm@8.15.6",
   "engines": {
