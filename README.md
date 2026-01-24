@@ -66,7 +66,7 @@ For production access via `portal.vsol.software`:
    cloudflared tunnel create portal-vsol
    ```
 
-4. Create a configuration file at `%USERPROFILE%\.cloudflared\config-portal.yml`:
+4. Create a configuration file at `%USERPROFILE%\.cloudflared\config.yml`:
    ```yaml
    tunnel: <tunnel-id>
    credentials-file: %USERPROFILE%\.cloudflared\<tunnel-id>.json
@@ -106,7 +106,7 @@ For production access via `portal.vsol.software`:
    & "$env:USERPROFILE\.cloudflared\start-portal-tunnel.ps1"
    
    # Option 2: Manual start
-   cloudflared tunnel --config C:\Users\romme\.cloudflared\config-portal.yml run
+   cloudflared tunnel --config $env:USERPROFILE\.cloudflared\config.yml run
    ```
 
    The script will:

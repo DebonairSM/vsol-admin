@@ -100,7 +100,7 @@ try {
     Write-Host "   Install with: winget install --id Cloudflare.cloudflared" -ForegroundColor Gray
 }
 
-$tunnelConfigPath = "$env:USERPROFILE\.cloudflared\config-portal.yml"
+$tunnelConfigPath = "$env:USERPROFILE\.cloudflared\config.yml"
 $tunnelConfigExists = Test-Path $tunnelConfigPath
 if ($tunnelConfigExists) {
     Write-Host "   Tunnel config found at: $tunnelConfigPath" -ForegroundColor Green
